@@ -129,6 +129,14 @@ Show e => Show (AssocList k e) where
   showPrec p (AL r) =
     showCon p "fromList" $ showArg (map (\(n,l) => (finToNat n, l)) r)
 
+export
+weakenAL : AssocList k e -> AssocList (S k) e
+weakenAL (AL r) = AL $ weakenRep r
+
+export
+weakenALN : (0 m : Nat) -> AssocList k e -> AssocList (k + m) e
+weakenALN m (AL g) = AL $ weakenRepN m g
+
 --------------------------------------------------------------------------------
 --          Utilities
 --------------------------------------------------------------------------------

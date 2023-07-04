@@ -28,7 +28,7 @@ record Edge (k : Nat) (e : Type) where
   label : e
   {auto 0 prf : Indexed.compFin node1 node2 === LT}
 
-0 compFinGT : (x,y : Fin k) -> compFin x y === GT -> compFin y x === LT 
+0 compFinGT : (x,y : Fin k) -> compFin x y === GT -> compFin y x === LT
 compFinGT (FS x) FZ     prf = Refl
 compFinGT (FS x) (FS y) prf = compFinGT x y prf
 compFinGT FZ     FZ prf     impossible
@@ -67,6 +67,18 @@ record Adj k e n where
   constructor A
   label       : n
   neighbours  : AssocList k e
+
+export
+weakenAdj : Adj k e n -> Adj (S k) e n
+weakenAdj (A l ns) = A l $ weakenAL ns
+
+export
+weakenAdjN : (0 m : Nat) -> Adj k e n -> Adj (k + m) e n
+weakenAdjN m (A l ns) = A l $ weakenALN m ns
+
+export %inline
+fromLabel : n -> Adj k e n
+fromLabel v = A v empty
 
 export
 Eq e => Eq n => Eq (Adj k e n) where
