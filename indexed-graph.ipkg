@@ -1,0 +1,17 @@
+package indexed-graph
+
+authors    = "stefan-hoeck"
+brief      = "Array-backed, order indexed, sparse, simple graphs in Idris2"
+version    = 0.1.0
+readme     = "README.md"
+license    = "BSD-3 Clause"
+
+sourcedir  = "src"
+depends    = base    >= 0.5.1
+           , array
+
+modules = Data.AssocList.Indexed
+
+        , Data.Graph.Indexed
+        , Data.Graph.Indexed.Types
+        , Data.Graph.Indexed.Util

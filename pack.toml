@@ -1,0 +1,11 @@
+[custom.all.indexed-graph]
+type   = "local"
+path   = "."
+ipkg   = "indexed-graph.ipkg"
+test   = "test/test.ipkg"
+
+[custom.all.array]
+type   = "git"
+url    = "https://github.com/stefan-hoeck/idris2-array"
+commit = "latest:main"
+ipkg   = "array.ipkg"
