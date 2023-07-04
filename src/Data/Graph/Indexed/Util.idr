@@ -173,19 +173,34 @@ export %inline
 delEdge : {k : _} -> (x,y : Fin k) -> IGraph k e n -> IGraph k e n
 delEdge x y = delEdges [(x,y)]
 
--- ||| Insert a labeled node into the `Graph`.
--- ||| The behavior is undefined if the node is already
--- ||| in the graph.
--- export
--- insNode : Node -> (lbl : n) -> Graph e n -> Graph e n
--- insNode v l (MkGraph m) = MkGraph $ insert v (MkAdj l $ MkAL []) m
---
---
--- ||| Insert multiple `LNode`s into the `Graph`.
--- export
--- insNodes : List (LNode n) -> Graph e n -> Graph e n
--- insNodes vs g = foldl (\g2,(MkLNode k l) => insNode k l g2) g vs
---
+||| Insert multiple `LNode`s into the `Graph`.
+export
+insNodes :
+     {k : _}
+  -> IGraph k e n
+  -> (ns : List n)
+  -> IGraph (k + length ns) e n
+insNodes (IG g) ns =
+  let g'  := map (weakenAdjN (length ns)) g
+   in IG $ append g' (map fromLabel (array ns))
+
+||| Insert multiple `LNode`s into the `Graph`.
+export
+insNodesAndEdges :
+     {k : _}
+  -> IGraph k e n
+  -> (ns : List n)
+  -> (es : List (Edge (k + length ns) e))
+  -> IGraph (k + length ns) e n
+insNodesAndEdges g ns es = insEdges es $ insNodes g ns
+
+||| Insert a labeled node into the `Graph`.
+||| The behavior is undefined if the node is already
+||| in the graph.
+export %inline
+insNode : {k : _} -> IGraph k e n -> n -> IGraph (k + 1) e n
+insNode g v = insNodes g [v]
+
 -- ||| Remove a 'Node' from the 'Graph'.
 -- export
 -- delNode : Node -> Graph e n -> Graph e n
