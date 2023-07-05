@@ -1,0 +1,14 @@
+package indexed-graph-profile
+
+authors    = "stefan-hoeck"
+version    = 0.1.0
+readme     = "README.md"
+license    = "BSD-3 Clause"
+
+sourcedir  = "src"
+depends    = graph
+           , profiler
+           , indexed-graph
+
+main       = Main
+executable = "runProfile"
