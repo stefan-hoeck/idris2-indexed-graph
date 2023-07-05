@@ -229,6 +229,10 @@ export
   toList     = map label . toList . graph
   null _     = k == 0
 
+export
+{k : _} -> Traversable (IGraph k e) where
+  traverse f (IG g) = IG <$> traverse (traverse f) g
+
 namespace IGraphFunctor
   export
   [OnEdge] {k : _} -> Functor (\e => IGraph k e n) where
@@ -256,6 +260,10 @@ export
   bifoldl f g acc =
     foldl (bifoldl f g) acc . graph
   binull = null
+
+export
+{k : _} -> Bitraversable (IGraph k) where
+  bitraverse f g (IG h) = IG <$> traverse (bitraverse f g) h
 
 --------------------------------------------------------------------------------
 --          Graph
@@ -286,6 +294,10 @@ Foldable (Graph e) where
   toList     (G _ g) = map label $ toList g
   null       (G o g) = o == 0
 
+export
+Traversable (Graph e) where
+  traverse f (G s g) = G s <$> traverse (traverse f) g
+
 namespace GraphFunctor
   export
   [OnEdge] Functor (\e => Graph e n) where
@@ -313,3 +325,7 @@ Bifoldable (Graph) where
   bifoldl f g acc (G o m) =
     foldl (bifoldl f g) acc m
   binull = null
+
+export
+Bitraversable Graph where
+  bitraverse f g (G s h) = G s <$> traverse (bitraverse f g) h

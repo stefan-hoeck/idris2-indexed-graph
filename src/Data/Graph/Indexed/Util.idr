@@ -147,6 +147,19 @@ generate : (k : Nat) -> (Fin k -> Adj k e n) -> IGraph k e n
 generate k f = IG $ generate k f
 
 --------------------------------------------------------------------------------
+--          Folds and Traversals
+--------------------------------------------------------------------------------
+
+export
+traverseCtxt :
+     {k : _}
+  -> {auto app : Applicative f}
+  -> (Fin k -> Adj k e n -> f (Adj k e n))
+  -> IGraph k e n
+  -> f (IGraph k e n)
+traverseCtxt fun (IG g) = IG <$> traverseWithIndex fun g
+
+--------------------------------------------------------------------------------
 --          Modifying Graphs
 --------------------------------------------------------------------------------
 
