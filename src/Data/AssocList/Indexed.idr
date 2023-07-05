@@ -9,14 +9,6 @@ import Data.List
 --          Utilities
 --------------------------------------------------------------------------------
 
-public export %inline
-compFin : Fin m -> Fin n -> Ordering
-compFin x y = compare (finToNat x) (finToNat y)
-
-public export %inline
-heqFin : Fin m -> Fin n -> Bool
-heqFin x y = finToNat x == finToNat y
-
 weakenp : (Fin n, t) -> (Fin (S n), t)
 weakenp (x,v) = (weaken x, v)
 

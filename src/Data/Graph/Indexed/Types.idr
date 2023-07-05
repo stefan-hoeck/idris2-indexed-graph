@@ -26,7 +26,7 @@ record Edge (k : Nat) (e : Type) where
   node1 : Fin k
   node2 : Fin k
   label : e
-  {auto 0 prf : Indexed.compFin node1 node2 === LT}
+  {auto 0 prf : compFin node1 node2 === LT}
 
 0 compFinGT : (x,y : Fin k) -> compFin x y === GT -> compFin y x === LT
 compFinGT (FS x) FZ     prf = Refl
