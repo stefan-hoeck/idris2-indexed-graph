@@ -2,10 +2,15 @@
 type   = "local"
 path   = "."
 ipkg   = "indexed-graph.ipkg"
-test   = "test/test.ipkg"
+
+[custom.all.indexed-graph-profile]
+type   = "local"
+path   = "profile"
+ipkg   = "indexed-graph-profile.ipkg"
 
 [custom.all.array]
 type   = "git"
 url    = "https://github.com/stefan-hoeck/idris2-array"
 commit = "latest:main"
 ipkg   = "array.ipkg"
+
