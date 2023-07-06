@@ -168,6 +168,22 @@ generate k f = IG $ generate k f
 --------------------------------------------------------------------------------
 
 export
+mapCtxt :
+     {k : _}
+  -> (Fin k -> Adj k e n -> Adj k e1 n1)
+  -> IGraph k e n
+  -> IGraph k e1 n1
+mapCtxt fun (IG g) = IG $ mapWithIndex fun g
+
+export %inline
+mapWithCtxt :
+     {k : _}
+  -> (Fin k -> Adj k e n -> n1)
+  -> IGraph k e n
+  -> IGraph k e n1
+mapWithCtxt fun = mapCtxt (\x,adj => adj $> fun x adj)
+
+export
 traverseCtxt :
      {k : _}
   -> {auto app : Applicative f}
