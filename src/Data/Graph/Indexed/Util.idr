@@ -165,6 +165,15 @@ traverseCtxt :
   -> f (IGraph k e n)
 traverseCtxt fun (IG g) = IG <$> traverseWithIndex fun g
 
+export
+traverseWithCtxt :
+     {k : _}
+  -> {auto app : Applicative f}
+  -> (Fin k -> Adj k e n -> f n)
+  -> IGraph k e n
+  -> f (IGraph k e n)
+traverseWithCtxt fun = traverseCtxt (\x,a => (`A` a.neighbours) <$> fun x a)
+
 --------------------------------------------------------------------------------
 --          Modifying Graphs
 --------------------------------------------------------------------------------
