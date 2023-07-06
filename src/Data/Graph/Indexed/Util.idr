@@ -160,18 +160,18 @@ export
 traverseCtxt :
      {k : _}
   -> {auto app : Applicative f}
-  -> (Fin k -> Adj k e n -> f (Adj k e n))
+  -> (Fin k -> Adj k e n -> f (Adj k e1 n1))
   -> IGraph k e n
-  -> f (IGraph k e n)
+  -> f (IGraph k e1 n1)
 traverseCtxt fun (IG g) = IG <$> traverseWithIndex fun g
 
 export
 traverseWithCtxt :
      {k : _}
   -> {auto app : Applicative f}
-  -> (Fin k -> Adj k e n -> f n)
+  -> (Fin k -> Adj k e n -> f n1)
   -> IGraph k e n
-  -> f (IGraph k e n)
+  -> f (IGraph k e n1)
 traverseWithCtxt fun = traverseCtxt (\x,a => (`A` a.neighbours) <$> fun x a)
 
 --------------------------------------------------------------------------------
