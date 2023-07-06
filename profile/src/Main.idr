@@ -47,16 +47,14 @@ graphData n =
    in GD ns es
 
 arrGraph : GraphData -> ArrGr () Nat
-arrGraph (GD ns es) =
-  let IG gr := mkGraph ns es
-   in G _ gr
+arrGraph (GD ns es) = G _ $ mkGraph ns es
 
 arrGraphN : Nat -> ArrGr () Nat
 arrGraphN = arrGraph . graphData
 
 labM : Nat -> ArrGr () Nat -> Maybe Nat
 labM n (G k g) = case tryNatToFin {k} n of
-  Just x => Just $lab (IG g) x
+  Just x => Just $ lab g x
   Nothing => Nothing
 
 --------------------------------------------------------------------------------
