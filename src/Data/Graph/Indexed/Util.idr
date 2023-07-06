@@ -308,6 +308,10 @@ export
 {k : _} -> Show e => Show n => Show (IGraph k e n) where
   showPrec p g = showCon p "mkGraph" $ showArg (labNodes g) ++ showArg (edges g)
 
+export
+Show e => Show n => Show (Graph e n) where
+  showPrec p (G o g) = showCon p "G" $ showArg o ++ showArg g
+
 pl : Nat -> Fin k -> String
 pl n = padLeft n ' ' . show . finToNat
 
