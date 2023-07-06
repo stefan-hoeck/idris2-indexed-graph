@@ -274,7 +274,7 @@ public export
 record Graph (e,n : Type) where
   constructor G
   order : Nat
-  graph : IArray order (Adj order e n)
+  graph : IGraph order e n
 
 export
 Eq e => Eq n => Eq (Graph e n) where
@@ -284,48 +284,46 @@ Eq e => Eq n => Eq (Graph e n) where
 
 export
 Functor (Graph e) where
-  map f (G o g) = G o $ map (map f) g
+  map f (G o g) = G o $ map f g
 
 export
 Foldable (Graph e) where
-  foldl f a  (G _ g) = foldl (\a',adj => f a' adj.label) a g
-  foldr f a  (G _ g) = foldr (f . label) a g
-  foldMap  f (G _ g) = foldMap (f . label) g
-  toList     (G _ g) = map label $ toList g
+  foldl f a  (G _ g) = foldl f a g
+  foldr f a  (G _ g) = foldr f a g
+  foldMap  f (G _ g) = foldMap f g
+  toList     (G _ g) = toList g
   null       (G o g) = o == 0
 
 export
 Traversable (Graph e) where
-  traverse f (G s g) = G s <$> traverse (traverse f) g
+  traverse f (G s g) = G s <$> traverse f g
 
 namespace GraphFunctor
   export
   [OnEdge] Functor (\e => Graph e n) where
-    map f (G o g) = G o $ map {neighbours $= map f} g
+    map f (G o g) = G o $ map @{IGraphFunctor.OnEdge} f g
 
 namespace GraphFoldable
   export
   [OnEdge] Foldable (\e => Graph e n) where
-    foldr f a (G o g) = foldr (\v,x => foldr f x v.neighbours) a g
-    foldl f a (G o g) = foldl (\x,v => foldl f x v.neighbours) a g
-    foldMap f (G o g) = foldMap (\v => foldMap f v.neighbours) g
-    toList    (G o g) = toList g >>= toList . neighbours
-    null      (G o g) = all (null . neighbours) g
+    foldr f a (G o g) = foldr @{IGraphFoldable.OnEdge} f a g
+    foldl f a (G o g) = foldl @{IGraphFoldable.OnEdge} f a g
+    foldMap f (G o g) = foldMap @{IGraphFoldable.OnEdge} f g
+    toList    (G o g) = toList @{IGraphFoldable.OnEdge} g
+    null      (G o g) = null @{IGraphFoldable.OnEdge} g
 
 export
 Bifunctor (Graph) where
-  bimap  f g (G o m) = G o $ bimap f g <$> m
-  mapFst f (G o m)   = G o $ mapFst f <$> m
-  mapSnd g (G o m)   = G o $ mapSnd g <$> m
+  bimap  f g (G o m) = G o $ bimap f g m
+  mapFst f (G o m)   = G o $ mapFst f m
+  mapSnd g (G o m)   = G o $ mapSnd g m
 
 export
 Bifoldable (Graph) where
-  bifoldr f g acc (G o m) =
-    foldr (flip $ bifoldr f g) acc m
-  bifoldl f g acc (G o m) =
-    foldl (bifoldl f g) acc m
-  binull = null
+  bifoldr f g acc (G o m) = bifoldr f g acc m
+  bifoldl f g acc (G o m) = bifoldl f g acc m
+  binull                  = null
 
 export
 Bitraversable Graph where
-  bitraverse f g (G s h) = G s <$> traverse (bitraverse f g) h
+  bitraverse f g (G s h) = G s <$> bitraverse f g h
