@@ -135,18 +135,29 @@ relength v = replace {p = \a => MArray a x} prf v
 
 ||| Create a `Graph` from a list of labeled nodes and edges.
 export
-mkGraph : (ns : List n) -> List (Edge (length ns) e) -> IGraph (length ns) e n
-mkGraph []        _  = empty
-mkGraph ns@(_::_) es =
+mkGraphL : (ns : List n) -> List (Edge (length ns) e) -> IGraph (length ns) e n
+mkGraphL []        _  = empty
+mkGraphL ns@(_::_) es =
   IG . unrestricted $ allocList (map (`A` empty) ns) $ \x =>
     let x2 := relength @{mapLen (`A` empty) ns} x in linsEdges es freeze x2
 
 ||| Create a `Graph` from a vect of labeled nodes and edges.
 export
-mkGraphV : {k : _} -> (ns : Vect k n) -> List (Edge k e) -> IGraph k e n
-mkGraphV {k = 0}   []        _  = empty
-mkGraphV {k = S m} ns@(_::_) es =
+mkGraph : {k : _} -> (ns : Vect k n) -> List (Edge k e) -> IGraph k e n
+mkGraph {k = 0}   []        _  = empty
+mkGraph {k = S m} ns@(_::_) es =
   IG . unrestricted $ allocVect (map (`A` empty) ns) $ linsEdges es freeze
+
+||| Create a `Graph` from a vect of labeled nodes and edges.
+|||
+||| Unlike `mkGraph`, this puts the nodes in the array in reverse order,
+||| which is useful when they come from a parser with the last node being
+||| at the head of the vector.
+export
+mkGraphRev : {k : _} -> (ns : Vect k n) -> List (Edge k e) -> IGraph k e n
+mkGraphRev {k = 0}   []        _  = empty
+mkGraphRev {k = S m} ns@(_::_) es =
+  IG . unrestricted $ allocRevVect (map (`A` empty) ns) $ linsEdges es freeze
 
 export %inline
 generate : (k : Nat) -> (Fin k -> Adj k e n) -> IGraph k e n
@@ -204,22 +215,22 @@ delEdge x y = delEdges [(x,y)]
 ||| Insert multiple `LNode`s into the `Graph`.
 export
 insNodes :
-     {k : _}
+     {k,m : _}
   -> IGraph k e n
-  -> (ns : List n)
-  -> IGraph (k + length ns) e n
+  -> (ns : Vect m n)
+  -> IGraph (k + m) e n
 insNodes (IG g) ns =
-  let g'  := map (weakenAdjN (length ns)) g
+  let g'  := map (weakenAdjN m) g
    in IG $ append g' (map fromLabel (array ns))
 
 ||| Insert multiple `LNode`s into the `Graph`.
 export
 insNodesAndEdges :
-     {k : _}
+     {k,m : _}
   -> IGraph k e n
-  -> (ns : List n)
-  -> (es : List (Edge (k + length ns) e))
-  -> IGraph (k + length ns) e n
+  -> (ns : Vect m n)
+  -> (es : List (Edge (k + m) e))
+  -> IGraph (k + m) e n
 insNodesAndEdges g ns es = insEdges es $ insNodes g ns
 
 ||| Insert a labeled node into the `Graph`.
