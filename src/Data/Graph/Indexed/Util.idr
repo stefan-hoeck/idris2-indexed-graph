@@ -70,6 +70,11 @@ export
 labNodes  : {k : _} -> IGraph k e n -> List (Fin k, n)
 labNodes = foldrKV (\x,(A l _),cs => (x,l) :: cs) [] . graph
 
+||| A list of all labeled nodes of a `Graph`
+export
+labels  : {k : _} -> IGraph k e n -> List n
+labels = foldr (\(A l _) => (l ::)) [] . graph
+
 export %inline
 adj : IGraph k e n -> Fin k -> Adj k e n
 adj (IG g) k = at g k
@@ -306,7 +311,7 @@ insNode g v = insNodes g [v]
 
 export
 {k : _} -> Show e => Show n => Show (IGraph k e n) where
-  showPrec p g = showCon p "mkGraph" $ showArg (labNodes g) ++ showArg (edges g)
+  showPrec p g = showCon p "mkGraph" $ showArg (labels g) ++ showArg (edges g)
 
 export
 Show e => Show n => Show (Graph e n) where
