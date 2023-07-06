@@ -16,6 +16,21 @@ import Data.List
 --          Edges
 --------------------------------------------------------------------------------
 
+0 weakenL : (x,y : Fin k) -> compFin (weaken x) (weaken y) === compFin x y
+weakenL FZ FZ         = Refl
+weakenL FZ (FS x)     = Refl
+weakenL (FS x) FZ     = Refl
+weakenL (FS x) (FS y) = weakenL x y
+
+0 weakenLN :
+     (m : Nat)
+  -> (x,y : Fin k)
+  -> compFin (weakenN m x) (weakenN m y) === compFin x y
+weakenLN m FZ FZ         = Refl
+weakenLN m FZ (FS x)     = Refl
+weakenLN m (FS x) FZ     = Refl
+weakenLN m (FS x) (FS y) = weakenLN m x y
+
 ||| A labeled edge in a simple, undirected graph.
 ||| Since edges go in both directions and loops are not allowed,
 ||| we can enforce without loss of generality
@@ -27,6 +42,15 @@ record Edge (k : Nat) (e : Type) where
   node2 : Fin k
   label : e
   {auto 0 prf : compFin node1 node2 === LT}
+
+export
+weakenEdge : Edge k e -> Edge (S k) e
+weakenEdge (E x y e @{p}) = E (weaken x) (weaken y) e @{weakenL x y `trans` p}
+
+export
+weakenEdgeN : (0 m : Nat) -> Edge k e -> Edge (k + m) e
+weakenEdgeN m (E x y e @{p}) =
+  E (weakenN m x) (weakenN m y) e @{weakenLN m x y `trans` p}
 
 0 compFinGT : (x,y : Fin k) -> compFin x y === GT -> compFin y x === LT
 compFinGT (FS x) FZ     prf = Refl
