@@ -13,7 +13,7 @@ import Data.List
 %default total
 
 --------------------------------------------------------------------------------
---          Edges
+--          Lemmata
 --------------------------------------------------------------------------------
 
 0 weakenL : (x,y : Fin k) -> compFin (weaken x) (weaken y) === compFin x y
@@ -30,6 +30,38 @@ weakenLN m FZ FZ         = Refl
 weakenLN m FZ (FS x)     = Refl
 weakenLN m (FS x) FZ     = Refl
 weakenLN m (FS x) (FS y) = weakenLN m x y
+
+0 finLT : (k : Nat) -> (x : Fin k) -> LT (finToNat x) k
+finLT (S k) FZ     = LTESucc LTEZero
+finLT (S k) (FS x) = LTESucc $ finLT k x
+finLT 0 x impossible
+
+0 weakenToNatL : (x : Fin k) -> finToNat x === finToNat (weaken x)
+weakenToNatL FZ     = Refl
+weakenToNatL (FS x) = cong S $ weakenToNatL x
+
+0 lastLemma : (n : Nat) -> n === finToNat (last {n})
+lastLemma 0     = Refl
+lastLemma (S k) = cong S (lastLemma k)
+
+0 ltLemma : (m,n : Nat) -> LT m n -> compareNat m n === LT
+ltLemma 0     (S j) x           = Refl
+ltLemma (S k) (S j) (LTESucc x) = ltLemma k j x
+ltLemma (S k) 0 x impossible
+ltLemma 0 0 x impossible
+
+0 edgeLemma :
+     (k : Nat)
+  -> (x : Fin k)
+  -> compareNat (finToNat $ weaken x) (finToNat Fin.last) === LT
+edgeLemma k x =
+  let p1 := rewrite (sym $ lastLemma k) in finLT k x
+      p2 := replace {p = \y => LT y (finToNat (last {n = k}))} (weakenToNatL x) p1
+   in ltLemma _ _ p2
+
+--------------------------------------------------------------------------------
+--          Edges
+--------------------------------------------------------------------------------
 
 ||| A labeled edge in a simple, undirected graph.
 ||| Since edges go in both directions and loops are not allowed,
@@ -64,6 +96,10 @@ mkEdge k j l with (compFin k j) proof prf
   _ | LT = Just (E k j l)
   _ | EQ = Nothing
   _ | GT = Just (E j k l @{compFinGT k j prf})
+
+public export
+edge : {k : _} -> Fin k -> e -> Edge (S k) e
+edge x l = E (weaken x) last l @{edgeLemma k x}
 
 public export
 Eq e => Eq (Edge k e) where
