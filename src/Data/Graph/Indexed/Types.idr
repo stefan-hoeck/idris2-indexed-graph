@@ -51,12 +51,12 @@ ltLemma (S k) 0 x impossible
 ltLemma 0 0 x impossible
 
 0 edgeLemma :
-     (k : Nat)
-  -> (x : Fin k)
-  -> compareNat (finToNat $ weaken x) (finToNat Fin.last) === LT
-edgeLemma k x =
-  let p1 := rewrite (sym $ lastLemma k) in finLT k x
-      p2 := replace {p = \y => LT y (finToNat (last {n = k}))} (weakenToNatL x) p1
+     (n : Nat)
+  -> (x : Fin n)
+  -> compareNat (finToNat $ weaken x) (finToNat $ Fin.last {n}) === LT
+edgeLemma n x =
+  let p1 := rewrite (sym $ lastLemma n) in finLT n x
+      p2 := replace {p = \y => LT y (finToNat (last {n}))} (weakenToNatL x) p1
    in ltLemma _ _ p2
 
 --------------------------------------------------------------------------------
