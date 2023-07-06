@@ -5,6 +5,7 @@ import Data.AssocList.Indexed
 import Data.Graph.Indexed.Types
 import Data.List
 import Data.String
+import Data.Vect
 
 %default total
 
@@ -132,15 +133,20 @@ mapLen f (x :: xs) = cong S $ mapLen f xs
 relength : {auto 0 prf : k === m} -> MArray k x -@ MArray m x
 relength v = replace {p = \a => MArray a x} prf v
 
-
-||| Create a `Graph` from the list of labeled nodes and
-||| edges.
+||| Create a `Graph` from a list of labeled nodes and edges.
 export
 mkGraph : (ns : List n) -> List (Edge (length ns) e) -> IGraph (length ns) e n
 mkGraph []        _  = empty
 mkGraph ns@(_::_) es =
   IG . unrestricted $ allocList (map (`A` empty) ns) $ \x =>
     let x2 := relength @{mapLen (`A` empty) ns} x in linsEdges es freeze x2
+
+||| Create a `Graph` from a vect of labeled nodes and edges.
+export
+mkGraphV : {k : _} -> (ns : Vect k n) -> List (Edge k e) -> IGraph k e n
+mkGraphV {k = 0}   []        _  = empty
+mkGraphV {k = S m} ns@(_::_) es =
+  IG . unrestricted $ allocVect (map (`A` empty) ns) $ linsEdges es freeze
 
 export %inline
 generate : (k : Nat) -> (Fin k -> Adj k e n) -> IGraph k e n
