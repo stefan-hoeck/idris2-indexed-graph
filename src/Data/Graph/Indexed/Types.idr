@@ -16,7 +16,7 @@ import Data.List
 --          Lemmata
 --------------------------------------------------------------------------------
 
-0 weakenL : (x,y : Fin k) -> compFin (weaken x) (weaken y) === compFin x y
+0 weakenL : (x,y : Fin k) -> compare (weaken x) (weaken y) === compare x y
 weakenL FZ FZ         = Refl
 weakenL FZ (FS x)     = Refl
 weakenL (FS x) FZ     = Refl
@@ -25,7 +25,7 @@ weakenL (FS x) (FS y) = weakenL x y
 0 weakenLN :
      (m : Nat)
   -> (x,y : Fin k)
-  -> compFin (weakenN m x) (weakenN m y) === compFin x y
+  -> compare (weakenN m x) (weakenN m y) === compare x y
 weakenLN m FZ FZ         = Refl
 weakenLN m FZ (FS x)     = Refl
 weakenLN m (FS x) FZ     = Refl
@@ -73,7 +73,7 @@ record Edge (k : Nat) (e : Type) where
   node1 : Fin k
   node2 : Fin k
   label : e
-  {auto 0 prf : compFin node1 node2 === LT}
+  {auto 0 prf : compare node1 node2 === LT}
 
 export
 weakenEdge : Edge k e -> Edge (S k) e
@@ -84,18 +84,18 @@ weakenEdgeN : (0 m : Nat) -> Edge k e -> Edge (k + m) e
 weakenEdgeN m (E x y e @{p}) =
   E (weakenN m x) (weakenN m y) e @{weakenLN m x y `trans` p}
 
-0 compFinGT : (x,y : Fin k) -> compFin x y === GT -> compFin y x === LT
-compFinGT (FS x) FZ     prf = Refl
-compFinGT (FS x) (FS y) prf = compFinGT x y prf
-compFinGT FZ     FZ prf     impossible
-compFinGT FZ     (FS x) prf impossible
+0 compareGT : (x,y : Fin k) -> compare x y === GT -> compare y x === LT
+compareGT (FS x) FZ     prf = Refl
+compareGT (FS x) (FS y) prf = compareGT x y prf
+compareGT FZ     FZ prf     impossible
+compareGT FZ     (FS x) prf impossible
 
 public export
 mkEdge : Fin k -> Fin k -> e -> Maybe (Edge k e)
-mkEdge k j l with (compFin k j) proof prf
+mkEdge k j l with (compare k j) proof prf
   _ | LT = Just (E k j l)
   _ | EQ = Nothing
-  _ | GT = Just (E j k l @{compFinGT k j prf})
+  _ | GT = Just (E j k l @{compareGT k j prf})
 
 public export
 edge : {k : _} -> Fin k -> e -> Edge (S k) e
@@ -103,7 +103,7 @@ edge x l = E (weaken x) last l @{edgeLemma k x}
 
 public export
 Eq e => Eq (Edge k e) where
-  E m1 n1 l1 == E m2 n2 l2 = heqFin m1 m2 && heqFin n1 n2 && l1 == l2
+  E m1 n1 l1 == E m2 n2 l2 = m1 == m2 && n1 == n2 && l1 == l2
 
 export
 Show e => Show (Edge k e) where
@@ -206,7 +206,7 @@ record Context (k : Nat) (e,n : Type) where
 export %inline
 Eq e => Eq n => Eq (Context k e n) where
   C n1 l1 ns1 == C n2 l2 ns2 =
-    heqFin n1 n2 && l1 == l2 && ns1 == ns2
+    n1 == n2 && l1 == l2 && ns1 == ns2
 
 export
 Show e => Show n => Show (Context k e n) where
