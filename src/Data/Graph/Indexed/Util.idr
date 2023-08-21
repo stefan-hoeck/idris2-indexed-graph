@@ -51,10 +51,12 @@ ldelEdges ((x,y)::xs) f a1 = let a2 := ldelEdge x y a1 in ldelEdges xs f a2
 -- context to avoid returning every edge twice in `labEdges`.
 ctxtEdges : Fin k -> Adj k e n -> SnocList (Edge k e)
 ctxtEdges x (A _ ns) = foldlKV acc [<] ns
-  where acc : Fin k -> SnocList (Edge k e) -> e -> SnocList (Edge k e)
-        acc y sp v with (compFin x y) proof eq
-          _ | LT = sp :< E x y v
-          _ | _  = sp
+
+  where
+    acc : Fin k -> SnocList (Edge k e) -> e -> SnocList (Edge k e)
+    acc y sp v with (compare x y) proof eq
+      _ | LT = sp :< E x y v
+      _ | _  = sp
 
 --------------------------------------------------------------------------------
 --          Inspecting Graphs
@@ -330,11 +332,11 @@ pretty de dn g =
         "Nodes:"   :: map (dispNode maxLen) ns ++
         "\nEdges:" :: map (dispEdge maxLen) es
 
-  where dispNode : Nat -> (Fin k, n) -> String
-        dispNode k (n1,l) =
-          "  \{pl k n1} :> \{dn l}"
+  where
+    dispNode : Nat -> (Fin k, n) -> String
+    dispNode k (n1,l) =
+      "  \{pl k n1} :> \{dn l}"
 
-        dispEdge : Nat -> Edge k e -> String
-        dispEdge k (E n1 n2 l) =
-          "E \{pl k n1} \{pl k n2}  \{de l}"
-
+    dispEdge : Nat -> Edge k e -> String
+    dispEdge k (E n1 n2 l) =
+      "E \{pl k n1} \{pl k n2}  \{de l}"

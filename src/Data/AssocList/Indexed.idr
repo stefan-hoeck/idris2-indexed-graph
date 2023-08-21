@@ -25,28 +25,28 @@ Rep n t = List (Fin n, t)
 heqRep : Eq e => Rep k e -> Rep m e -> Bool
 heqRep [] []               = True
 heqRep ((n1,e1) :: xs) ((n2,e2) :: ys) =
-  case heqFin n1 n2 && e1 == e2 of
+  case finToNat n1 == finToNat n2 && e1 == e2 of
     True  => heqRep xs ys
     False => False
 heqRep _         _         = False
 
 insertRep : Fin n -> e -> Rep n e -> Rep n e
 insertRep k el []        = [(k,el)]
-insertRep k el (x :: xs) = case compFin k (fst x) of
+insertRep k el (x :: xs) = case compare k (fst x) of
   LT => (k,el) :: x :: xs
   EQ => (k,el) :: xs
   GT => x :: insertRep k el xs
 
 insertWithRep : (e -> e -> e) -> Fin n -> e -> Rep n e -> Rep n e
 insertWithRep f k el []        = [(k,el)]
-insertWithRep f k el (x :: xs) = case compFin k (fst x) of
+insertWithRep f k el (x :: xs) = case compare k (fst x) of
   LT => (k,el) :: x :: xs
   EQ => (k,f el (snd x)) :: xs
   GT => x :: insertWithRep f k el xs
 
 lookupRep : Fin n -> Rep n e -> Maybe e
 lookupRep x []        = Nothing
-lookupRep x (y :: xs) = case compFin x (fst y) of
+lookupRep x (y :: xs) = case compare x (fst y) of
   LT => lookupRep x xs
   EQ => Just (snd y)
   GT => Nothing
@@ -54,7 +54,7 @@ lookupRep x (y :: xs) = case compFin x (fst y) of
 unionRep : Rep k e -> Rep k e -> Rep k e
 unionRep []      ys      = ys
 unionRep xs      []      = xs
-unionRep l@(x::xs) r@(y::ys) = case compFin (fst x) (fst y) of
+unionRep l@(x::xs) r@(y::ys) = case compare (fst x) (fst y) of
   LT => x :: unionRep xs r
   EQ => x :: unionRep xs ys
   GT => y :: unionRep l ys
@@ -62,7 +62,7 @@ unionRep l@(x::xs) r@(y::ys) = case compFin (fst x) (fst y) of
 unionMapRep : (e -> e -> b) -> (e -> b) -> Rep k e -> Rep k e -> Rep k b
 unionMapRep f g []        ys                    = map (map g) ys
 unionMapRep f g xs        []                    = map (map g) xs
-unionMapRep f g l@((k1,l1)::xs) r@((k2,l2)::ys) = case compFin k1 k2 of
+unionMapRep f g l@((k1,l1)::xs) r@((k2,l2)::ys) = case compare k1 k2 of
   LT => (k1, g l1)    :: unionMapRep f g xs r
   EQ => (k1, f l1 l2) :: unionMapRep f g xs ys
   GT => (k2, g l2)    :: unionMapRep f g l  ys
@@ -70,7 +70,7 @@ unionMapRep f g l@((k1,l1)::xs) r@((k2,l2)::ys) = case compFin k1 k2 of
 intersectWithRep : (e -> e -> b) -> Rep k e -> Rep k e -> Rep k b
 intersectWithRep f []        ys                    = []
 intersectWithRep f xs        []                    = []
-intersectWithRep f l@((k1,l1)::xs) r@((k2,l2)::ys) = case compFin k1 k2 of
+intersectWithRep f l@((k1,l1)::xs) r@((k2,l2)::ys) = case compare k1 k2 of
   LT => intersectWithRep f xs r
   EQ => (k1, f l1 l2) :: intersectWithRep f xs ys
   GT => intersectWithRep f l  ys
@@ -151,8 +151,8 @@ foldlKV f ini (AL r) = foldl (\v,(x,l) => f x v l) ini r
 
 public export
 traverseKV :
-     Applicative f
-  => ((Fin k,e) -> f b)
+     {auto _ : Applicative f}
+  -> ((Fin k,e) -> f b)
   -> AssocList k e
   -> f (AssocList k b)
 traverseKV f (AL r) = AL <$> traverse (\(n,l) => (n,) <$> f (n,l)) r
@@ -214,7 +214,7 @@ fromList = foldl (\al,(k,v) => insert k v al) empty
 ||| or greater than `m`.
 export %inline
 delete : Fin k -> AssocList k e -> AssocList k e
-delete x (AL r) = AL $ filter (not . heqFin x . fst) r
+delete x (AL r) = AL $ filter ((/= x) . fst) r
 
 ||| Applies the given function to all values, keeping only the
 ||| `Just` results.
@@ -232,14 +232,14 @@ mapMaybeK f (AL r) = AL $ mapMaybe (\(x,l) => (x,) <$> f x l) r
 export %inline
 update : Fin k -> (e -> e) -> AssocList k e -> AssocList k e
 update k f (AL r) =
-  AL $ map (\(x,l) => if heqFin k x then (x, f l) else (x,l)) r
+  AL $ map (\(x,l) => if k == x then (x, f l) else (x,l)) r
 
 ||| Updates the value at the given position by applying the given effectful
 ||| computation.
 export %inline
 updateA : Applicative f => Fin k -> (e -> f e) -> AssocList k e -> f (AssocList k e)
 updateA k g (AL r) =
-  AL <$> traverse (\(x,l) => if heqFin k x then (x,) <$> g l else pure (x,l)) r
+  AL <$> traverse (\(x,l) => if k == x then (x,) <$> g l else pure (x,l)) r
 
 ||| Computes the union of two assoc lists.
 |||
