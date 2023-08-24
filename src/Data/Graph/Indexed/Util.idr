@@ -241,10 +241,10 @@ insNodes :
      {k,m : _}
   -> IGraph k e n
   -> (ns : Vect m n)
-  -> IGraph (k + m) e n
+  -> IGraph (m + k) e n
 insNodes (IG g) ns =
   let g'  := map (weakenAdjN m) g
-   in IG $ append g' (map fromLabel (array ns))
+   in rewrite plusCommutative m k in IG $ append g' (map fromLabel (array ns))
 
 ||| Insert multiple `LNode`s into the `Graph`.
 export
@@ -252,15 +252,15 @@ insNodesAndEdges :
      {k,m : _}
   -> IGraph k e n
   -> (ns : Vect m n)
-  -> (es : List (Edge (k + m) e))
-  -> IGraph (k + m) e n
+  -> (es : List (Edge (m + k) e))
+  -> IGraph (m + k) e n
 insNodesAndEdges g ns es = insEdges es $ insNodes g ns
 
 ||| Insert a labeled node into the `Graph`.
 ||| The behavior is undefined if the node is already
 ||| in the graph.
 export %inline
-insNode : {k : _} -> IGraph k e n -> n -> IGraph (k + 1) e n
+insNode : {k : _} -> IGraph k e n -> n -> IGraph (S k) e n
 insNode g v = insNodes g [v]
 
 -- ||| Remove a 'Node' from the 'Graph'.
