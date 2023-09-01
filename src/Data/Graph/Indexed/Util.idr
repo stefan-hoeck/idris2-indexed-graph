@@ -3,6 +3,8 @@ module Data.Graph.Indexed.Util
 import Data.Array.Indexed
 import Data.AssocList.Indexed
 import Data.Graph.Indexed.Types
+import Data.SortedMap
+import Data.SortedSet
 import Data.List
 import Data.String
 import Data.Vect
@@ -263,18 +265,40 @@ export %inline
 insNode : {k : _} -> IGraph k e n -> n -> IGraph (S k) e n
 insNode g v = insNodes g [v]
 
--- ||| Remove a 'Node' from the 'Graph'.
--- export
--- delNode : Node -> Graph e n -> Graph e n
--- delNode v g = case match v g of
---   Split _ gr => gr
---   Empty      => g
---
--- ||| Remove multiple 'Node's from the 'Graph'.
--- export
--- delNodes : List Node -> Graph e n -> Graph e n
--- delNodes vs g = foldl (flip delNode) g vs
---
+proj :
+     SortedSet (Fin x)
+  -> SortedMap (Fin x) (Fin y)
+  -> Fin x
+  -> Fin y
+  -> SortedMap (Fin x) (Fin y)
+proj s m fk FZ        =
+  if contains fk s then m else insert fk FZ m
+proj s m (FS n) (FS k) =
+  assert_total $ if contains (FS n) s
+     then proj s m (weaken n) (weaken k)
+     else proj s (insert (FS n) (FS k) m) (weaken n) (weaken k)
+proj s m _ _ = m
+
+adjEdges : SortedMap (Fin x) (Fin y) -> Adj x e n -> Adj y e n
+adjEdges m (A l ns) =
+  let ps := mapMaybe (\(n,v) => (,v) <$> lookup n m) $ pairs ns
+   in A l $ fromList ps
+
+export
+delNodes : {k : _} -> List (Fin k) -> IGraph k e n -> Graph e n
+delNodes {k = 0} _ _ = G _ empty
+delNodes {k = S x} ks (IG g) =
+  let set       := SortedSet.fromList ks
+      A (S y) h :=
+        filterWithKey (\x,_ => not (contains x set)) g | A 0 _ => G _ empty
+      proMap    := proj {x = S x} {y = S y} set empty last last
+   in G (S y) (IG $ map (adjEdges proMap) h)
+
+||| Remove a 'Node' from the 'Graph'.
+export
+delNode : {k : _} -> Fin k -> IGraph k e n -> Graph e n
+delNode = delNodes . pure
+
 -- ||| Returns the subgraph only containing the labelled nodes which
 -- ||| satisfy the given predicate.
 -- export
@@ -292,20 +316,6 @@ insNode g v = insNodes g [v]
 -- export
 -- labfilter : (n -> Bool) -> Graph e n -> Graph e n
 -- labfilter f = labnfilter (f . label)
---
--- ||| Retruns the same graph additionaly containing list of connecting
--- ||| edges and labels to each node.
--- export
--- pairWithNeighbours : Graph e n -> Graph e (n, List (n,e))
--- pairWithNeighbours g =
---   MkGraph $ mapWithKey (\k => map (,neighbourLabels g k)) (graph g)
---
--- ||| Returns the same graph additionaly containing list of connecting
--- ||| labels to each node.
--- export
--- pairWithNeighbours' : Graph e n -> Graph e (n, List n)
--- pairWithNeighbours' g =
---   MkGraph $ mapWithKey (\k => map (,map fst $ neighbourLabels g k)) (graph g)
 
 --------------------------------------------------------------------------------
 --          Displaying Graphs
