@@ -275,7 +275,7 @@ proj s m fk FZ        =
   if contains fk s then m else insert fk FZ m
 proj s m (FS n) (FS k) =
   assert_total $ if contains (FS n) s
-     then proj s m (weaken n) (weaken k)
+     then proj s m (weaken n) (FS k)
      else proj s (insert (FS n) (FS k) m) (weaken n) (weaken k)
 proj s m _ _ = m
 
