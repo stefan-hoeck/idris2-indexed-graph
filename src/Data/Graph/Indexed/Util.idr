@@ -214,6 +214,16 @@ traverseWithCtxt fun = traverseCtxt (\x,a => (`A` a.neighbours) <$> fun x a)
 --          Modifying Graphs
 --------------------------------------------------------------------------------
 
+||| Updates a single node in the graph at the given position.
+export
+updateNode : {k : _} -> Fin k -> (n -> n) -> IGraph k e n -> IGraph k e n
+updateNode x f = mapWithCtxt (\y,a => if x == y then f a.label else a.label)
+
+||| Replaces a single node in the graph at the given position.
+export %inline
+setNode : {k : _} -> Fin k -> n -> IGraph k e n -> IGraph k e n
+setNode x = updateNode x . const
+
 export
 insEdges : {k : _} -> List (Edge k e) -> IGraph k e n -> IGraph k e n
 insEdges {k = 0}   es g = empty
