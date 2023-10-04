@@ -276,32 +276,32 @@ insNode : {k : _} -> IGraph k e n -> n -> IGraph (S k) e n
 insNode g v = insNodes g [v]
 
 proj :
-     SortedSet (Fin x)
-  -> SortedMap (Fin x) (Fin y)
-  -> Fin x
+     SortedSet Nat
+  -> SortedMap Nat (Fin y)
+  -> Nat
   -> Fin y
-  -> SortedMap (Fin x) (Fin y)
-proj s m fk FZ        =
-  if contains fk s then m else insert fk FZ m
-proj s m (FS n) (FS k) =
-  assert_total $ if contains (FS n) s
-     then proj s m (weaken n) (FS k)
-     else proj s (insert (FS n) (FS k) m) (weaken n) (weaken k)
-proj s m _ _ = m
+  -> SortedMap Nat (Fin y)
+proj s m (S n) FZ        =
+  if contains (S n) s then proj s m n FZ else insert (S n) FZ m
+proj s m (S n) (FS k) =
+  if contains (S n) s
+     then proj s m n (FS k)
+     else proj s (insert (S n) (FS k) m) n (weaken k)
+proj s m Z k = if contains Z s then m else insert Z k m
 
-adjEdges : SortedMap (Fin x) (Fin y) -> Adj x e n -> Adj y e n
+adjEdges : SortedMap Nat (Fin y) -> Adj x e n -> Adj y e n
 adjEdges m (A l ns) =
-  let ps := mapMaybe (\(n,v) => (,v) <$> lookup n m) $ pairs ns
+  let ps := mapMaybe (\(n,v) => (,v) <$> lookup (finToNat n) m) $ pairs ns
    in A l $ fromList ps
 
 export
 delNodes : {k : _} -> List (Fin k) -> IGraph k e n -> Graph e n
 delNodes {k = 0} _ _ = G _ empty
 delNodes {k = S x} ks (IG g) =
-  let set       := SortedSet.fromList ks
+  let set       := SortedSet.fromList (map finToNat ks)
       A (S y) h :=
-        filterWithKey (\x,_ => not (contains x set)) g | A 0 _ => G _ empty
-      proMap    := proj {x = S x} {y = S y} set empty last last
+        filterWithKey (\x,_ => not (contains (finToNat x) set)) g | A 0 _ => G _ empty
+      proMap    := proj {y = S y} set empty (S x) last
    in G (S y) (IG $ map (adjEdges proMap) h)
 
 ||| Remove a 'Node' from the 'Graph'.
