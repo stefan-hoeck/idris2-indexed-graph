@@ -301,7 +301,7 @@ delNodes {k = S x} ks (IG g) =
   let set       := SortedSet.fromList (map finToNat ks)
       A (S y) h :=
         filterWithKey (\x,_ => not (contains (finToNat x) set)) g | A 0 _ => G _ empty
-      proMap    := proj {y = S y} set empty (S x) last
+      proMap    := proj {y = S y} set empty x last
    in G (S y) (IG $ map (adjEdges proMap) h)
 
 ||| Remove a 'Node' from the 'Graph'.
