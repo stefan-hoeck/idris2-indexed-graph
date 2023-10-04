@@ -11,6 +11,14 @@ import Data.Vect
 
 %default total
 
+allFinsFast : (n : Nat) -> List (Fin n)
+allFinsFast 0 = []
+allFinsFast (S n) = go [] last
+  where
+    go : List (Fin $ S n) -> Fin (S n) -> List (Fin $ S n)
+    go xs FZ     = FZ :: xs
+    go xs (FS x) = go (FS x :: xs) (assert_smaller (FS x) $ weaken x)
+
 --------------------------------------------------------------------------------
 --          Internal utilities
 --------------------------------------------------------------------------------
@@ -275,33 +283,21 @@ export %inline
 insNode : {k : _} -> IGraph k e n -> n -> IGraph (S k) e n
 insNode g v = insNodes g [v]
 
-proj :
-     SortedSet Nat
-  -> SortedMap Nat (Fin y)
-  -> Nat
-  -> Fin y
-  -> SortedMap Nat (Fin y)
-proj s m (S n) FZ        =
-  if contains (S n) s then proj s m n FZ else insert (S n) FZ m
-proj s m (S n) (FS k) =
-  if contains (S n) s
-     then proj s m n (FS k)
-     else proj s (insert (S n) (FS k) m) n (weaken k)
-proj s m Z k = if contains Z s then m else insert Z k m
-
-adjEdges : SortedMap Nat (Fin y) -> Adj x e n -> Adj y e n
+adjEdges : SortedMap (Fin x) (Fin y) -> Adj x e n -> Adj y e n
 adjEdges m (A l ns) =
-  let ps := mapMaybe (\(n,v) => (,v) <$> lookup (finToNat n) m) $ pairs ns
+  let ps := mapMaybe (\(n,v) => (,v) <$> lookup n m) $ pairs ns
    in A l $ fromList ps
 
 export
 delNodes : {k : _} -> List (Fin k) -> IGraph k e n -> Graph e n
 delNodes {k = 0} _ _ = G _ empty
 delNodes {k = S x} ks (IG g) =
-  let set       := SortedSet.fromList (map finToNat ks)
+  let set       := SortedSet.fromList ks
       A (S y) h :=
-        filterWithKey (\x,_ => not (contains (finToNat x) set)) g | A 0 _ => G _ empty
-      proMap    := proj {y = S y} set empty x last
+        filterWithKey (\x,_ => not (contains x set)) g | A 0 _ => G _ empty
+      finX      := filter (\x => not (contains x set)) $ allFinsFast (S x)
+      finY      := allFinsFast (S y)
+      proMap    := SortedMap.fromList $ zip finX finY
    in G (S y) (IG $ map (adjEdges proMap) h)
 
 ||| Remove a 'Node' from the 'Graph'.
