@@ -415,3 +415,18 @@ pretty de dn g =
     dispEdge : Nat -> Edge k e -> String
     dispEdge k (E n1 n2 l) =
       "E \{pl k n1} \{pl k n2}  \{de l}"
+
+--------------------------------------------------------------------------------
+--          Ring detection
+--------------------------------------------------------------------------------
+
+covering
+paths : (g : IGraph k e n) -> (n1 : Fin k) -> (n2 : Fin k) -> List (List (Fin k))
+paths g n1 n2 = getPaths [] n1
+
+  where getPaths : (List (Fin k)) -> (n : Fin k) -> List (List (Fin k))
+        getPaths xs n =
+          if n == n2 then [[n2]] else
+          case toList (neighbours g n) of
+            xs => ?foo_0
+
