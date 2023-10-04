@@ -15,3 +15,4 @@ modules = Data.AssocList.Indexed
         , Data.Graph.Indexed
         , Data.Graph.Indexed.Types
         , Data.Graph.Indexed.Util
+        , Data.Graph.Indexed.Cycles
