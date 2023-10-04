@@ -11,6 +11,14 @@ import Data.Vect
 
 %default total
 
+allFinsFast : (n : Nat) -> List (Fin n)
+allFinsFast 0 = []
+allFinsFast (S n) = go [] last
+  where
+    go : List (Fin $ S n) -> Fin (S n) -> List (Fin $ S n)
+    go xs FZ     = FZ :: xs
+    go xs (FS x) = go (FS x :: xs) (assert_smaller (FS x) $ weaken x)
+
 --------------------------------------------------------------------------------
 --          Internal utilities
 --------------------------------------------------------------------------------
@@ -275,20 +283,6 @@ export %inline
 insNode : {k : _} -> IGraph k e n -> n -> IGraph (S k) e n
 insNode g v = insNodes g [v]
 
-proj :
-     SortedSet (Fin x)
-  -> SortedMap (Fin x) (Fin y)
-  -> Fin x
-  -> Fin y
-  -> SortedMap (Fin x) (Fin y)
-proj s m fk FZ        =
-  if contains fk s then m else insert fk FZ m
-proj s m (FS n) (FS k) =
-  assert_total $ if contains (FS n) s
-     then proj s m (weaken n) (FS k)
-     else proj s (insert (FS n) (FS k) m) (weaken n) (weaken k)
-proj s m _ _ = m
-
 adjEdges : SortedMap (Fin x) (Fin y) -> Adj x e n -> Adj y e n
 adjEdges m (A l ns) =
   let ps := mapMaybe (\(n,v) => (,v) <$> lookup n m) $ pairs ns
@@ -301,7 +295,9 @@ delNodes {k = S x} ks (IG g) =
   let set       := SortedSet.fromList ks
       A (S y) h :=
         filterWithKey (\x,_ => not (contains x set)) g | A 0 _ => G _ empty
-      proMap    := proj {x = S x} {y = S y} set empty last last
+      finX      := filter (\x => not (contains x set)) $ allFinsFast (S x)
+      finY      := allFinsFast (S y)
+      proMap    := SortedMap.fromList $ zip finX finY
    in G (S y) (IG $ map (adjEdges proMap) h)
 
 ||| Remove a 'Node' from the 'Graph'.
