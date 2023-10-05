@@ -6,7 +6,9 @@ readme     = "README.md"
 license    = "BSD-3 Clause"
 
 sourcedir  = "src"
+
 depends    = indexed-graph
+           , hedgehog
 
 executable = "indexed-graph-test"
 main       = Main
