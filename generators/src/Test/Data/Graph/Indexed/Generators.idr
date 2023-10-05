@@ -1,4 +1,4 @@
-module Generators
+module Test.Data.Graph.Indexed.Generators
 
 import Data.List
 import public Data.Graph.Indexed

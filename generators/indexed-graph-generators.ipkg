@@ -1,0 +1,13 @@
+package indexed-graph-generators
+
+authors    = "stefan-hoeck"
+brief      = "Hedgehog generators for the indexed-graph library"
+version    = 0.1.0
+readme     = "README.md"
+license    = "BSD-3 Clause"
+
+sourcedir  = "src"
+depends    = indexed-graph
+           , hedgehog
+
+modules = Test.Data.Graph.Indexed.Generators

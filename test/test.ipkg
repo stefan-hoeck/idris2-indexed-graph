@@ -7,8 +7,7 @@ license    = "BSD-3 Clause"
 
 sourcedir  = "src"
 
-depends    = indexed-graph
-           , hedgehog
+depends    = indexed-graph-generators
 
 executable = "indexed-graph-test"
 main       = Main

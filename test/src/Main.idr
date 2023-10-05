@@ -1,6 +1,6 @@
 module Main
 
-import Generators
+import Test.Data.Graph.Indexed.Generators
 
 %default total
 
