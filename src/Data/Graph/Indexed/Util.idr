@@ -184,7 +184,8 @@ generate k f = IG $ generate k f
 --          Folds and Traversals
 --------------------------------------------------------------------------------
 
-export
+||| Map the adjacencies in a graph accoring to each node's context
+export %inline
 mapCtxt :
      {k : _}
   -> (Fin k -> Adj k e n -> Adj k e1 n1)
@@ -192,6 +193,7 @@ mapCtxt :
   -> IGraph k e1 n1
 mapCtxt fun (IG g) = IG $ mapWithIndex fun g
 
+||| Map the node labels in a graph accoring to each node's context
 export %inline
 mapWithCtxt :
      {k : _}
@@ -199,6 +201,16 @@ mapWithCtxt :
   -> IGraph k e n
   -> IGraph k e n1
 mapWithCtxt fun = mapCtxt (\x,adj => adj $> fun x adj)
+
+||| Map the adjacencies in a graph
+export %inline
+mapAdj : {k : _} -> (Adj k e n -> Adj k f m) -> IGraph k e n -> IGraph k f m
+mapAdj fun (IG g) = IG $ map fun g
+
+||| Map the node labels in a graph accoring to each node's adjacency
+export %inline
+mapWithAdj : {k : _} -> (Adj k e n -> m) -> IGraph k e n -> IGraph k e m
+mapWithAdj fun = mapAdj (\adj => adj $> fun adj)
 
 export
 traverseCtxt :
