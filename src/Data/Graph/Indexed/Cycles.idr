@@ -24,5 +24,13 @@ paths g n1 n2 = getPaths [] n1
   where getPaths : (List (Fin k)) -> (n : Fin k) -> List (List (Fin k))
         getPaths xs n =
           if n == n2 then [[n2]] else
-          case toList (neighbours g n) of
-            xs => ?foo_0
+          case map fst $ pairs $ neighbours g n of
+            neigh =>
+              let unvis := filter (not . wasVisited) neigh
+                  newVis := [n] ++ xs
+                  subpaths := concatMap (getPaths newVis) unvis
+                in map (n ::) subpaths
+
+        where wasVisited : Fin k -> Bool
+              wasVisited x = elem x xs
+
