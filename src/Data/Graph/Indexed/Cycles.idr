@@ -34,3 +34,10 @@ paths g n1 n2 = getPaths [] n1
         where wasVisited : Fin k -> Bool
               wasVisited x = elem x xs
 
+covering
+rings : (g : IGraph k e n) -> (n : Fin k) -> List (List (Fin k))
+rings g n = case map (\y => paths g y n) (map fst $ pairs $ neighbours g n) of
+              xss => case concatMap (filter (\xs => length xs > 2)) xss of
+                fs => map (n ::) fs
+
+
