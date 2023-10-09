@@ -47,9 +47,9 @@ insertWithRep f k el (x :: xs) = case compare k (fst x) of
 lookupRep : Fin n -> Rep n e -> Maybe e
 lookupRep x []        = Nothing
 lookupRep x (y :: xs) = case compare x (fst y) of
-  LT => lookupRep x xs
+  GT => lookupRep x xs
   EQ => Just (snd y)
-  GT => Nothing
+  LT => Nothing
 
 unionRep : Rep k e -> Rep k e -> Rep k e
 unionRep []      ys      = ys
@@ -161,6 +161,11 @@ traverseKV f (AL r) = AL <$> traverse (\(n,l) => (n,) <$> f (n,l)) r
 export %inline
 lookup : Fin k -> AssocList k e -> Maybe e
 lookup k (AL r) = lookupRep k r
+
+||| Checks if an `AssocList` has an entry for the given key.
+export %inline
+hasKey : AssocList k e -> Fin k -> Bool
+hasKey l k = isJust $ lookup k l
 
 export %inline
 nonEmpty : AssocList k e -> Bool
