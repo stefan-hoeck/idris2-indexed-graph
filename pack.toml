@@ -2,6 +2,17 @@
 type   = "local"
 path   = "."
 ipkg   = "indexed-graph.ipkg"
+test   = "test/test.ipkg"
+
+[custom.all.indexed-graph-generators]
+type   = "local"
+path   = "generators"
+ipkg   = "indexed-graph-generators.ipkg"
+
+[custom.all.indexed-graph-test]
+type   = "local"
+path   = "test"
+ipkg   = "test.ipkg"
 
 [custom.all.indexed-graph-profile]
 type   = "local"
