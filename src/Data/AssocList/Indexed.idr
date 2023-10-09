@@ -1,6 +1,6 @@
 module Data.AssocList.Indexed
 
-import Data.Array.Indexed
+import Data.Array
 import Data.List
 
 %default total
