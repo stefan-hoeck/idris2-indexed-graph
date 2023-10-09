@@ -1,10 +1,12 @@
 module Main
 
+import Debug.Trace
+import Data.Vect
 import Test.Data.Graph.Indexed.Generators
 
 %default total
 
-saneIGraph : {k : _} -> IGraph k e n -> Bool
+saneIGraph : Show e => {k : _} -> IGraph k e n -> Bool
 saneIGraph g = all bondsUndirected (contexts g)
   where
     bondUndirected : Fin k -> (Fin k, e) -> Bool
@@ -16,11 +18,28 @@ saneIGraph g = all bondsUndirected (contexts g)
 u : Gen ()
 u = pure ()
 
+sparseUGraph : Gen (Graph () ())
+sparseUGraph = sparseGraph (linear 0 20) (linear 0 20) u u
+
+ugraph : Gen (Graph () ())
+ugraph = graph (linear 0 20) (element [Nothing, Just ()]) u
+
 prop_saneGraphSparse : Property
 prop_saneGraphSparse =
   property $ do
-    G _ g <- forAll $ sparseGraph (linear 0 20) (linear 0 20) u u
+    G _ g <- forAll sparseUGraph
+    assert $ saneIGraph g
+
+prop_saneGraph : Property
+prop_saneGraph =
+  property $ do
+    G _ g <- forAll ugraph
     assert $ saneIGraph g
 
 main : IO ()
-main = putStrLn "Hello indexed graph test"
+main =
+  test . pure $
+    MkGroup "indexed-graph"
+      [ ("prop_saneGraphSparse", prop_saneGraphSparse)
+      , ("prop_saneGraph", prop_saneGraph)
+      ]
