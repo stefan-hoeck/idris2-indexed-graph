@@ -1,6 +1,7 @@
 module Data.Graph.Indexed.Util
 
-import Data.Array.Indexed
+import Data.Array
+import Data.Array.Mutable
 import Data.AssocList.Indexed
 import Data.Graph.Indexed.Types
 import Data.SortedMap

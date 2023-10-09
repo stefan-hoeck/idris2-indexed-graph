@@ -6,7 +6,7 @@
 ||| interface implementations.
 module Data.Graph.Indexed.Types
 
-import Data.Array.Indexed
+import Data.Array
 import Data.AssocList.Indexed
 import Data.List
 
