@@ -31,3 +31,5 @@ jobs:
         uses: actions/checkout@v2
       - name: Build indexed-graph
         run: pack install indexed-graph
+      - name: Test indexed-graph
+        run: pack test indexed-graph
