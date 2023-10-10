@@ -1,10 +1,23 @@
 module Test.Data.Graph.Indexed.Generators
 
 import Data.List
+import Data.Array.Index
 import public Data.Graph.Indexed
 import public Hedgehog
 
 %default total
+
+||| Generates an arbitrary `Fin (S k)` for a known natural number `k`
+export
+anyFin : {k : _} -> Gen (Fin $ S k)
+anyFin = fromMaybe FZ . tryNatToFin <$> nat (linear 0 k)
+
+||| Generates an `AssocList` for a graph of order `S k`, using `k` to
+||| determine the list's maximal length and the given generator
+||| for its values.
+export
+assocList : {k : _} -> Gen a -> Gen (AssocList (S k) a)
+assocList g = fromList <$> list (linear 0 k) [| MkPair anyFin g |]
 
 ||| Generates a single `Edge` for a graph of order `k + 2`.
 |||

@@ -1,6 +1,6 @@
 module Main
 
-import Debug.Trace
+import AssocList
 import Data.Vect
 import Test.Data.Graph.Indexed.Generators
 
@@ -38,8 +38,10 @@ prop_saneGraph =
 
 main : IO ()
 main =
-  test . pure $
-    MkGroup "indexed-graph"
-      [ ("prop_saneGraphSparse", prop_saneGraphSparse)
-      , ("prop_saneGraph", prop_saneGraph)
-      ]
+  test
+    [ AssocList.props
+    , MkGroup "indexed-graph"
+        [ ("prop_saneGraphSparse", prop_saneGraphSparse)
+        , ("prop_saneGraph", prop_saneGraph)
+        ]
+    ]

@@ -138,6 +138,10 @@ empty : AssocList k e
 empty = AL []
 
 export %inline
+singleton : Fin k -> e -> AssocList k e
+singleton n v = AL [(n,v)]
+
+export %inline
 pairs : AssocList k e -> List (Fin k, e)
 pairs = ps
 
