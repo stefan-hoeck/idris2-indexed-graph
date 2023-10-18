@@ -9,6 +9,7 @@ import Data.SortedSet
 import Data.List
 import Data.String
 import Data.Vect
+import Data.Bits
 
 %default total
 
@@ -40,4 +41,29 @@ rings g n = case map (\y => paths g y n) (map fst $ pairs $ neighbours g n) of
               xss => case concatMap (filter (\xs => length xs > 2)) xss of
                 fs => map (n ::) fs
 
+record State where
+  constructor MkState
+  visited  : Integer
+  prefixes : Vect k Integer
+  rings    : List Integer
 
+
+covering
+search1 : (g : IGraph k e n) -> State
+search1 g = ?foo ---getRings 0 0 (MkState 0 (Vect k 0) Nil)
+
+  where getRings : (v, prev : Fin k) -> (st : State) -> State
+        getRings v prev st =
+          if st.visited == oneBits then st
+          else case updatePrefixes st of
+            st2 => case updateVisited st2 of
+              st3 => case keys $ neighbours g v of
+                neigh => ?maiu
+
+
+
+        where updatePrefixes : State -> State
+              updatePrefixes x = ?koo ---{prefixes $= replaceAt v st.visited} x
+
+              updateVisited : State -> State
+              updateVisited x = ?fooo
