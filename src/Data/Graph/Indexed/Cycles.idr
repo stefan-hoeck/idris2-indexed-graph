@@ -47,7 +47,6 @@ record State where
   prefixes : Vect k Integer
   rings    : List Integer
 
-
 covering
 search1 : (g : IGraph k e n) -> State
 search1 g = ?foo ---getRings 0 0 (MkState 0 (Vect k 0) Nil)
@@ -58,7 +57,8 @@ search1 g = ?foo ---getRings 0 0 (MkState 0 (Vect k 0) Nil)
           else case updatePrefixes st of
             st2 => case updateVisited st2 of
               st3 => case keys $ neighbours g v of
-                neigh => ?maiu
+                neigh => case map (checkNeigh st3) neigh of
+                             xs => ?fofo
 
 
 
@@ -67,3 +67,11 @@ search1 g = ?foo ---getRings 0 0 (MkState 0 (Vect k 0) Nil)
 
               updateVisited : State -> State
               updateVisited x = ?fooo
+
+              checkNeigh : State -> (n : Fin k) -> State
+              checkNeigh st3 n = case testBit st3.visited $ finToNat n of
+                x => if not x then getRings n v st3
+                  else ?fjeiw
+                    ---case testBit (index v (?st3prefixes)) $ finToNat prev of
+                    ---  y => ?maifh
+
