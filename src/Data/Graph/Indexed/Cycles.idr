@@ -41,37 +41,41 @@ rings g n = case map (\y => paths g y n) (map fst $ pairs $ neighbours g n) of
               xss => case concatMap (filter (\xs => length xs > 2)) xss of
                 fs => map (n ::) fs
 
-record State where
+record State k where
   constructor MkState
   visited  : Integer
   prefixes : Vect k Integer
   rings    : List Integer
 
 covering
-search1 : (g : IGraph k e n) -> State
-search1 g = ?foo ---getRings 0 0 (MkState 0 (Vect k 0) Nil)
+getRings : (v, prev : Fin k) -> (g : IGraph k e n) -> (st : State k) -> State k
 
-  where getRings : (v, prev : Fin k) -> (st : State) -> State
-        getRings v prev st =
-          if st.visited == oneBits then st
-          else case updatePrefixes st of
-            st2 => case updateVisited st2 of
-              st3 => case keys $ neighbours g v of
-                neigh => case map (checkNeigh st3) neigh of
-                             xs => ?fofo
+covering
+getRings' : List (Fin k) -> (v, prev : Fin k) -> (g : IGraph k e n) -> State k -> State k
+getRings' [] v prev g st@(MkState visited prefixes rings)         = st
+getRings' (x :: xs) v prev g st@(MkState visited prefixes rings)  =
+  if not . testBit st.visited $ finToNat x
+    then let newst    := getRings x v g st
+             returnst := getRings' xs v prev g newst
+           in returnst
+    else if not $ testBit (index prev st.prefixes) (finToNat x)
+           then case getRings' xs v prev g st of
+             returnst => returnst
+           else let nring := xor (index v st.prefixes) (index x st.prefixes)
+                    nrings := nring :: st.rings
+                    newst := MkState visited prefixes nrings
+                  in getRings' xs v prev g newst
 
+getRings v prev g (MkState visited prefixes rings) =
+  let updpref := replaceAt v visited prefixes
+      updvis  := setBit visited $ finToNat v
+      newst   := MkState updvis updpref rings
+    in case keys $ neighbours g v of
+      neigh => getRings' neigh v prev g newst
 
+covering
+search1 : {k : _} -> (g : IGraph k e n) -> List Integer
+search1 {k = Z} g = []
+search1 {k = S n} g = rings $ getRings 0 0 g (MkState 0 (replicate _ 0) Nil)
 
-        where updatePrefixes : State -> State
-              updatePrefixes x = ?koo ---{prefixes $= replaceAt v st.visited} x
-
-              updateVisited : State -> State
-              updateVisited x = ?fooo
-
-              checkNeigh : State -> (n : Fin k) -> State
-              checkNeigh st3 n = case testBit st3.visited $ finToNat n of
-                x => if not x then getRings n v st3
-                  else ?fjeiw
-                    ---case testBit (index v (?st3prefixes)) $ finToNat prev of
-                    ---  y => ?maifh
 
