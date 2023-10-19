@@ -73,7 +73,7 @@ getRings v prev g (MkState visited prefixes rings) =
     in case keys $ neighbours g v of
       neigh => getRings' neigh v prev g newst
 
-covering
+export covering
 search1 : {k : _} -> (g : IGraph k e n) -> List Integer
 search1 {k = Z} g = []
 search1 {k = S n} g = rings $ getRings 0 0 g (MkState 0 (replicate _ 0) Nil)
