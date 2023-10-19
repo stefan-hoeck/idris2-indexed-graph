@@ -48,34 +48,37 @@ record State k where
   rings    : List Integer
 
 covering
-getRings : (v, prev : Fin k) -> (g : IGraph k e n) -> (st : State k) -> State k
+getRings : (v : Fin k) -> (curr, prev : Integer) -> (g : IGraph k e n) -> (st : State k) -> State k
 
 covering
-getRings' : List (Fin k) -> (v, prev : Fin k) -> (g : IGraph k e n) -> State k -> State k
-getRings' [] v prev g st@(MkState visited prefixes rings)         = st
-getRings' (x :: xs) v prev g st@(MkState visited prefixes rings)  =
-  if not . testBit st.visited $ finToNat x
-    then let newst    := getRings x v g st
-             returnst := getRings' xs v prev g newst
-           in returnst
-    else if not $ testBit (index prev st.prefixes) (finToNat x)
-           then case getRings' xs v prev g st of
-             returnst => returnst
-           else let nring := xor (index v st.prefixes) (index x st.prefixes)
-                    nrings := nring :: st.rings
-                    newst := MkState visited prefixes nrings
-                  in getRings' xs v prev g newst
+getRings' : List (Fin k) -> (v : Fin k) -> (curr, prev : Integer) -> (g : IGraph k e n) -> State k -> State k
 
-getRings v prev g (MkState visited prefixes rings) =
-  let updpref := replaceAt v visited prefixes
+getRings v curr prev g (MkState visited prefixes rings) =
+  let updpref := replaceAt v curr prefixes
+      next    := setBit curr $ finToNat v
       updvis  := setBit visited $ finToNat v
       newst   := MkState updvis updpref rings
     in case keys $ neighbours g v of
-      neigh => getRings' neigh v prev g newst
+      neigh => getRings' neigh v next curr g newst
+
+getRings' []        v curr prev g st@(MkState visited prefixes rings)  = st
+getRings' (x :: xs) v curr prev g st@(MkState visited prefixes rings)  =
+  if not . testBit st.visited $ finToNat x
+    then let newst    := getRings x curr prev g st
+             returnst := getRings' xs v curr prev g newst
+           in returnst
+    else if not $ testBit (index x st.prefixes) (finToNat x)
+           then case getRings' xs v curr prev g st of
+             returnst => returnst
+           else let nring := xor (index v st.prefixes) curr
+                    nrings := nring :: st.rings
+                    newst := MkState visited prefixes nrings
+                  in getRings' xs v curr prev g newst
+
 
 export covering
 search1 : {k : _} -> (g : IGraph k e n) -> List Integer
 search1 {k = Z} g = []
-search1 {k = S n} g = rings $ getRings 0 0 g (MkState 0 (replicate _ 0) Nil)
+search1 {k = S n} g = rings $ getRings 0 0 0 g (MkState 0 (replicate _ 0) Nil)
 
 
