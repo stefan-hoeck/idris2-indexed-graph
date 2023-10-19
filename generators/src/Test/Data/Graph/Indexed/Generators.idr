@@ -1,6 +1,7 @@
 module Test.Data.Graph.Indexed.Generators
 
 import Data.List
+import Data.Vect
 import Data.Array.Index
 import public Data.Graph.Indexed
 import public Hedgehog
@@ -64,6 +65,33 @@ distEdges lbl = catMaybes <$> traverse gen (pairs $ allFinsFast k)
     gen (x,y) with (compare x y) proof prf
       _ | LT = map (\v => E x y v) <$> lbl
       _ | _  = pure Nothing
+
+||| Generates an indexed graph of the given size with the number of edges
+||| in the given range.
+export
+sparseIGraph :
+     {k : _}
+  -> (nrEdges   : Hedgehog.Range Nat)
+  -> (edgeLabel : Gen e)
+  -> (nodeLabel : Gen n)
+  -> Gen (IGraph k e n)
+sparseIGraph nre el nl = do
+  ns <- vect k nl
+  es <- edges nre el
+  pure (mkGraph ns es)
+
+||| Generates an indexed graph with the given number of nodes and
+||| a random distribution of edges.
+export
+igraph :
+     {k : _}
+  -> (edgeLabel : Gen $ Maybe e)
+  -> (nodeLabel : Gen n)
+  -> Gen (IGraph k e n)
+igraph el nl = do
+  ns <- vect k nl
+  es <- distEdges el
+  pure (mkGraph ns es)
 
 ||| Generates a graph with the numbers of nodes and edges in the
 ||| given ranges.

@@ -70,6 +70,26 @@ prop_union_empty = property $ do
   al <- forAll assocList10
   al === union empty al
 
+prop_unionWith_self : Property
+prop_unionWith_self = property $ do
+  al <- forAll assocList10
+  map (2*) al === unionWith (+) al al
+
+prop_unionWith_empty : Property
+prop_unionWith_empty = property $ do
+  al <- forAll assocList10
+  al === unionWith (+) al empty
+
+prop_intersectWith_self : Property
+prop_intersectWith_self = property $ do
+  al <- forAll assocList10
+  map (2*) al === intersectWith (+) al al
+
+prop_intersectWith_empty : Property
+prop_intersectWith_empty = property $ do
+  al <- forAll assocList10
+  empty === intersectWith (+) al empty
+
 export
 props : Group
 props =
@@ -85,4 +105,8 @@ props =
     , ("prop_update", prop_update)
     , ("prop_union_self", prop_union_self)
     , ("prop_union_empty", prop_union_empty)
+    , ("prop_unionWith_self", prop_unionWith_self)
+    , ("prop_unionWith_empty", prop_unionWith_empty)
+    , ("prop_intersectWith_self", prop_intersectWith_self)
+    , ("prop_intersectWith_empty", prop_intersectWith_empty)
     ]
