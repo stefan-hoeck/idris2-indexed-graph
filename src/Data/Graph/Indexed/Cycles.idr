@@ -51,7 +51,7 @@ covering
 getRings : (v : Fin k) -> (curr, prev : Integer) -> (g : IGraph k e n) -> (st : State k) -> State k
 
 covering
-getRings' : List (Fin k) -> (v : Fin k) -> (curr, prev : Integer) -> (g : IGraph k e n) -> State k -> State k
+getRings' : List (Fin k) -> (v : Fin k) -> (next, curr, prev : Integer) -> (g : IGraph k e n) -> State k -> State k
 
 getRings v curr prev g (MkState visited prefixes rings) =
   let updpref := replaceAt v curr prefixes
@@ -59,26 +59,26 @@ getRings v curr prev g (MkState visited prefixes rings) =
       updvis  := setBit visited $ finToNat v
       newst   := MkState updvis updpref rings
     in case keys $ neighbours g v of
-      neigh => getRings' neigh v next curr g newst
+      neigh => getRings' neigh v next curr prev g newst
 
-getRings' []        v curr prev g st@(MkState visited prefixes rings)  = st
-getRings' (x :: xs) v curr prev g st@(MkState visited prefixes rings)  =
-  if not . testBit st.visited $ finToNat x
-    then let newst    := getRings x curr prev g st
-             returnst := getRings' xs v curr prev g newst
+getRings' []        v next curr prev g st@(MkState visited prefixes rings)  = st
+getRings' (x :: xs) v next curr prev g st@(MkState visited prefixes rings)  =
+  if not . testBit visited $ finToNat x
+    then let newst    := getRings x next curr g st
+             returnst := getRings' xs v next curr prev g newst
            in returnst
-    else if not $ testBit (index x st.prefixes) (finToNat x)
-           then case getRings' xs v curr prev g st of
+    else if not $ testBit prev (finToNat x)
+           then case getRings' xs v next curr prev g st of
              returnst => returnst
-           else let nring := xor (index v st.prefixes) curr
+           else let nring := xor (index x prefixes) next
                     nrings := nring :: st.rings
                     newst := MkState visited prefixes nrings
-                  in getRings' xs v curr prev g newst
+                  in getRings' xs v next curr prev g newst
 
 
 export covering
 search1 : {k : _} -> (g : IGraph k e n) -> List Integer
-search1 {k = Z} g = []
+search1 {k = Z}   g = []
 search1 {k = S n} g = rings $ getRings 0 0 0 g (MkState 0 (replicate _ 0) Nil)
 
 
