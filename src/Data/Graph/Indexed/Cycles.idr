@@ -68,17 +68,14 @@ getRings' (x :: xs) v next curr prev g st@(MkState visited prefixes rings)  =
              returnst := getRings' xs v next curr prev g newst
            in returnst
     else if not $ testBit prev (finToNat x)
-           then case getRings' xs v next curr prev g st of
-             returnst => returnst
-           else let nring := xor (index x prefixes) next
+           then getRings' xs v next curr prev g st
+           else let nring  := xor (index x prefixes) next
                     nrings := nring :: st.rings
-                    newst := MkState visited prefixes nrings
+                    newst  := MkState visited prefixes nrings
                   in getRings' xs v next curr prev g newst
-
 
 export covering
 search1 : {k : _} -> (g : IGraph k e n) -> List Integer
 search1 {k = Z}   g = []
 search1 {k = S n} g = rings $ getRings 0 0 0 g (MkState 0 (replicate _ 0) Nil)
-
 
