@@ -41,6 +41,16 @@ rings g n = case map (\y => paths g y n) (map fst $ pairs $ neighbours g n) of
               xss => case concatMap (filter (\xs => length xs > 2)) xss of
                 fs => map (n ::) fs
 
+record Visited (k : Nat) where
+  constructor V
+  value : Integer
+
+isVisited : Fin k -> Visited k -> Bool
+isVisited v vis = testBit vis.value $ finToNat v
+
+visit : Fin k -> Visited k -> Visited k
+visit v vis = V . setBit vis.value $ finToNat v
+
 record State k where
   constructor MkState
   visited  : Integer
