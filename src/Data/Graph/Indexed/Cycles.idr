@@ -67,32 +67,31 @@ implementation Semigroup (Path k) where
 implementation Monoid (Path k) where
   neutral = P 0
 
-
 record State k where
   constructor MkState
-  visited  : Integer
-  prefixes : Vect k Integer
+  visited  : Visited k
+  prefixes : Vect k (Path k)
   rings    : List Integer
 
 covering
-getRings : (v : Fin k) -> (curr, prev : Integer) -> (g : IGraph k e n) -> (st : State k) -> State k
+getRings : (v : Fin k) -> (curr, prev : Path k) -> (g : IGraph k e n) -> (st : State k) -> State k
 
 covering
-getRings' : List (Fin k) -> (v : Fin k) -> (next, curr, prev : Integer) -> (g : IGraph k e n) -> State k -> State k
+getRings' : List (Fin k) -> (v : Fin k) -> (next, curr, prev : Path k) -> (g : IGraph k e n) -> State k -> State k
 
 getRings v curr prev g (MkState visited prefixes rings) =
   let updpref := replaceAt v curr prefixes
-      next    := setBit curr $ finToNat v
-      updvis  := setBit visited $ finToNat v
+      next    := add v curr
+      updvis  := visit v visited
       newst   := MkState updvis updpref rings
     in case keys $ neighbours g v of
       neigh => getRings' neigh v next curr prev g newst
 
 getRings' []        v next curr prev g st = st
 getRings' (x :: xs) v next curr prev g st =
-  if testBit st.visited $ finToNat x
-    then if testBit prev (finToNat x)
-           then let nring  := xor (index x st.prefixes) next
+  if isVisited x st.visited
+    then if inPath x prev
+           then let nring  := value $ index x st.prefixes <+> next
                     newst  := {rings $= (nring ::)} st
                   in getRings' xs v next curr prev g newst
            else getRings' xs v next curr prev g st
@@ -102,5 +101,5 @@ getRings' (x :: xs) v next curr prev g st =
 export covering
 search1 : {k : _} -> (g : IGraph k e n) -> List Integer
 search1 {k = Z}   g = []
-search1 {k = S n} g = rings $ getRings 0 0 0 g (MkState 0 (replicate _ 0) Nil)
+search1 {k = S n} g = rings $ getRings 0 (P 0) (P 0) g (MkState (V 0) (replicate _ (P 0)) Nil)
 
