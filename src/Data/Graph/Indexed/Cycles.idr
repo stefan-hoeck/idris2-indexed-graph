@@ -51,6 +51,23 @@ isVisited v vis = testBit vis.value $ finToNat v
 visit : Fin k -> Visited k -> Visited k
 visit v vis = V . setBit vis.value $ finToNat v
 
+record Path (k : Nat) where
+  constructor P
+  value : Integer
+
+add : Fin k -> Path k -> Path k
+add v path = P . setBit path.value $ finToNat v
+
+inPath : Fin k -> Path k -> Bool
+inPath v path = testBit path.value $ finToNat v
+
+implementation Semigroup (Path k) where
+  (<+>) p1 p2 = P (xor p1.value p2.value)
+
+implementation Monoid (Path k) where
+  neutral = P 0
+
+
 record State k where
   constructor MkState
   visited  : Integer
