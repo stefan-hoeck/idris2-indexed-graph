@@ -9,6 +9,7 @@ module Data.Graph.Indexed.Types
 import Data.Array
 import Data.AssocList.Indexed
 import Data.List
+import Data.Bits
 
 %default total
 
@@ -461,3 +462,35 @@ Bifoldable (Graph) where
 export
 Bitraversable Graph where
   bitraverse f g (G s h) = G s <$> bitraverse f g h
+
+
+public export
+record Visited (k : Nat) where
+  constructor V
+  value : Integer
+
+export
+isVisited : Fin k -> Visited k -> Bool
+isVisited v vis = testBit vis.value $ finToNat v
+
+export
+visit : Fin k -> Visited k -> Visited k
+visit v vis = V . setBit vis.value $ finToNat v
+
+
+public export
+record Ring k where
+  constructor R
+  value : Integer
+
+export
+inRing : Fin k -> Ring k -> Bool
+inRing v ring = testBit ring.value $ finToNat v
+
+export
+Semigroup (Ring k) where
+  (<+>) r1 r2 = R (xor r1.value r2.value)
+
+export
+Monoid (Ring k) where
+  neutral = R 0
