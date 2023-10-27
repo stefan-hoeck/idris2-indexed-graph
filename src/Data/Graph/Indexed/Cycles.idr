@@ -62,3 +62,18 @@ search1 : {k : _} -> (g : IGraph k e n) -> List (Ring k)
 search1 {k = Z}   g = []
 search1 {k = S n} g = rings $ getRings 0 (PR 0) (PR 0) g (MkState (V 0) (replicate _ (PR 0)) Nil)
 
+covering
+getAll : List (Fin k) -> (g : IGraph k e n) -> (st : State k) -> State k
+getAll []        g st = st
+getAll (x :: xs) g st =
+  if isVisited x st.visited then getAll xs g st
+    else getAll xs g $ getRings x (PR 0) (PR 0) g st
+
+export covering
+searchAll : {k : _} -> (g : IGraph k e n) -> List (Ring k)
+searchAll {k = Z} g   = []
+searchAll {k = S n} g = case allFinsFast (S n) of
+  xs => rings $ getAll xs g (MkState (V 0) (replicate _ (PR 0)) Nil)
+
+
+
