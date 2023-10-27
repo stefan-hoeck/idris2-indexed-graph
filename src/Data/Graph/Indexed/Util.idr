@@ -115,9 +115,9 @@ elab : IGraph k e n -> Fin k -> Fin k -> Maybe e
 elab (IG g) x y = lookup y . neighbours $ at g x
 
 ||| List all 'Node's in the 'Graph'.
-export
-nodes : {k : _} -> IGraph k e n -> List (Fin k)
-nodes = map fst . labNodes
+export %inline
+nodes : {k : _} -> (0 _ : IGraph k e n) -> List (Fin k)
+nodes _ = allFinsFast k
 
 ||| A list of all `LEdge`s in the `Graph` (in lexicographic order).
 export

@@ -1,10 +1,24 @@
 module Test.Data.Graph.Indexed.Generators
 
 import Data.List
+import Data.Vect
+import Data.Array.Index
 import public Data.Graph.Indexed
 import public Hedgehog
 
 %default total
+
+||| Generates an arbitrary `Fin (S k)` for a known natural number `k`
+export
+anyFin : {k : _} -> Gen (Fin $ S k)
+anyFin = fromMaybe FZ . tryNatToFin <$> nat (linear 0 k)
+
+||| Generates an `AssocList` for a graph of order `S k`, using `k` to
+||| determine the list's maximal length and the given generator
+||| for its values.
+export
+assocList : {k : _} -> Gen a -> Gen (AssocList (S k) a)
+assocList g = fromList <$> list (linear 0 k) [| MkPair anyFin g |]
 
 ||| Generates a single `Edge` for a graph of order `k + 2`.
 |||
@@ -51,6 +65,33 @@ distEdges lbl = catMaybes <$> traverse gen (pairs $ allFinsFast k)
     gen (x,y) with (compare x y) proof prf
       _ | LT = map (\v => E x y v) <$> lbl
       _ | _  = pure Nothing
+
+||| Generates an indexed graph of the given size with the number of edges
+||| in the given range.
+export
+sparseIGraph :
+     {k : _}
+  -> (nrEdges   : Hedgehog.Range Nat)
+  -> (edgeLabel : Gen e)
+  -> (nodeLabel : Gen n)
+  -> Gen (IGraph k e n)
+sparseIGraph nre el nl = do
+  ns <- vect k nl
+  es <- edges nre el
+  pure (mkGraph ns es)
+
+||| Generates an indexed graph with the given number of nodes and
+||| a random distribution of edges.
+export
+igraph :
+     {k : _}
+  -> (edgeLabel : Gen $ Maybe e)
+  -> (nodeLabel : Gen n)
+  -> Gen (IGraph k e n)
+igraph el nl = do
+  ns <- vect k nl
+  es <- distEdges el
+  pure (mkGraph ns es)
 
 ||| Generates a graph with the numbers of nodes and edges in the
 ||| given ranges.
