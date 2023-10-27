@@ -42,8 +42,8 @@ mask = 7
 %inline bits : Nat
 bits = 3
 
-%inline shift : Integer -> Integer
-shift = (`shiftR` bits)
+%inline ix : Integer -> Integer
+ix = (`shiftR` bits)
 
 %inline bit : Integer -> Bits8
 bit n = cast n .&. mask
@@ -53,7 +53,7 @@ setBit v i = v .|. prim__shl_Bits8 1 (bit i)
 
 testBit : Bits8 -> Integer -> Bool
 testBit x b =
-  case x .&. prim__shl_Bits8 x (bit b) of
+  case x .&. prim__shl_Bits8 1 (bit b) of
     0 => False
     _ => True
 
@@ -70,13 +70,11 @@ record Visited (k : Nat) where
 
 visit' : Integer -> Visited k -@ Visited k
 visit' i (V b) =
-  let o   := shift i
+  let o   := ix i
    in V $ set' o (setBit (prim__getByte b o) i) b
 
 visited' : Integer -> Visited k -@ CRes Bool (Visited k)
-visited' i (V b) =
-  let bit := cast i .&. 7
-   in testBit (prim__getByte b $ shift i) i # V b
+visited' i (V b) = testBit (prim__getByte b $ ix i) i # V b
 
 ||| Set the current node to "visited".
 export %inline
@@ -98,4 +96,4 @@ done x (V _) = MkBang x
 export %inline
 visiting : (k : Nat) -> (Visited k -@ Ur a) -> a
 visiting k f =
-  unrestricted $ f (V $ prim__newBuf (1 + cast (Visited.shift $ cast k)))
+  unrestricted $ f (V $ prim__newBuf (1 + cast (Visited.ix $ cast k)))
