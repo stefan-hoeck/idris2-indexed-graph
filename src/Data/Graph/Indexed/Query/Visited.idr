@@ -70,15 +70,15 @@ record MVisited (k : Nat) where
 
 ||| Set the current node to "visited".
 export
-visit : Fin k -> MVisited k -@ MVisited k
-visit i (MV b) =
+mvisit : Fin k -> MVisited k -@ MVisited k
+mvisit i (MV b) =
   let o   := ix i
    in MV $ set' o (setBit (prim__getByte b o) i) b
 
 ||| Test, if the current node has been visited.
 export
-visited : Fin k -> MVisited k -@ CRes Bool (MVisited k)
-visited i (MV b) = testBit (prim__getByte b $ ix i) i # MV b
+mvisited : Fin k -> MVisited k -@ CRes Bool (MVisited k)
+mvisited i (MV b) = testBit (prim__getByte b $ ix i) i # MV b
 
 ||| Discard the linear byte array and return the current result.
 export
@@ -92,3 +92,32 @@ visiting : (k : Nat) -> (MVisited k -@ Ur a) -> a
 visiting k f =
   let i := cast {to = Integer} k `shiftR` bits
    in unrestricted $ f (MV $ prim__newBuf (1 + cast i))
+
+--------------------------------------------------------------------------------
+--          Visited
+--------------------------------------------------------------------------------
+
+||| Immutable value for keeping track of the visited nodes in a graph.
+|||
+||| Note: Profiling on the Chez backend showed, that this is considerably
+|||       faster than `MVisited` for `k < 64`. For larger `k`, however,
+|||       `MVisited` outperforms this by far.
+export
+record Visited (k : Nat) where
+  constructor V
+  vis : Integer
+
+||| Initial `Visited` state
+export
+ini : Visited k
+ini = V 0
+
+||| Set the current node to "visited".
+export
+visit : Fin k -> Visited k -> Visited k
+visit i (V b) = V $ setBit b (finToNat i)
+
+||| Test, if the current node has been visited.
+export
+visited : Fin k -> Visited k -> Bool
+visited i (V b) = testBit b (finToNat i)

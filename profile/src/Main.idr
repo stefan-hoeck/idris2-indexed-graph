@@ -85,22 +85,23 @@ graphN = graph . pairs
 --          Visited
 --------------------------------------------------------------------------------
 
-testVisInteger : Integer -> List (Fin k) -> Bool
-testVisInteger i []        = testBit i 1
-testVisInteger i (x :: xs) =
-  case testBit i (finToNat x) of
-    False => testVisInteger (setBit i (finToNat x)) xs
-    True  => testVisInteger i xs
-
-testVisVisited : {k : _} -> List (Fin k) -> Bool
-testVisVisited xs = visiting k (go xs)
+testMVisited : {k : _} -> List (Fin k) -> Bool
+testMVisited xs = visiting k (go xs)
   where
-    go : List (Fin k) -> Visited k -@ Ur Bool
+    go : List (Fin k) -> MVisited k -@ Ur Bool
     go []        v = done True v
     go (x :: xs) v =
-      let False # v2 := visited x v | True # v2 => go xs v2
-          v3         := visit x v2
+      let False # v2 := mvisited x v | True # v2 => go xs v2
+          v3         := mvisit x v2
        in go xs v3
+
+testVisited : {k : _} -> List (Fin k) -> Bool
+testVisited xs = go xs ini
+  where
+    go : List (Fin k) -> Visited k -> Bool
+    go []        v = True
+    go (x :: xs) v =
+      if visited x v then go xs v else go xs (visit x v)
 
 --------------------------------------------------------------------------------
 --          Benchmarks
@@ -108,21 +109,21 @@ testVisVisited xs = visiting k (go xs)
 
 bench : Benchmark Void
 bench = Group "graph_ops"
-  [ Group "visited integer-based"
-      [ Single "1"     (basic (testVisInteger 0) $ allFinsFast 1)
-      , Single "32"    (basic (testVisInteger 0) $ allFinsFast 32)
-      , Single "64"    (basic (testVisInteger 0) $ allFinsFast 64)
-      , Single "128"   (basic (testVisInteger 0) $ allFinsFast 128)
-      , Single "1024"  (basic (testVisInteger 0) $ allFinsFast 1024)
-      , Single "65536" (basic (testVisInteger 0) $ allFinsFast 65536)
+  [ Group "Visited"
+      [ Single "1"     (basic testVisited $ allFinsFast 1)
+      , Single "32"    (basic testVisited $ allFinsFast 32)
+      , Single "64"    (basic testVisited $ allFinsFast 64)
+      , Single "128"   (basic testVisited $ allFinsFast 128)
+      , Single "1024"  (basic testVisited $ allFinsFast 1024)
+      , Single "65536" (basic testVisited $ allFinsFast 65536)
       ]
-  , Group "visited array-based"
-      [ Single "1"     (basic testVisVisited $ allFinsFast 1)
-      , Single "32"    (basic testVisVisited $ allFinsFast 32)
-      , Single "64"    (basic testVisVisited $ allFinsFast 64)
-      , Single "128"   (basic testVisVisited $ allFinsFast 128)
-      , Single "1024"  (basic testVisVisited $ allFinsFast 1024)
-      , Single "65536" (basic testVisVisited $ allFinsFast 65536)
+  , Group "MVisited"
+      [ Single "1"     (basic testMVisited $ allFinsFast 1)
+      , Single "32"    (basic testMVisited $ allFinsFast 32)
+      , Single "64"    (basic testMVisited $ allFinsFast 64)
+      , Single "128"   (basic testMVisited $ allFinsFast 128)
+      , Single "1024"  (basic testMVisited $ allFinsFast 1024)
+      , Single "65536" (basic testMVisited $ allFinsFast 65536)
       ]
   , Group "mkGraph map-based"
       [ Single "1"     (basic graph $ pairs 1)
