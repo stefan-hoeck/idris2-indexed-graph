@@ -17,4 +17,5 @@ modules = Data.AssocList.Indexed
         , Data.Graph.Indexed.Types
         , Data.Graph.Indexed.Util
 
+        , Data.Graph.Indexed.Query.DFS
         , Data.Graph.Indexed.Query.Visited
