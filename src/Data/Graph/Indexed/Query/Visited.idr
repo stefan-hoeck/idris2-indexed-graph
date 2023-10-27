@@ -42,58 +42,53 @@ mask = 7
 %inline bits : Nat
 bits = 3
 
-%inline ix : Integer -> Integer
-ix = (`shiftR` bits)
+%inline ix : Fin k -> Integer
+ix n = cast n `shiftR` bits
 
-%inline bit : Integer -> Bits8
-bit n = cast n .&. mask
+%inline bit : Fin k -> Bits8
+bit n = cast (finToNat n) .&. mask
 
-%inline setBit : Bits8 -> Integer -> Bits8
+%inline setBit : Bits8 -> Fin k -> Bits8
 setBit v i = v .|. prim__shl_Bits8 1 (bit i)
 
-testBit : Bits8 -> Integer -> Bool
+testBit : Bits8 -> Fin k -> Bool
 testBit x b =
   case x .&. prim__shl_Bits8 1 (bit b) of
     0 => False
     _ => True
 
 --------------------------------------------------------------------------------
---          Visited
+--          MVisited
 --------------------------------------------------------------------------------
 
 ||| Wraps a mutable byte array for keeping track of the visited nodes
 ||| in a graph.
 export
-record Visited (k : Nat) where
-  constructor V
+record MVisited (k : Nat) where
+  constructor MV
   buf : Buffer
 
-visit' : Integer -> Visited k -@ Visited k
-visit' i (V b) =
-  let o   := ix i
-   in V $ set' o (setBit (prim__getByte b o) i) b
-
-visited' : Integer -> Visited k -@ CRes Bool (Visited k)
-visited' i (V b) = testBit (prim__getByte b $ ix i) i # V b
-
 ||| Set the current node to "visited".
-export %inline
-visit : Fin k -> Visited k -@ Visited k
-visit = visit' . cast
+export
+visit : Fin k -> MVisited k -@ MVisited k
+visit i (MV b) =
+  let o   := ix i
+   in MV $ set' o (setBit (prim__getByte b o) i) b
 
 ||| Test, if the current node has been visited.
-export %inline
-visited : Fin k -> Visited k -@ CRes Bool (Visited k)
-visited = visited' . cast
+export
+visited : Fin k -> MVisited k -@ CRes Bool (MVisited k)
+visited i (MV b) = testBit (prim__getByte b $ ix i) i # MV b
 
 ||| Discard the linear byte array and return the current result.
 export
-done : a -> Visited k -@ Ur a
-done x (V _) = MkBang x
+done : a -> MVisited k -@ Ur a
+done x (MV _) = MkBang x
 
 ||| Allocate a linear byte array and use it to run the given
 ||| computation.
 export %inline
-visiting : (k : Nat) -> (Visited k -@ Ur a) -> a
+visiting : (k : Nat) -> (MVisited k -@ Ur a) -> a
 visiting k f =
-  unrestricted $ f (V $ prim__newBuf (1 + cast (Visited.ix $ cast k)))
+  let i := cast {to = Integer} k `shiftR` bits
+   in unrestricted $ f (MV $ prim__newBuf (1 + cast i))
