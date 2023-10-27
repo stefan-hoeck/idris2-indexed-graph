@@ -9,6 +9,7 @@ license    = "BSD-3 Clause"
 sourcedir  = "src"
 depends    = base    >= 0.5.1
            , array
+           , containers
 
 modules = Data.AssocList.Indexed
 
