@@ -29,7 +29,7 @@ parameters {k : Nat}
     else dfsS (nbours x ++ xs) f (f st x) (assert_smaller v $ visit x v)
 
   ||| Traverses the graph in depth-first order for the given
-  ||| start nodes and converts the nodes encountered with the
+  ||| start nodes and accumulates the nodes encountered with the
   ||| given function.
   export
   dfsWith : (acc : s -> Fin k -> s) -> (init : s) -> List (Fin k) -> s
@@ -37,19 +37,19 @@ parameters {k : Nat}
     if k < 64 then dfsS xs acc init ini else visiting k (dfsL xs acc init)
 
   ||| Traverses the whole graph in depth-first order
-  ||| converts the nodes encountered with the given function.
+  ||| accumulates the nodes encountered with the given function.
   export %inline
   dfsWith' : (acc : s -> Fin k -> s) -> (init : s) -> s
   dfsWith' acc init = dfsWith acc init (allFinsFast k)
 
   ||| Traverses the graph in depth-first order for the given start nodes
-  ||| returning the encountered nodes in a list.
+  ||| returning the encountered nodes in a `SnocList`.
   export %inline
   dfs : List (Fin k) -> SnocList (Fin k)
   dfs = dfsWith (:<) [<]
 
   ||| Traverses the whole graph in depth-first order
-  ||| returning the encountered nodes in a list.
+  ||| returning the encountered nodes in a `SnocList`.
   export %inline
   dfs' : SnocList (Fin k)
   dfs' = dfsWith' (:<) [<]
