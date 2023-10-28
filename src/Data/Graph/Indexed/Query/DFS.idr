@@ -14,55 +14,45 @@ parameters {k : Nat}
   nbours x = keys $ neighbours g x
 
   -- flat DFS implementation for large graphs
-  dfsL :
-       SnocList t
-    -> (Fin k -> t)
-    -> List (Fin k)
-    -> MVisited k
-    -@ Ur (List t)
-  dfsL sx f []      v = done (sx <>> []) v
-  dfsL sx f (x::xs) v =
+  dfsL : List (Fin k) -> (s -> Fin k -> s) -> s -> MVisited k -@ Ur s
+  dfsL []      f st v = done st v
+  dfsL (x::xs) f st v =
     let False # v2 := mvisited x v
-          | True # v2 => dfsL sx f xs (assert_smaller v v2)
-     in dfsL (sx :< f x) f (nbours x ++ xs) (assert_smaller v $ mvisit x v2)
+          | True # v2 => dfsL xs f st (assert_smaller v v2)
+     in dfsL (nbours x ++ xs) f (f st x) (assert_smaller v $ mvisit x v2)
 
   -- flat DFS implementation for small graphs
-  dfsS :
-       SnocList t
-    -> (Fin k -> t)
-    -> List (Fin k)
-    -> Visited k
-    -> List t
-  dfsS sx f []      v = sx <>> []
-  dfsS sx f (x::xs) v =
-    if visited x v then dfsS sx f xs v
-    else dfsS (sx :< f x) f (nbours x ++ xs) (assert_smaller v $ visit x v)
+  dfsS : List (Fin k) -> (s -> Fin k -> s) -> s -> Visited k -> s
+  dfsS []      f st v = st
+  dfsS (x::xs) f st v =
+    if visited x v then dfsS xs f st v
+    else dfsS (nbours x ++ xs) f (f st x) (assert_smaller v $ visit x v)
 
   ||| Traverses the graph in depth-first order for the given
   ||| start nodes and converts the nodes encountered with the
   ||| given function.
   export
-  dfsWith : (Fin k -> t) -> List (Fin k) -> List t
-  dfsWith f xs =
-    if k < 64 then dfsS [<] f xs ini else visiting k (dfsL [<] f xs)
+  dfsWith : (acc : s -> Fin k -> s) -> (init : s) -> List (Fin k) -> s
+  dfsWith acc init xs =
+    if k < 64 then dfsS xs acc init ini else visiting k (dfsL xs acc init)
 
   ||| Traverses the whole graph in depth-first order
   ||| converts the nodes encountered with the given function.
   export %inline
-  dfsWith' : (Fin k -> t) -> List t
-  dfsWith' f = dfsWith f (allFinsFast k)
+  dfsWith' : (acc : s -> Fin k -> s) -> (init : s) -> s
+  dfsWith' acc init = dfsWith acc init (allFinsFast k)
 
   ||| Traverses the graph in depth-first order for the given start nodes
   ||| returning the encountered nodes in a list.
   export %inline
-  dfs : List (Fin k) -> List (Fin k)
-  dfs = dfsWith id
+  dfs : List (Fin k) -> SnocList (Fin k)
+  dfs = dfsWith (:<) [<]
 
   ||| Traverses the whole graph in depth-first order
   ||| returning the encountered nodes in a list.
   export %inline
-  dfs' : List (Fin k)
-  dfs' = dfsWith' id
+  dfs' : SnocList (Fin k)
+  dfs' = dfsWith' (:<) [<]
 
   -- tree-based DFS implementation for large graphs
   dffL :

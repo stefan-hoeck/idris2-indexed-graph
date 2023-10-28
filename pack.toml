@@ -30,4 +30,3 @@ type   = "git"
 url    = "https://github.com/stefan-hoeck/idris2-containers"
 commit = "latest:main"
 ipkg   = "containers.ipkg"
-
