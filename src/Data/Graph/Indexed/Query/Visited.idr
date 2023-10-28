@@ -93,6 +93,19 @@ visiting k f =
   let i := cast {to = Integer} k `shiftR` bits
    in unrestricted $ f (MV $ prim__newBuf (1 + cast i))
 
+||| Allocate a linear byte array and use it to run the given
+||| computation, discarding it at the end.
+|||
+||| This is a convenience alias for `visiting` for those cases, where
+||| we already have a function returning a linear pair of values.
+export %inline
+visiting' : (k : Nat) -> (MVisited k -@ CRes a (MVisited k)) -> a
+visiting' k f =
+  let i        := cast {to = Integer} k `shiftR` bits
+      res # v  := f (MV $ prim__newBuf (1 + cast i))
+      MkBang v := done res v
+   in v
+
 --------------------------------------------------------------------------------
 --          Visited
 --------------------------------------------------------------------------------
