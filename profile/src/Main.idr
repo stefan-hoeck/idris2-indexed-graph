@@ -1,7 +1,9 @@
 module Main
 
 import Data.Graph as G
+import Data.DPair
 import Data.Graph.Indexed as I
+import Data.Graph.Indexed.Cycles
 import Profile
 
 %default total
@@ -47,7 +49,7 @@ graphData n =
    in GD ns es
 
 arrGraph : GraphData -> ArrGr () Nat
-arrGraph (GD ns es) = G _ $ mkGraph ns es
+arrGraph (GD ns es) = G _ $ mkGraphL ns es
 
 arrGraphN : Nat -> ArrGr () Nat
 arrGraphN = arrGraph . graphData
@@ -77,9 +79,21 @@ graphN : Nat -> Gr () Nat
 graphN = graph . pairs
 
 --------------------------------------------------------------------------------
+--          Ring Generation
+--------------------------------------------------------------------------------
+
+-- generate a single ring of size `n`
+ringN : (n : Nat) -> ArrGr () ()
+
+covering
+searchRings : ArrGr () () -> Exists (List . Ring)
+searchRings (G _ g) = Evidence _ $ searchAll g
+
+--------------------------------------------------------------------------------
 --          Benchmarks
 --------------------------------------------------------------------------------
 
+covering
 bench : Benchmark Void
 bench = Group "graph_ops" [
     Group "mkGraph" [
@@ -106,6 +120,10 @@ bench = Group "graph_ops" [
       , Single "G 10000" (basic (`lab` 5000) $ graphN 10000)
       , Single "A 10000" (basic (labM 5000) $ arrGraphN 10000)
       ]
+  , Group "searchRings" [
+        Single "1"     (basic searchRings $ ringN 1)
+      , Single "10"     (basic searchRings $ ringN 10)
+      ]
   ]
 --   , Group "insert" [
 --         Single "1"     (basic (insert 333 "") $ full 1)
@@ -123,5 +141,6 @@ bench = Group "graph_ops" [
 --       ]
 --   ]
 
+covering
 main : IO ()
 main = runDefault (const True) Table show bench
