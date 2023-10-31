@@ -13,6 +13,19 @@ import Data.Bits
 
 %default total
 
+||| Generates the list of all `Fin n` in linear type.
+|||
+||| This is a lot faster than `Data.Fin.allFins`, which runs in quadratic
+||| time.
+export
+allFinsFast : (n : Nat) -> List (Fin n)
+allFinsFast 0 = []
+allFinsFast (S n) = go [] last
+  where
+    go : List (Fin $ S n) -> Fin (S n) -> List (Fin $ S n)
+    go xs FZ     = FZ :: xs
+    go xs (FS x) = go (FS x :: xs) (assert_smaller (FS x) $ weaken x)
+
 --------------------------------------------------------------------------------
 --          Lemmata
 --------------------------------------------------------------------------------
@@ -486,6 +499,10 @@ record Ring k where
 export
 inRing : Fin k -> Ring k -> Bool
 inRing v ring = testBit ring.value $ finToNat v
+
+export
+{k : _} -> Show (Ring k) where
+  show r = show $ filter (`inRing` r) (allFinsFast k)
 
 export
 Semigroup (Ring k) where

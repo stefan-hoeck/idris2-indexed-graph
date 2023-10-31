@@ -74,6 +74,3 @@ searchAll : {k : _} -> (g : IGraph k e n) -> List (Ring k)
 searchAll {k = Z} g   = []
 searchAll {k = S n} g = case allFinsFast (S n) of
   xs => rings $ getAll xs g (MkState (V 0) (replicate _ (PR 0)) Nil)
-
-
-
