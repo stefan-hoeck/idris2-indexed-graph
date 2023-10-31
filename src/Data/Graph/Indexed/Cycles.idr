@@ -49,28 +49,33 @@ getRings v curr prev g (MkState visited prefixes rings) =
 getRings' []        v next curr prev g st = st
 getRings' (x :: xs) v next curr prev g st =
   if isVisited x st.visited
-    then if inPreRing x prev
-           then let nring  := merge next $ index x st.prefixes
-                    newst  := {rings $= (nring ::)} st
-                  in getRings' xs v next curr prev g newst
-           else getRings' xs v next curr prev g st
-    else let newst := getRings x next curr g st
-          in getRings' xs v next curr prev g newst
+    then
+      if inPreRing x prev
+         then
+           let nring  := merge next $ index x st.prefixes
+               newst  := {rings $= (nring ::)} st
+            in getRings' xs v next curr prev g newst
+         else getRings' xs v next curr prev g st
+    else
+      let newst := getRings x next curr g st
+       in getRings' xs v next curr prev g newst
 
 export covering
 search1 : {k : _} -> (g : IGraph k e n) -> List (Ring k)
 search1 {k = Z}   g = []
-search1 {k = S n} g = rings $ getRings 0 (PR 0) (PR 0) g (MkState (V 0) (replicate _ (PR 0)) Nil)
+search1 {k = S n} g =
+  rings $ getRings 0 (PR 0) (PR 0) g (MkState (V 0) (replicate _ (PR 0)) Nil)
 
 covering
 getAll : List (Fin k) -> (g : IGraph k e n) -> (st : State k) -> State k
 getAll []        g st = st
 getAll (x :: xs) g st =
-  if isVisited x st.visited then getAll xs g st
-    else getAll xs g $ getRings x (PR 0) (PR 0) g st
+  if isVisited x st.visited
+     then getAll xs g st
+     else getAll xs g $ getRings x (PR 0) (PR 0) g st
 
 export covering
 searchAll : {k : _} -> (g : IGraph k e n) -> List (Ring k)
-searchAll {k = Z} g   = []
-searchAll {k = S n} g = case allFinsFast (S n) of
-  xs => rings $ getAll xs g (MkState (V 0) (replicate _ (PR 0)) Nil)
+searchAll g =
+  let xs := allFinsFast k
+   in rings $ getAll xs g (MkState (V 0) (replicate _ (PR 0)) Nil)
