@@ -2,8 +2,10 @@ module Main
 
 import Data.Bits
 import Data.Graph as G
+import Data.DPair
 import Data.Graph.Indexed as I
 import Data.Graph.Indexed.Query.Visited
+import Data.Graph.Indexed.Cycles
 import Profile
 
 %default total
@@ -104,9 +106,20 @@ testVisited xs = go xs ini
       if visited x v then go xs v else go xs (visit x v)
 
 --------------------------------------------------------------------------------
+--          Ring Generation
+--------------------------------------------------------------------------------
+
+-- generate a single ring of size `n`
+ringN : (n : Nat) -> ArrGr () ()
+
+searchRings : ArrGr () () -> Exists (List . Ring)
+searchRings (G _ g) = Evidence _ $ searchAll g
+
+--------------------------------------------------------------------------------
 --          Benchmarks
 --------------------------------------------------------------------------------
 
+covering
 bench : Benchmark Void
 bench = Group "graph_ops"
   [ Group "Visited"
@@ -167,7 +180,12 @@ bench = Group "graph_ops"
       , Single "1000"  (basic (insM 1) $ arrGraphN 1000)
       , Single "10000" (basic (insM 1) $ arrGraphN 10000)
       ]
+  , Group "searchRings" [
+        Single "1"     (basic searchRings $ ringN 1)
+      , Single "10"     (basic searchRings $ ringN 10)
+      ]
   ]
 
+covering
 main : IO ()
 main = runDefault (const True) Table show bench
