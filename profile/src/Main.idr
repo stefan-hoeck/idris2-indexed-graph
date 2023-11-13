@@ -111,6 +111,13 @@ testVisited xs = go xs ini
 
 -- generate a single ring of size `n`
 ringN : (n : Nat) -> ArrGr () ()
+ringN n =
+  let ns  := gen n $ \n => MkLNode (cast n) ()
+      es  := genMay n $ \n =>
+        if n > 0 then mkEdge (cast n) (cast n-1)
+          else mkEdge (cast Z) (cast $ length ns)
+      les := map (\x => MkLEdge x () ) es
+   in ?foo ---mkGraph ns les
 
 searchRings : ArrGr () () -> Exists (List . Ring)
 searchRings (G _ g) = Evidence _ $ searchAll g
