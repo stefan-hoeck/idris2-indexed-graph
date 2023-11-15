@@ -47,10 +47,10 @@ getRings v curr prev g (MkState prefixes rings) =
 getRings' []        v next curr prev g st = st
 getRings' (x :: xs) v next curr prev g st =
   case index x st.prefixes of
-    Nothing   =>
+    Nothing =>
       let newst := getRings x next curr g st
        in getRings' xs v next curr prev g newst
-    (Just pr) =>
+    Just pr =>
       if inPreRing x prev
         then
           let nring  := merge next pr
@@ -59,19 +59,13 @@ getRings' (x :: xs) v next curr prev g st =
         else
           getRings' xs v next curr prev g st
 
-export covering
-search1 : {k : _} -> (g : IGraph k e n) -> List (Ring k)
-search1 {k = Z}   g = []
-search1 {k = S n} g =
-  rings $ getRings 0 (PR 0) (PR 0) g (MkState (replicate _ Nothing) Nil)
-
 covering
 getAll : List (Fin k) -> (g : IGraph k e n) -> (st : State k) -> State k
 getAll []        g st = st
 getAll (x :: xs) g st =
   case index x st.prefixes of
-    Nothing  => getAll xs g $ getRings x (PR 0) (PR 0) g st
-    (Just _) => getAll xs g st
+    Nothing => getAll xs g $ getRings x (PR 0) (PR 0) g st
+    Just _  => getAll xs g st
 
 export covering
 searchAll : {k : _} -> (g : IGraph k e n) -> List (Ring k)
