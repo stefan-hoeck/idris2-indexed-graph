@@ -82,15 +82,17 @@ graphN = graph . pairs
 --          Ring Generation
 --------------------------------------------------------------------------------
 
+getEdges : {k : _} -> List (Fin k) -> List (Maybe (Edge k ()))
+getEdges []             = []
+getEdges (FZ :: xs)     = mkEdge FZ last () :: getEdges xs
+getEdges ((FS x) :: xs) = mkEdge (weaken x) (FS x) () :: getEdges xs
+
 -- generate a single ring of size `n`
 ringN : (n : Nat) -> ArrGr () ()
 ringN n =
-  let ns  := gen n $ \n => MkLNode (cast n) ()
-      es  := genMay n $ \n =>
-        if n > 0 then mkEdge (cast n) (cast n-1)
-          else mkEdge (cast Z) (cast $ length ns)
-      les := map (\x => MkLEdge x () ) es
-   in ?foo ---mkGraph ns les
+  let fins := allFinsFast n
+      es   := getEdges fins
+   in G n $ mkGraph (replicate _ () ) (mapMaybe id es)
 
 covering
 searchRings : ArrGr () () -> Exists (List . Ring)
@@ -130,6 +132,9 @@ bench = Group "graph_ops" [
   , Group "searchRings" [
         Single "1"     (basic searchRings $ ringN 1)
       , Single "10"     (basic searchRings $ ringN 10)
+      , Single "100"     (basic searchRings $ ringN 100)
+      , Single "1000"     (basic searchRings $ ringN 1000)
+      , Single "10000"     (basic searchRings $ ringN 1000)
       ]
   ]
 --   , Group "insert" [
