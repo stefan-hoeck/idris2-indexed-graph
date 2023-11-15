@@ -21,3 +21,4 @@ modules = Data.AssocList.Indexed
         , Data.Graph.Indexed.Query.Visited
         , Data.Graph.Indexed.Query.Util
         , Data.Graph.Indexed.Cycles
+        , Data.Graph.Indexed.Cycles2
