@@ -28,7 +28,7 @@ merge pr1 pr2 = R (xor pr1.value pr2.value)
 
 record State k where
   constructor MkState
-  prefixes : Vect k (Maybe $ PreRing k)
+  prefixes : SortedMap (Fin k) (PreRing k)
   rings    : List (Ring k)
 
 covering
@@ -38,7 +38,7 @@ covering
 getRings' : List (Fin k) -> (v : Fin k) -> (next, curr, prev : PreRing k) -> (g : IGraph k e n) -> State k -> State k
 
 getRings v curr prev g (MkState prefixes rings) =
-  let updpref := replaceAt v (Just curr) prefixes
+  let updpref := insert v curr prefixes
       next    := add v curr
       newst   := MkState updpref rings
       neigh   := keys $ neighbours g v
@@ -46,7 +46,7 @@ getRings v curr prev g (MkState prefixes rings) =
 
 getRings' []        v next curr prev g st = st
 getRings' (x :: xs) v next curr prev g st =
-  case index x st.prefixes of
+  case lookup x st.prefixes of
     Nothing =>
       let newst := getRings x next curr g st
        in getRings' xs v next curr prev g newst
@@ -63,7 +63,7 @@ covering
 getAll : List (Fin k) -> (g : IGraph k e n) -> (st : State k) -> State k
 getAll []        g st = st
 getAll (x :: xs) g st =
-  case index x st.prefixes of
+  case lookup x st.prefixes of
     Nothing => getAll xs g $ getRings x (PR 0) (PR 0) g st
     Just _  => getAll xs g st
 
@@ -71,4 +71,4 @@ export covering
 searchAll : {k : _} -> (g : IGraph k e n) -> List (Ring k)
 searchAll g =
   let xs := allFinsFast k
-   in rings $ getAll xs g (MkState (replicate _ Nothing) Nil)
+   in rings $ getAll xs g (MkState (M empty) Nil)
