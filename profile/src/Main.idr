@@ -6,6 +6,7 @@ import Data.DPair
 import Data.Graph.Indexed as I
 import Data.Graph.Indexed.Query.Visited
 import Data.Graph.Indexed.Cycles
+import Data.Graph.Indexed.Cycles2
 import Profile
 
 %default total
@@ -124,12 +125,16 @@ ringN n =
 searchRings : ArrGr () () -> Exists (List . Ring)
 searchRings (G _ g) = Evidence _ $ searchAll g
 
+covering
+searchRingsSM : ArrGr () () -> Exists (List . Ring)
+searchRingsSM (G _ g) = Evidence _ $ searchAllSM g
 --------------------------------------------------------------------------------
 --          Benchmarks
 --------------------------------------------------------------------------------
 
 covering
 bench : Benchmark Void
+<<<<<<< HEAD
 bench = Group "graph_ops"
   [ Group "Visited"
       [ Single "1"     (basic testVisited $ allFinsFast 1)
@@ -190,11 +195,18 @@ bench = Group "graph_ops"
       , Single "10000" (basic (insM 1) $ arrGraphN 10000)
       ]
   , Group "searchRings" [
-        Single "1"     (basic searchRings $ ringN 1)
+       Single "1"     (basic searchRings $ ringN 1)
       , Single "10"     (basic searchRings $ ringN 10)
       , Single "100"     (basic searchRings $ ringN 100)
       , Single "1000"     (basic searchRings $ ringN 1000)
       , Single "10000"     (basic searchRings $ ringN 1000)
+      ]
+  , Group "searchRingsSM" [
+        Single "1"     (basic searchRingsSM $ ringN 1)
+      , Single "10"     (basic searchRingsSM $ ringN 10)
+      , Single "100"     (basic searchRingsSM $ ringN 100)
+      , Single "1000"     (basic searchRingsSM $ ringN 1000)
+      , Single "10000"     (basic searchRingsSM $ ringN 1000)
       ]
   ]
 

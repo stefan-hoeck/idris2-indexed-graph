@@ -68,7 +68,7 @@ getAll (x :: xs) g st =
     Just _  => getAll xs g st
 
 export covering
-searchAll : {k : _} -> (g : IGraph k e n) -> List (Ring k)
-searchAll g =
+searchAllSM : {k : _} -> (g : IGraph k e n) -> List (Ring k)
+searchAllSM g =
   let xs := allFinsFast k
    in rings $ getAll xs g (MkState empty Nil)
