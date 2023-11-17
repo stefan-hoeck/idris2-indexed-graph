@@ -4,6 +4,7 @@ import Data.Graph as G
 import Data.DPair
 import Data.Graph.Indexed as I
 import Data.Graph.Indexed.Cycles
+import Data.Graph.Indexed.Cycles2
 import Profile
 
 %default total
@@ -98,6 +99,9 @@ covering
 searchRings : ArrGr () () -> Exists (List . Ring)
 searchRings (G _ g) = Evidence _ $ searchAll g
 
+covering
+searchRingsSM : ArrGr () () -> Exists (List . Ring)
+searchRingsSM (G _ g) = Evidence _ $ searchAllSM g
 --------------------------------------------------------------------------------
 --          Benchmarks
 --------------------------------------------------------------------------------
@@ -105,36 +109,43 @@ searchRings (G _ g) = Evidence _ $ searchAll g
 covering
 bench : Benchmark Void
 bench = Group "graph_ops" [
-    Group "mkGraph" [
-        Single "G 1"     (basic graph $ pairs 1)
-      , Single "A 1"     (basic arrGraph $ graphData 1)
-      , Single "G 10"    (basic graph $ pairs 10)
-      , Single "A 10"    (basic arrGraph $ graphData 10)
-      , Single "G 100"   (basic graph $ pairs 100)
-      , Single "A 100"   (basic arrGraph $ graphData 100)
-      , Single "G 1000"  (basic graph $ pairs 1000)
-      , Single "A 1000"  (basic arrGraph $ graphData 1000)
-      , Single "G 10000" (basic graph $ pairs 10000)
-      , Single "A 10000" (basic arrGraph $ graphData 10000)
-      ]
-  , Group "lab" [
-        Single "G 1"     (basic (`lab` 0) $ graphN 1)
-      , Single "A 1"     (basic (labM 0) $ arrGraphN 1)
-      , Single "G 10"    (basic (`lab` 5) $ graphN 10)
-      , Single "A 10"    (basic (labM 5) $ arrGraphN 10)
-      , Single "G 100"   (basic (`lab` 50) $ graphN 100)
-      , Single "A 100"   (basic (labM 50) $ arrGraphN 100)
-      , Single "G 1000"  (basic (`lab` 500) $ graphN 1000)
-      , Single "A 1000"  (basic (labM 500) $ arrGraphN 1000)
-      , Single "G 10000" (basic (`lab` 5000) $ graphN 10000)
-      , Single "A 10000" (basic (labM 5000) $ arrGraphN 10000)
-      ]
-  , Group "searchRings" [
+---    Group "mkGraph" [
+---        Single "G 1"     (basic graph $ pairs 1)
+---      , Single "A 1"     (basic arrGraph $ graphData 1)
+---      , Single "G 10"    (basic graph $ pairs 10)
+---      , Single "A 10"    (basic arrGraph $ graphData 10)
+---      , Single "G 100"   (basic graph $ pairs 100)
+---      , Single "A 100"   (basic arrGraph $ graphData 100)
+---      , Single "G 1000"  (basic graph $ pairs 1000)
+---      , Single "A 1000"  (basic arrGraph $ graphData 1000)
+---      , Single "G 10000" (basic graph $ pairs 10000)
+---      , Single "A 10000" (basic arrGraph $ graphData 10000)
+---      ]
+---  , Group "lab" [
+---        Single "G 1"     (basic (`lab` 0) $ graphN 1)
+---      , Single "A 1"     (basic (labM 0) $ arrGraphN 1)
+---      , Single "G 10"    (basic (`lab` 5) $ graphN 10)
+---      , Single "A 10"    (basic (labM 5) $ arrGraphN 10)
+---      , Single "G 100"   (basic (`lab` 50) $ graphN 100)
+---      , Single "A 100"   (basic (labM 50) $ arrGraphN 100)
+---      , Single "G 1000"  (basic (`lab` 500) $ graphN 1000)
+---      , Single "A 1000"  (basic (labM 500) $ arrGraphN 1000)
+---      , Single "G 10000" (basic (`lab` 5000) $ graphN 10000)
+---      , Single "A 10000" (basic (labM 5000) $ arrGraphN 10000)
+---      ]
+    Group "searchRings" [
         Single "1"     (basic searchRings $ ringN 1)
       , Single "10"     (basic searchRings $ ringN 10)
       , Single "100"     (basic searchRings $ ringN 100)
       , Single "1000"     (basic searchRings $ ringN 1000)
       , Single "10000"     (basic searchRings $ ringN 1000)
+      ]
+  , Group "searchRingsSM" [
+        Single "1"     (basic searchRingsSM $ ringN 1)
+      , Single "10"     (basic searchRingsSM $ ringN 10)
+      , Single "100"     (basic searchRingsSM $ ringN 100)
+      , Single "1000"     (basic searchRingsSM $ ringN 1000)
+      , Single "10000"     (basic searchRingsSM $ ringN 1000)
       ]
   ]
 --   , Group "insert" [
