@@ -142,14 +142,14 @@ incEdge k (E n1 n2 l @{prf}) =
     l
 
 ||| Creates an edge between two nodes from different graphs,
-||| resulting in a new edge of their compound graph.
+||| resulting in a new edge of their composite graph.
 |||
 ||| Note: This assumes that nodes in the first graph (of order `k`)
 |||       will stay the same, while nodes in the second graph
 |||       (of order `m`) will be increased by `k`.
 export
-compoundEdge : {k : _} -> Fin k -> Fin m -> (l : e) -> Edge (k+m) e
-compoundEdge x y l =
+compositeEdge : {k : _} -> Fin k -> Fin m -> (l : e) -> Edge (k+m) e
+compositeEdge x y l =
   fromNat
     (finToNat x)
     (k + finToNat y)
