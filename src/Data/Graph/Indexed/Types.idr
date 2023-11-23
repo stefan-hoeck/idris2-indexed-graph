@@ -16,7 +16,11 @@ import Data.List
 --          Lemmata
 --------------------------------------------------------------------------------
 
-0 weakenL : (x,y : Fin k) -> compare (weaken x) (weaken y) === compare x y
+public export
+0 CompFin : Fin k -> Fin k -> Ordering
+CompFin x y = compareNat (finToNat x) (finToNat y)
+
+0 weakenL : (x,y : Fin k) -> CompFin (weaken x) (weaken y) === CompFin x y
 weakenL FZ FZ         = Refl
 weakenL FZ (FS x)     = Refl
 weakenL (FS x) FZ     = Refl
@@ -25,7 +29,7 @@ weakenL (FS x) (FS y) = weakenL x y
 0 weakenLN :
      (m : Nat)
   -> (x,y : Fin k)
-  -> compare (weakenN m x) (weakenN m y) === compare x y
+  -> CompFin (weakenN m x) (weakenN m y) === CompFin x y
 weakenLN m FZ FZ         = Refl
 weakenLN m FZ (FS x)     = Refl
 weakenLN m (FS x) FZ     = Refl
@@ -50,14 +54,45 @@ ltLemma (S k) (S j) (LTESucc x) = ltLemma k j x
 ltLemma (S k) 0 x impossible
 ltLemma 0 0 x impossible
 
+0 ltLemma2 : (m,n : Nat) -> compareNat m n === LT -> LT m n
+ltLemma2 0     0     prf impossible
+ltLemma2 (S x) 0     prf impossible
+ltLemma2 0     (S y) prf = LTESucc LTEZero
+ltLemma2 (S x) (S y) prf = LTESucc $ ltLemma2 x y prf
+
 0 edgeLemma :
      (n : Nat)
   -> (x : Fin n)
-  -> compareNat (finToNat $ weaken x) (finToNat $ Fin.last {n}) === LT
+  -> CompFin (weaken x) (Fin.last {n}) === LT
 edgeLemma n x =
   let p1 := rewrite (sym $ lastLemma n) in finLT n x
       p2 := replace {p = \y => LT y (finToNat (last {n}))} (weakenToNatL x) p1
    in ltLemma _ _ p2
+
+0 fromNatLemma :
+     (x,y : Nat)
+  -> (p1 : LT x k)
+  -> (p2 : LT y k)
+  -> (p3 : LT x y)
+  -> CompFin (natToFinLT {n = k} x) (natToFinLT {n = k} y) === LT
+fromNatLemma _ 0 _ _ p3 = absurd p3
+fromNatLemma 0     (S j) (LTESucc x) (LTESucc y) _           = Refl
+fromNatLemma (S i) (S j) (LTESucc x) (LTESucc y) (LTESucc z) =
+  fromNatLemma i j x y z
+
+0 ltPlusRight : LT k m -> LT (k + n) (m + n)
+ltPlusRight {k = S x} {m = S y} (LTESucc p) = LTESucc $ ltPlusRight p
+ltPlusRight {k = _}   {m = 0}   p           = absurd p
+ltPlusRight {k = 0}   {m = S y} p           =
+  rewrite plusCommutative y n in LTESucc (lteAddRight n)
+
+0 ltPlusLeft : LT k m -> LT (n + k) (n + m)
+ltPlusLeft x =
+  rewrite plusCommutative n k in
+  rewrite plusCommutative n m in ltPlusRight x
+
+0 lteAddLeft : (n : Nat) -> LTE n (m + n)
+lteAddLeft n = rewrite plusCommutative m n in lteAddRight n
 
 --------------------------------------------------------------------------------
 --          Edges
@@ -73,7 +108,17 @@ record Edge (k : Nat) (e : Type) where
   node1 : Fin k
   node2 : Fin k
   label : e
-  {auto 0 prf : compare node1 node2 === LT}
+  {auto 0 prf : CompFin node1 node2 === LT}
+
+export
+fromNat :
+     (x,y : Nat)
+  -> {auto 0 p1 : LT x k}
+  -> {auto 0 p2 : LT y k}
+  -> {auto 0 p3 : LT x y}
+  -> (l : e)
+  -> Edge k e
+fromNat x y l = E (natToFinLT x) (natToFinLT y) l @{fromNatLemma x y p1 p2 p3}
 
 export
 weakenEdge : Edge k e -> Edge (S k) e
@@ -84,7 +129,36 @@ weakenEdgeN : (0 m : Nat) -> Edge k e -> Edge (k + m) e
 weakenEdgeN m (E x y e @{p}) =
   E (weakenN m x) (weakenN m y) e @{weakenLN m x y `trans` p}
 
-0 compareGT : (x,y : Fin k) -> compare x y === GT -> compare y x === LT
+||| Increase both nodes in an edge by the same natural number
+export
+incEdge : (k : Nat) -> Edge m e -> Edge (k + m) e
+incEdge k (E n1 n2 l @{prf}) =
+  fromNat
+    (k + finToNat n1)
+    (k + finToNat n2)
+    @{ltPlusLeft $ finLT m n1}
+    @{ltPlusLeft $ finLT m n2}
+    @{ltPlusLeft $ ltLemma2 _ _ prf}
+    l
+
+||| Creates an edge between two nodes from different graphs,
+||| resulting in a new edge of their compound graph.
+|||
+||| Note: This assumes that nodes in the first graph (of order `k`)
+|||       will stay the same, while nodes in the second graph
+|||       (of order `m`) will be increased by `k`.
+export
+compoundEdge : {k : _} -> Fin k -> Fin m -> (l : e) -> Edge (k+m) e
+compoundEdge x y l =
+  fromNat
+    (finToNat x)
+    (k + finToNat y)
+    @{transitive (finLT k x) (lteAddRight _)}
+    @{ltPlusLeft $ finLT m y}
+    @{transitive (finLT k x) $ lteAddRight _}
+    l
+
+0 compareGT : (x,y : Fin k) -> CompFin x y === GT -> CompFin y x === LT
 compareGT (FS x) FZ     prf = Refl
 compareGT (FS x) (FS y) prf = compareGT x y prf
 compareGT FZ     FZ prf     impossible
@@ -92,8 +166,8 @@ compareGT FZ     (FS x) prf impossible
 
 public export
 mkEdge : Fin k -> Fin k -> e -> Maybe (Edge k e)
-mkEdge k j l with (compare k j) proof prf
-  _ | LT = Just (E k j l)
+mkEdge k j l with (compareNat (finToNat k) (finToNat j)) proof prf
+  _ | LT = Just (E k j l )
   _ | EQ = Nothing
   _ | GT = Just (E j k l @{compareGT k j prf})
 
