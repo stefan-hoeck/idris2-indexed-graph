@@ -199,14 +199,14 @@ bench = Group "graph_ops"
       , Single "10"     (basic searchRings $ ringN 10)
       , Single "100"     (basic searchRings $ ringN 100)
       , Single "1000"     (basic searchRings $ ringN 1000)
-      , Single "10000"     (basic searchRings $ ringN 1000)
+      , Single "10000"     (basic searchRings $ ringN 10000)
       ]
   , Group "searchRingsSM" [
         Single "1"     (basic searchRingsSM $ ringN 1)
       , Single "10"     (basic searchRingsSM $ ringN 10)
       , Single "100"     (basic searchRingsSM $ ringN 100)
       , Single "1000"     (basic searchRingsSM $ ringN 1000)
-      , Single "10000"     (basic searchRingsSM $ ringN 1000)
+      , Single "10000"     (basic searchRingsSM $ ringN 10000)
       ]
   ]
 
