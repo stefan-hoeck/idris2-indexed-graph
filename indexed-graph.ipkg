@@ -17,3 +17,4 @@ modules = Data.AssocList.Indexed
         , Data.Graph.Indexed.Util
         , Data.Graph.Indexed.Cycles
         , Data.Graph.Indexed.Cycles2
+        , Data.Graph.Indexed.Cycles3
