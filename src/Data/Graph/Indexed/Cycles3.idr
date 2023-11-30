@@ -65,16 +65,15 @@ covering
 findAll : List (Fin k) -> (g : IGraph k e n) -> (1 st : State k) -> Ur (List $ Ring k)
 findAll []        g (MkState p r) = discarding p (MkBang r)
 findAll (x :: xs) g (MkState pref rings) =
-  let r # pref2 := get x pref
-   in case r of
-     Nothing => findAll xs g $ findRings x (PR 0) (PR 0) g (MkState pref2 rings)
-     Just y  => findAll xs g (MkState pref2 rings)
+  case get x pref of
+    Nothing # pref2 => findAll xs g $ findRings x (PR 0) (PR 0) g (MkState pref2 rings)
+    Just _  # pref2 => findAll xs g (MkState pref2 rings)
 
 covering
 findAll' : List (Fin k) -> (g : IGraph k e n) -> (1 st : State k) -> Ur (List $ Ring k)
 findAll' []        g (MkState p r) = discarding p (MkBang r)
 findAll' (x :: xs) g (MkState pref rings) =
-  let (Just r) # pref2 := get x pref
+  let Just _  # pref2 := get x pref
     | Nothing # pref2 => findAll' xs g $ findRings x (PR 0) (PR 0) g (MkState pref2 rings)
    in findAll' xs g (MkState pref2 rings)
 
