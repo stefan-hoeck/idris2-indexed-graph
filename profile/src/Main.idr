@@ -5,6 +5,7 @@ import Data.DPair
 import Data.Graph.Indexed as I
 import Data.Graph.Indexed.Cycles
 import Data.Graph.Indexed.Cycles2
+import Data.Graph.Indexed.Cycles3
 import Profile
 
 %default total
@@ -102,6 +103,10 @@ searchRings (G _ g) = Evidence _ $ searchAll g
 covering
 searchRingsSM : ArrGr () () -> Exists (List . Ring)
 searchRingsSM (G _ g) = Evidence _ $ searchAllSM g
+
+covering
+searchRingsAM : ArrGr () () -> Exists (List . Ring)
+searchRingsAM (G _ g) = Evidence _ $ searchAllMA g
 --------------------------------------------------------------------------------
 --          Benchmarks
 --------------------------------------------------------------------------------
@@ -147,11 +152,18 @@ bench = Group "graph_ops" [
       , Single "1000"     (basic searchRingsSM $ ringN 1000)
       , Single "10000"     (basic searchRingsSM $ ringN 10000)
       ]
+  , Group "searchRingsAM" [
+        Single "1"     (basic searchRingsAM $ ringN 1)
+      , Single "10"     (basic searchRingsAM $ ringN 10)
+      , Single "100"     (basic searchRingsAM $ ringN 100)
+      , Single "1000"     (basic searchRingsAM $ ringN 1000)
+      , Single "10000"     (basic searchRingsAM $ ringN 10000)
+      ]
   ]
 --   , Group "insert" [
 --         Single "1"     (basic (insert 333 "") $ full 1)
 --       , Single "10"    (basic (insert 333 "") $ full 10)
---       , Single "100"   (basic (insert 333 "") $ full 100)
+--       , Single "100"   (basic (insert 333 "") $ full 100)A
 --       , Single "1000"  (basic (insert 333 "") $ full 1000)
 --       , Single "10000" (basic (insert 333 "") $ full 10000)
 --       ]
