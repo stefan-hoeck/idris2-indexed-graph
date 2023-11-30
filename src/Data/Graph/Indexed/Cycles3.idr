@@ -34,46 +34,56 @@ record State k where
   rings    : List (Ring k)
 
 covering
-getRings : (v : Fin k) -> (curr, prev : PreRing k) -> (g : IGraph k e n) -> (1 st : State k) -> State k
+findRings : (v : Fin k) -> (curr, prev : PreRing k) -> (g : IGraph k e n) -> (1 st : State k) -> State k
 
 covering
-getRings' : List (Fin k) -> (v : Fin k) -> (next, curr, prev : PreRing k) -> (g : IGraph k e n) -> (1 st: State k) -> State k
+findRings' : List (Fin k) -> (v : Fin k) -> (next, curr, prev : PreRing k) -> (g : IGraph k e n) -> (1 st: State k) -> State k
 
----getRings v curr prev g (MkState prefixes rings) =
----  let updpref := insert v curr prefixes
----      next    := add v curr
----      newst   := MkState updpref rings
----      neigh   := keys $ neighbours g v
----   in getRings' neigh v next curr prev g newst
----
----getRings' []        v next curr prev g st = st
----getRings' (x :: xs) v next curr prev g st =
----  case lookup x st.prefixes of
----    Nothing =>
----      let newst := getRings x next curr g st
----       in getRings' xs v next curr prev g newst
----    Just pr =>
----      if inPreRing x prev
----        then
----          let nring  := merge next pr
----              newst  := {rings $= (nring ::)} st
----           in getRings' xs v next curr prev g newst
----        else
----          getRings' xs v next curr prev g st
----
+findRings v curr prev g (MkState prefixes rings) =
+  let updpref := set v (Just curr) prefixes
+      next    := add v curr
+      newst   := MkState updpref rings
+      neigh   := keys $ neighbours g v
+   in findRings' neigh v next curr prev g newst
+
+findRings' []        v next curr prev g st = st
+findRings' (x :: xs) v next curr prev g (MkState pref rings) =
+  case get x pref of
+    Nothing # pref2 =>
+      let newst := findRings x next curr g $ MkState pref2 rings
+       in findRings' xs v next curr prev g newst
+    Just pr # pref2 =>
+      if inPreRing x prev
+        then
+          let nring  := merge next pr
+              newst  := MkState pref2 $ nring :: rings
+           in findRings' xs v next curr prev g newst
+        else
+          findRings' xs v next curr prev g $ MkState pref2 rings
+
 covering
-getAll : List (Fin k) -> (g : IGraph k e n) -> (1 st : State k) -> Ur (List $ Ring k)
-getAll []        g (MkState p r) = discarding p (MkBang r)
-getAll (x :: xs) g (MkState prefixes rings) =
-  let r # p2 := get x prefixes
-   in ?foo
-  ---case get x st.prefixes of
-       ---xs => ?foo
-    ---Nothing => getAll xs g $ getRings x (PR 0) (PR 0) g st
-    ---Just _  => getAll xs g st
+findAll : List (Fin k) -> (g : IGraph k e n) -> (1 st : State k) -> Ur (List $ Ring k)
+findAll []        g (MkState p r) = discarding p (MkBang r)
+findAll (x :: xs) g (MkState pref rings) =
+  let r # pref2 := get x pref
+   in case r of
+     Nothing => findAll xs g $ findRings x (PR 0) (PR 0) g (MkState pref2 rings)
+     Just y  => findAll xs g (MkState pref2 rings)
 
----export covering
----searchAllSM : {k : _} -> (g : IGraph k e n) -> List (Ring k)
----searchAllSM g =
----  let xs := allFinsFast k
----   in rings $ getAll xs g (MkState empty Nil)
+covering
+findAll' : List (Fin k) -> (g : IGraph k e n) -> (1 st : State k) -> Ur (List $ Ring k)
+findAll' []        g (MkState p r) = discarding p (MkBang r)
+findAll' (x :: xs) g (MkState pref rings) =
+  let (Just r) # pref2 := get x pref
+    | Nothing # pref2 => findAll' xs g $ findRings x (PR 0) (PR 0) g (MkState pref2 rings)
+   in findAll' xs g (MkState pref2 rings)
+
+covering
+getRings : {k : _} -> (g : IGraph k e n) -> (1 pref : MArray k (Maybe $ PreRing k)) -> Ur (List $ Ring k)
+getRings g pref =
+  let xs := allFinsFast k
+   in findAll xs g $ MkState pref Nil
+
+export covering
+searchAllMA : {k : _} -> (g : IGraph k e n) -> List (Ring k)
+searchAllMA g = unrestricted $ alloc k Nothing (getRings g)
