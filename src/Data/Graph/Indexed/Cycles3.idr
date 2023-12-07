@@ -34,10 +34,21 @@ record State k where
   rings    : List (Ring k)
 
 covering
-findRings : (v : Fin k) -> (curr, prev : PreRing k) -> (g : IGraph k e n) -> (1 st : State k) -> State k
+findRings :
+     (v : Fin k)
+  -> (curr, prev : PreRing k)
+  -> (g : IGraph k e n)
+  -> (1 st : State k)
+  -> State k
 
 covering
-findRings' : List (Fin k) -> (v : Fin k) -> (next, curr, prev : PreRing k) -> (g : IGraph k e n) -> (1 st: State k) -> State k
+findRings' :
+     List (Fin k)
+  -> (v : Fin k)
+  -> (next, curr, prev : PreRing k)
+  -> (g : IGraph k e n)
+  -> (1 st: State k)
+  -> State k
 
 findRings v curr prev g (MkState prefixes rings) =
   let updpref := set v (Just curr) prefixes
@@ -62,27 +73,16 @@ findRings' (x :: xs) v next curr prev g (MkState pref rings) =
           findRings' xs v next curr prev g $ MkState pref2 rings
 
 covering
-findAll : List (Fin k) -> (g : IGraph k e n) -> (1 st : State k) -> Ur (List $ Ring k)
+findAll : List (Fin k) -> IGraph k e n -> (1 st : State k) -> Ur (List $ Ring k)
 findAll []        g (MkState p r) = discarding p (MkBang r)
 findAll (x :: xs) g (MkState pref rings) =
   case get x pref of
-    Nothing # pref2 => findAll xs g $ findRings x (PR 0) (PR 0) g (MkState pref2 rings)
-    Just _  # pref2 => findAll xs g (MkState pref2 rings)
-
-covering
-findAll' : List (Fin k) -> (g : IGraph k e n) -> (1 st : State k) -> Ur (List $ Ring k)
-findAll' []        g (MkState p r) = discarding p (MkBang r)
-findAll' (x :: xs) g (MkState pref rings) =
-  let Just _  # pref2 := get x pref
-    | Nothing # pref2 => findAll' xs g $ findRings x (PR 0) (PR 0) g (MkState pref2 rings)
-   in findAll' xs g (MkState pref2 rings)
-
-covering
-getRings : {k : _} -> (g : IGraph k e n) -> (1 pref : MArray k (Maybe $ PreRing k)) -> Ur (List $ Ring k)
-getRings g pref =
-  let xs := allFinsFast k
-   in findAll xs g $ MkState pref Nil
+    Nothing # pref2 =>
+      findAll xs g $ findRings x (PR 0) (PR 0) g (MkState pref2 rings)
+    Just _  # pref2 =>
+      findAll xs g (MkState pref2 rings)
 
 export covering
 searchAllMA : {k : _} -> (g : IGraph k e n) -> List (Ring k)
-searchAllMA g = unrestricted $ alloc k Nothing (getRings g)
+searchAllMA g =
+  unrestricted $ alloc k Nothing (\x => findAll (allFinsFast k) g (MkState x []))
