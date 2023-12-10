@@ -6,34 +6,10 @@ module Data.Graph.Indexed.Query.DFS
 import Data.Either
 import Data.Tree
 import Data.Graph.Indexed
+import Data.Graph.Indexed.Query.Util
 import Data.Graph.Indexed.Query.Visited
 
 %default total
-
---------------------------------------------------------------------------------
--- Utilities
---------------------------------------------------------------------------------
-
-%inline fromLeft : Either a Void -> a
-fromLeft (Left v) = v
-fromLeft (Right _) impossible
-
-%inline fleft : (a -> b -> a) -> a -> b -> Either a Void
-fleft f x = Left . f x
-
--- Internal alias for stateful functions when visiting small graphs
-0 Vis : Nat -> Type -> Type
-Vis k s = Visited k -> (s, Visited k)
-
--- Internal alias for stateful functions when visiting large graphs
-0 MVis : Nat -> Type -> Type
-MVis k s = MVisited k -@ CRes s (MVisited k)
-
-%inline fromLeftMVis : CRes (Either a Void) (MVisited k) -@ CRes a (MVisited k)
-fromLeftMVis (x # m) = fromLeft x # m
-
-%inline fromLeftVis : (Either a Void, Visited k) -> (a, Visited k)
-fromLeftVis (v,x) = (fromLeft v, x)
 
 parameters {k : Nat}
            (g : IGraph k e n)
@@ -65,11 +41,11 @@ parameters {k : Nat}
        in dfsS (nbours x ++ xs) f st2 (assert_smaller v $ visit x v)
 
   %inline dfsL' : List (Fin k) -> (s -> Fin k -> s) -> s -> MVis k s
-  dfsL' xs acc i v = fromLeftMVis $ dfsL xs (fleft acc) i v
+  dfsL' xs acc i v = fromLeftMVis $ dfsL xs (fleft2 acc) i v
 
   -- flat DFS implementation for small graphs
   %inline dfsS' : List (Fin k) -> (s -> Fin k -> s) -> s -> Vis k s
-  dfsS' xs acc i v = fromLeftVis $ dfsS xs (fleft acc) i v
+  dfsS' xs acc i v = fromLeftVis $ dfsS xs (fleft2 acc) i v
 
   ||| Traverses the graph in depth-first order from the given
   ||| start node and accumulates the nodes encountered with the
@@ -89,7 +65,7 @@ parameters {k : Nat}
   ||| from the given starting node in depth-first order.
   export %inline
   dfsWith' : (acc : s -> Fin k -> s) -> (init : s) -> Fin k -> s
-  dfsWith' acc init = fromLeft . dfsWith (fleft acc) init
+  dfsWith' acc init = fromLeft . dfsWith (fleft2 acc) init
 
   ||| Traverses the graph in depth-first order for the given start nodes
   ||| returning the encountered nodes in a `SnocList`.
