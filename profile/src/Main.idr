@@ -1,7 +1,9 @@
 module Main
 
+import Data.Bits
 import Data.Graph as G
 import Data.Graph.Indexed as I
+import Data.Graph.Indexed.Query.Visited
 import Profile
 
 %default total
@@ -47,7 +49,7 @@ graphData n =
    in GD ns es
 
 arrGraph : GraphData -> ArrGr () Nat
-arrGraph (GD ns es) = G _ $ mkGraph ns es
+arrGraph (GD ns es) = G _ $ mkGraphL ns es
 
 arrGraphN : Nat -> ArrGr () Nat
 arrGraphN = arrGraph . graphData
@@ -56,6 +58,9 @@ labM : Nat -> ArrGr () Nat -> Maybe Nat
 labM n (G k g) = case tryNatToFin {k} n of
   Just x => Just $ lab g x
   Nothing => Nothing
+
+insM : Nat -> ArrGr () Nat -> ArrGr () Nat
+insM n (G k g) = G _ $ insNodes g [n]
 
 --------------------------------------------------------------------------------
 --          Regular Graph Generation
@@ -77,51 +82,92 @@ graphN : Nat -> Gr () Nat
 graphN = graph . pairs
 
 --------------------------------------------------------------------------------
+--          Visited
+--------------------------------------------------------------------------------
+
+testMVisited : {k : _} -> List (Fin k) -> Bool
+testMVisited xs = visiting k (go xs)
+  where
+    go : List (Fin k) -> MVisited k -@ Ur Bool
+    go []        v = done True v
+    go (x :: xs) v =
+      let False # v2 := mvisited x v | True # v2 => go xs v2
+          v3         := mvisit x v2
+       in go xs v3
+
+testVisited : {k : _} -> List (Fin k) -> Bool
+testVisited xs = go xs ini
+  where
+    go : List (Fin k) -> Visited k -> Bool
+    go []        v = True
+    go (x :: xs) v =
+      if visited x v then go xs v else go xs (visit x v)
+
+--------------------------------------------------------------------------------
 --          Benchmarks
 --------------------------------------------------------------------------------
 
 bench : Benchmark Void
-bench = Group "graph_ops" [
-    Group "mkGraph" [
-        Single "G 1"     (basic graph $ pairs 1)
-      , Single "A 1"     (basic arrGraph $ graphData 1)
-      , Single "G 10"    (basic graph $ pairs 10)
-      , Single "A 10"    (basic arrGraph $ graphData 10)
-      , Single "G 100"   (basic graph $ pairs 100)
-      , Single "A 100"   (basic arrGraph $ graphData 100)
-      , Single "G 1000"  (basic graph $ pairs 1000)
-      , Single "A 1000"  (basic arrGraph $ graphData 1000)
-      , Single "G 10000" (basic graph $ pairs 10000)
-      , Single "A 10000" (basic arrGraph $ graphData 10000)
+bench = Group "graph_ops"
+  [ Group "Visited"
+      [ Single "1"     (basic testVisited $ allFinsFast 1)
+      , Single "32"    (basic testVisited $ allFinsFast 32)
+      , Single "64"    (basic testVisited $ allFinsFast 64)
+      , Single "128"   (basic testVisited $ allFinsFast 128)
+      , Single "1024"  (basic testVisited $ allFinsFast 1024)
+      , Single "65536" (basic testVisited $ allFinsFast 65536)
       ]
-  , Group "lab" [
-        Single "G 1"     (basic (`lab` 0) $ graphN 1)
-      , Single "A 1"     (basic (labM 0) $ arrGraphN 1)
-      , Single "G 10"    (basic (`lab` 5) $ graphN 10)
-      , Single "A 10"    (basic (labM 5) $ arrGraphN 10)
-      , Single "G 100"   (basic (`lab` 50) $ graphN 100)
-      , Single "A 100"   (basic (labM 50) $ arrGraphN 100)
-      , Single "G 1000"  (basic (`lab` 500) $ graphN 1000)
-      , Single "A 1000"  (basic (labM 500) $ arrGraphN 1000)
-      , Single "G 10000" (basic (`lab` 5000) $ graphN 10000)
-      , Single "A 10000" (basic (labM 5000) $ arrGraphN 10000)
+  , Group "MVisited"
+      [ Single "1"     (basic testMVisited $ allFinsFast 1)
+      , Single "32"    (basic testMVisited $ allFinsFast 32)
+      , Single "64"    (basic testMVisited $ allFinsFast 64)
+      , Single "128"   (basic testMVisited $ allFinsFast 128)
+      , Single "1024"  (basic testMVisited $ allFinsFast 1024)
+      , Single "65536" (basic testMVisited $ allFinsFast 65536)
+      ]
+  , Group "mkGraph map-based"
+      [ Single "1"     (basic graph $ pairs 1)
+      , Single "10"    (basic graph $ pairs 10)
+      , Single "100"   (basic graph $ pairs 100)
+      , Single "1000"  (basic graph $ pairs 1000)
+      , Single "10000" (basic graph $ pairs 10000)
+      ]
+  , Group "mkGraph array-based"
+      [ Single "1"     (basic arrGraph $ graphData 1)
+      , Single "10"    (basic arrGraph $ graphData 10)
+      , Single "100"   (basic arrGraph $ graphData 100)
+      , Single "1000"  (basic arrGraph $ graphData 1000)
+      , Single "10000" (basic arrGraph $ graphData 10000)
+      ]
+  , Group "lab map-based"
+      [ Single "1"     (basic (`lab` 0)    $ graphN 1)
+      , Single "10"    (basic (`lab` 5)    $ graphN 10)
+      , Single "100"   (basic (`lab` 50)   $ graphN 100)
+      , Single "1000"  (basic (`lab` 500)  $ graphN 1000)
+      , Single "10000" (basic (`lab` 5000) $ graphN 10000)
+      ]
+  , Group "lab array-based"
+      [ Single "1"     (basic (labM 0)    $ arrGraphN 1)
+      , Single "10"    (basic (labM 5)    $ arrGraphN 10)
+      , Single "100"   (basic (labM 50)   $ arrGraphN 100)
+      , Single "1000"  (basic (labM 500)  $ arrGraphN 1000)
+      , Single "10000" (basic (labM 5000) $ arrGraphN 10000)
+      ]
+  , Group "insert map-based"
+      [ Single "1"     (basic (insNode 1 1)     $ graphN 1)
+      , Single "10"    (basic (insNode 11 1)    $ graphN 10)
+      , Single "100"   (basic (insNode 111 1)   $ graphN 100)
+      , Single "1000"  (basic (insNode 1111 1)  $ graphN 1000)
+      , Single "10000" (basic (insNode 11111 1) $ graphN 10000)
+      ]
+  , Group "insert array-based"
+      [ Single "1"     (basic (insM 1) $ arrGraphN 1)
+      , Single "10"    (basic (insM 1) $ arrGraphN 10)
+      , Single "100"   (basic (insM 1) $ arrGraphN 100)
+      , Single "1000"  (basic (insM 1) $ arrGraphN 1000)
+      , Single "10000" (basic (insM 1) $ arrGraphN 10000)
       ]
   ]
---   , Group "insert" [
---         Single "1"     (basic (insert 333 "") $ full 1)
---       , Single "10"    (basic (insert 333 "") $ full 10)
---       , Single "100"   (basic (insert 333 "") $ full 100)
---       , Single "1000"  (basic (insert 333 "") $ full 1000)
---       , Single "10000" (basic (insert 333 "") $ full 10000)
---       ]
---   , Group "delete" [
---         Single "1"     (basic (delete 333) $ full 1)
---       , Single "10"    (basic (delete 333) $ full 10)
---       , Single "100"   (basic (delete 333) $ full 100)
---       , Single "1000"  (basic (delete 333) $ full 1000)
---       , Single "10000" (basic (delete 333) $ full 10000)
---       ]
---   ]
 
 main : IO ()
 main = runDefault (const True) Table show bench

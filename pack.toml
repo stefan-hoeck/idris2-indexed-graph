@@ -25,3 +25,8 @@ url    = "https://github.com/stefan-hoeck/idris2-array"
 commit = "latest:main"
 ipkg   = "array.ipkg"
 
+[custom.all.containers]
+type   = "git"
+url    = "https://github.com/stefan-hoeck/idris2-containers"
+commit = "latest:main"
+ipkg   = "containers.ipkg"
