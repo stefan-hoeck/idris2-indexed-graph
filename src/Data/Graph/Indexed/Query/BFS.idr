@@ -10,6 +10,13 @@ import Data.Graph.Indexed.Query.Visited
 -- Utilities
 --------------------------------------------------------------------------------
 
+%inline fromLeft : Either a Void -> a
+fromLeft (Left v) = v
+fromLeft (Right _) impossible
+
+%inline fleft : (a -> b -> c -> a) -> a -> b -> c -> Either a Void
+fleft f x y = Left . f x y
+
 -- Internal alias for stateful functions when visiting small graphs
 0 Vis : Nat -> Type -> Type
 Vis k s = Visited k -> (s, Visited k)
@@ -17,6 +24,12 @@ Vis k s = Visited k -> (s, Visited k)
 -- Internal alias for stateful functions when visiting large graphs
 0 MVis : Nat -> Type -> Type
 MVis k s = MVisited k -@ CRes s (MVisited k)
+
+%inline fromLeftMVis : CRes (Either a Void) (MVisited k) -@ CRes a (MVisited k)
+fromLeftMVis (x # m) = fromLeft x # m
+
+%inline fromLeftVis : (Either a Void, Visited k) -> (a, Visited k)
+fromLeftVis (v,x) = (fromLeft v, x)
 
 parameters {k : Nat}
            (g : IGraph k e n)
@@ -30,100 +43,65 @@ parameters {k : Nat}
 --------------------------------------------------------------------------------
 
   -- flat BFS implementation for large graphs
-  bfsL : Queue (Fin k) -> (s -> Fin k -> s) -> s -> MVis k s
+  bfsL :
+       Queue (Nat,Fin k)
+    -> (s -> Nat -> Fin k -> Either s a)
+    -> s
+    -> MVis k (Either s a)
   bfsL q f st v =
     case dequeue q of
-      Nothing     => st # v
-      Just (x,q2) =>
+      Nothing     => Left st # v
+      Just ((d,x),q2) =>
        let False # v2 := mvisited x v
              | True # v2 => bfsL q2 f st (assert_smaller v v2)
-           q3         := enqueueAll q2 (nbours x)
-        in bfsL q3 f (f st x) (assert_smaller v $ mvisit x v2)
+           q3         := enqueueAll q2 $ (S d,) <$> nbours x
+           Left st2   := f st d x | Right v => Right v # v2
+        in bfsL q3 f st2 (assert_smaller v $ mvisit x v2)
 
   -- flat BFS implementation for small graphs
-  bfsS : Queue (Fin k) -> (s -> Fin k -> s) -> s -> Vis k s
+  bfsS :
+       Queue (Nat,Fin k)
+    -> (s -> Nat -> Fin k -> Either s a)
+    -> s
+    -> Vis k (Either s a)
   bfsS q f st v =
     case dequeue q of
-      Nothing     => (st,v)
-      Just (x,q2) =>
-       let False := visited x v | True => bfsS q2 f st (assert_smaller v v)
-           q3    := enqueueAll q2 (nbours x)
-        in bfsS q3 f (f st x) (assert_smaller v $ visit x v)
+      Nothing     => (Left st,v)
+      Just ((d,x),q2) =>
+       let False    := visited x v | True => bfsS q2 f st (assert_smaller v v)
+           q3       := enqueueAll q2 ((S d,) <$> nbours x)
+           Left st2 := f st d x | Right x => (Right x, v)
+        in bfsS q3 f st2 (assert_smaller v $ visit x v)
 
-  ||| Traverses the graph in depth-first order for the given
+  %inline bfsL' : Queue (Nat,Fin k) -> (s -> Nat -> Fin k -> s) -> s -> MVis k s
+  bfsL' xs acc i v = fromLeftMVis $ bfsL xs (fleft acc) i v
+
+  -- flat BFS implementation for small graphs
+  %inline bfsS' : Queue (Nat,Fin k) -> (s -> Nat -> Fin k -> s) -> s -> Vis k s
+  bfsS' xs acc i v = fromLeftVis $ bfsS xs (fleft acc) i v
+
+  ||| Traverses the graph in breadth-first order for the given
   ||| start nodes and accumulates the nodes encountered with the
   ||| given function.
   export
-  bfsWith : (acc : s -> Fin k -> s) -> (init : s) -> List (Fin k) -> s
-  bfsWith acc init xs =
+  bfsWith :
+       (s -> Nat -> Fin k -> Either s a)
+    -> (init : s)
+    -> Fin k
+    -> Either s a
+  bfsWith acc init x =
     if k < 64
-       then fst $ bfsS (fromList xs) acc init ini
-       else visiting' k (bfsL (fromList xs) acc init)
+       then fst $ bfsS (fromList [(0,x)]) acc init ini
+       else visiting' k (bfsL (fromList [(0,x)]) acc init)
 
-  ||| Traverses the whole graph in depth-first order
-  ||| accumulates the nodes encountered with the given function.
+  ||| Traverses the whole graph in breadth-first order
+  ||| accumulating the nodes encountered with the given function.
   export %inline
-  bfsWith' : (acc : s -> Fin k -> s) -> (init : s) -> s
-  bfsWith' acc init = bfsWith acc init (allFinsFast k)
+  bfsWith' : (acc : s -> Nat -> Fin k -> s) -> (init : s) -> Fin k -> s
+  bfsWith' acc init = fromLeft . bfsWith (fleft acc) init
 
-  ||| Traverses the graph in depth-first order for the given start nodes
+  ||| Traverses the whole graph in breadth-first order
   ||| returning the encountered nodes in a `SnocList`.
   export %inline
-  bfs : List (Fin k) -> SnocList (Fin k)
-  bfs = bfsWith (:<) [<]
-
-  ||| Traverses the whole graph in depth-first order
-  ||| returning the encountered nodes in a `SnocList`.
-  export %inline
-  bfs' : SnocList (Fin k)
-  bfs' = bfsWith' (:<) [<]
-
---------------------------------------------------------------------------------
--- Flat component-wise BFS traversals
---------------------------------------------------------------------------------
-
-  -- flat component-wise DFS implementation for large graphs
-  cbfsL : (s -> Fin k -> s) -> s -> SnocList s -> List (Fin k) -> MVis k (List s)
-  cbfsL f i ss []      v = (ss <>> []) # v
-  cbfsL f i ss (x::xs) v =
-    let False # v2 := mvisited x v | True # v2 => cbfsL f i ss xs v2
-        y # v3     := bfsL (fromList [x]) f i v2
-     in cbfsL f i (ss:<y) xs v3
-
-  -- flat component-wise DFS implementation for small graphs
-  cbfsS : (s -> Fin k -> s) -> s -> SnocList s -> List (Fin k) -> Vis k (List s)
-  cbfsS f i ss []      v = (ss <>> [], v)
-  cbfsS f i ss (x::xs) v =
-    if visited x v then cbfsS f i ss xs v
-    else let (y,v2) := bfsS (fromList [x]) f i v in cbfsS f i (ss:<y) xs v2
-
-  ||| Traverses the graph in depth-first order for the given
-  ||| start nodes and accumulates the nodes encountered with the
-  ||| given function.
-  |||
-  ||| Unlike with `bfsWith`, results are accumulated component-wise,
-  ||| using initial state `init` for every component we encounter.
-  export
-  cbfsWith : (acc : s -> Fin k -> s) -> (init : s) -> List (Fin k) -> List s
-  cbfsWith acc init xs =
-    if k < 64
-       then fst $ cbfsS acc init [<] xs ini
-       else visiting' k (cbfsL acc init [<] xs)
-
-  ||| Traverses the whole graph in depth-first order
-  ||| accumulates the nodes encountered with the given function.
-  export %inline
-  cbfsWith' : (acc : s -> Fin k -> s) -> (init : s) -> List s
-  cbfsWith' acc init = cbfsWith acc init (allFinsFast k)
-
-  ||| Traverses the graph in depth-first order for the given start nodes
-  ||| returning the encountered nodes in a `SnocList`.
-  export %inline
-  cbfs : List (Fin k) -> List (SnocList (Fin k))
-  cbfs = cbfsWith (:<) [<]
-
-  ||| Traverses the whole graph in depth-first order
-  ||| returning the encountered nodes in a `SnocList`.
-  export %inline
-  cbfs' : List (SnocList (Fin k))
-  cbfs' = cbfsWith' (:<) [<]
+  bfs : Fin k -> SnocList (Nat,Fin k)
+  bfs = bfsWith' (\st,n,x => st :< (n,x)) [<]
