@@ -31,7 +31,9 @@ merge pr1 pr2 = R (xor pr1.value pr2.value)
 record State k where
   constructor MkState
   1 prefixes : MArray k (Maybe $ PreRing k)
-  rings    : List (Ring k)
+  rings    : List (Bool, Ring k)
+
+addRing : Ring k -> (1 st : State k) -> State k
 
 covering
 findRings :
@@ -67,13 +69,13 @@ findRings' (x :: xs) v next curr prev g (MkState pref rings) =
       if inPreRing x prev
         then
           let nring  := merge next pr
-              newst  := MkState pref2 $ nring :: rings
+              newst  := addRing nring $ MkState pref2 rings
            in findRings' xs v next curr prev g newst
         else
           findRings' xs v next curr prev g $ MkState pref2 rings
 
 covering
-findAll : List (Fin k) -> IGraph k e n -> (1 st : State k) -> Ur (List $ Ring k)
+findAll : List (Fin k) -> IGraph k e n -> (1 st : State k) -> Ur (List (Bool, Ring k))
 findAll []        g (MkState p r) = discarding p (MkBang r)
 findAll (x :: xs) g (MkState pref rings) =
   case get x pref of
@@ -83,6 +85,6 @@ findAll (x :: xs) g (MkState pref rings) =
       findAll xs g (MkState pref2 rings)
 
 export covering
-searchAllMA : {k : _} -> (g : IGraph k e n) -> List (Ring k)
+searchAllMA : {k : _} -> (g : IGraph k e n) -> List (Bool, Ring k)
 searchAllMA g =
   unrestricted $ alloc k Nothing (\x => findAll (allFinsFast k) g (MkState x []))
