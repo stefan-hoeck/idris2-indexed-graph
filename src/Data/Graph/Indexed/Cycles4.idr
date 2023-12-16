@@ -33,19 +33,66 @@ record State k where
   1 prefixes : MArray k (Maybe $ PreRing k)
   rings    : List (Bool, Ring k)
 
-findFused : Ring k -> List (Bool, Ring k) -> List (Bool, Ring k)
-findFused y []        = [(False, y)]
-findFused y (x :: xs) =
+--- incomplete version of finding fused rings that doesnt check
+--- if new fused ring is fused to other rings
+
+addFused : Ring k -> List (Bool, Ring k) -> List (Bool, Ring k)
+addFused y []        = [(False, y)]
+addFused y (x :: xs) =
   case (value y .&. (value (snd x))) > 1 of
-    False => x :: findFused y xs
+    False => x :: addFused y xs
     True  =>
       let fusedRing := R $ value y .|. (value (snd x))
        in (True, fusedRing) :: xs
 
 addRing : Ring k -> (1 st : State k) -> State k
 addRing x (MkState prefixes rings) =
-  case findFused x rings of
+  case addFused x rings of
     nrings => MkState prefixes nrings
+
+---------------------------------------------------------------
+
+--- cumbersome version that checks if new fused rings are fused
+--- with other rings
+
+findFused : Ring k -> List (Bool, Ring k) -> Maybe (Ring k)
+findFused y []        = Nothing
+findFused y (x :: xs) =
+  case (value y .&. (value (snd x))) > 1 of
+    False => findFused y xs
+    True  => Just (snd x)
+
+removeFused : Ring k -> List(Bool, Ring k) -> List (Bool, Ring k)
+removeFused y []        = []
+removeFused y (z :: xs) =
+  if value (snd z) == value y then xs else z :: removeFused y xs
+
+covering
+updateRings' : Ring k -> List (Bool, Ring k) -> List (Bool, Ring k)
+updateRings' fusedRing ys =
+  case findFused fusedRing ys of
+    Nothing => (True, fusedRing) :: ys
+    Just x  =>
+      let yys := removeFused x ys
+          fusedRing2 := R $ value fusedRing .|. value x
+       in updateRings' fusedRing2 yys
+
+covering
+updateRings : Ring k -> List (Bool, Ring k) -> List (Bool, Ring k)
+updateRings x xs =
+  case findFused x xs of
+    Nothing => (False, x) :: xs
+    Just y  =>
+      let ys        := removeFused y xs
+          fusedRing := R $ value y .|. value x
+       in updateRings' fusedRing ys
+
+covering
+addRing' : Ring k -> (1 st : State k) -> State k
+addRing' x (MkState prefixes rings) =
+  let nrings := updateRings x rings
+   in MkState prefixes nrings
+
 
 covering
 findRings :
