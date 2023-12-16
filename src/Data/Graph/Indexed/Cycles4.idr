@@ -33,7 +33,19 @@ record State k where
   1 prefixes : MArray k (Maybe $ PreRing k)
   rings    : List (Bool, Ring k)
 
+findFused : Ring k -> List (Bool, Ring k) -> List (Bool, Ring k)
+findFused y []        = [(False, y)]
+findFused y (x :: xs) =
+  case (value y .&. (value (snd x))) > 1 of
+    False => x :: findFused y xs
+    True  =>
+      let fusedRing := R $ value y .|. (value (snd x))
+       in (True, fusedRing) :: xs
+
 addRing : Ring k -> (1 st : State k) -> State k
+addRing x (MkState prefixes rings) =
+  case findFused x rings of
+    nrings => MkState prefixes nrings
 
 covering
 findRings :
