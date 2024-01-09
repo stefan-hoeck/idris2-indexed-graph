@@ -14,10 +14,6 @@ import Data.Graph.Indexed.Query.Visited
 parameters {k : Nat}
            (g : IGraph k e n)
 
-  -- TODO: this should be dropped and `neighbours` and `lneighbours` adjusted
-  %inline nbours : Fin k -> List (Fin k)
-  nbours x = keys $ neighbours g x
-
 --------------------------------------------------------------------------------
 -- Flat DFS traversals
 --------------------------------------------------------------------------------
@@ -29,7 +25,7 @@ parameters {k : Nat}
     let False # v2 := mvisited x v
           | True # v2 => dfsL xs f st (assert_smaller v v2)
         Left st2   := f st x | Right v => Right v # v2
-     in dfsL (nbours x ++ xs) f st2 (assert_smaller v $ mvisit x v2)
+     in dfsL (neighbours g x ++ xs) f st2 (assert_smaller v $ mvisit x v2)
 
   -- flat DFS implementation for small graphs
   dfsS : List (Fin k) -> (s -> Fin k -> Either s a) -> s -> Vis k (Either s a)
@@ -38,7 +34,7 @@ parameters {k : Nat}
     if visited x v then dfsS xs f st v
     else
       let Left st2 := f st x | Right x => (Right x, v)
-       in dfsS (nbours x ++ xs) f st2 (assert_smaller v $ visit x v)
+       in dfsS (neighbours g x ++ xs) f st2 (assert_smaller v $ visit x v)
 
   %inline dfsL' : List (Fin k) -> (s -> Fin k -> s) -> s -> MVis k s
   dfsL' xs acc i v = fromLeftMVis $ dfsL xs (fleft2 acc) i v
@@ -133,7 +129,7 @@ parameters {k : Nat}
   dffL f (x::xs) v =
       let False # v2 := mvisited x v
             | True # v2 => dffL f xs (assert_smaller v v2)
-          ts # v3 := dffL f (nbours x) (assert_smaller v $ mvisit x v2)
+          ts # v3 := dffL f (neighbours g x) (assert_smaller v $ mvisit x v2)
           fs # v4 := dffL f xs (assert_smaller v v3)
        in (T (f x) ts :: fs) # v4
 
@@ -143,7 +139,7 @@ parameters {k : Nat}
   dffS f (x::xs) v =
     if visited x v then dffS f xs v
     else
-      let (ts,v2) := dffS f (nbours x) (assert_smaller v $ visit x v)
+      let (ts,v2) := dffS f (neighbours g x) (assert_smaller v $ visit x v)
           (fs,v3) := dffS f xs (assert_smaller v v2)
        in (T (f x) ts :: fs, v3)
 

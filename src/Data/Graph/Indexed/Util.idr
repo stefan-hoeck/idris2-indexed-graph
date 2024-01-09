@@ -83,6 +83,11 @@ export
 contexts : {k : _} -> IGraph k e n -> List (Context k e n)
 contexts = foldrKV (\x,(A l ns),cs => C x l ns :: cs) [] . graph
 
+||| List all 'Node's in the 'Graph'.
+export %inline
+nodes : {k : _} -> (0 _ : IGraph k e n) -> List (Fin k)
+nodes _ = allFinsFast k
+
 ||| A list of all labeled nodes of a `Graph`
 export
 labNodes  : {k : _} -> IGraph k e n -> List (Fin k, n)
@@ -93,31 +98,37 @@ export
 labels  : {k : _} -> IGraph k e n -> List n
 labels = foldr (\(A l _) => (l ::)) [] . graph
 
+||| Returns the adjacency (node label plus labeled edges to neighbours)
+||| of a node in a graph.
 export %inline
 adj : IGraph k e n -> Fin k -> Adj k e n
 adj (IG g) k = at g k
 
+||| Returns the label of a node in graph.
 export %inline
 lab : IGraph k e n -> Fin k -> n
 lab g = label . adj g
 
+||| Returns the list of neighbouring nodes of a node in a graph.
 export %inline
-neighbours : IGraph k e n -> Fin k -> AssocList k e
-neighbours g = neighbours . adj g
+neighbours : IGraph k e n -> Fin k -> List (Fin k)
+neighbours g = keys . neighbours . adj g
 
+||| Returns the list of edges connecting a node.
+export %inline
+edgesTo : IGraph k e n -> Fin k -> List (Edge k e)
+edgesTo g k = ctxtEdges k (adj g k) <>> []
+
+||| Returns the list of neighboring nodes paired with their
+||| corresponding labels.
 export
-lneighbours : IGraph k e n -> Fin k -> AssocList k (e,n)
-lneighbours g = mapKV (\x,e => (e, lab g x)) . neighbours g
+lneighbours : IGraph k e n -> Fin k -> List (Fin k, n)
+lneighbours g = map (\x => (x, lab g x)) . neighbours g
 
 ||| Find the label for an `Edge`.
 export
 elab : IGraph k e n -> Fin k -> Fin k -> Maybe e
 elab (IG g) x y = lookup y . neighbours $ at g x
-
-||| List all 'Node's in the 'Graph'.
-export %inline
-nodes : {k : _} -> (0 _ : IGraph k e n) -> List (Fin k)
-nodes _ = allFinsFast k
 
 ||| A list of all `LEdge`s in the `Graph` (in lexicographic order).
 export
@@ -240,16 +251,52 @@ traverseWithCtxt fun = traverseCtxt (\x,a => (`A` a.neighbours) <$> fun x a)
 --          Modifying Graphs
 --------------------------------------------------------------------------------
 
-||| Updates a single node in the graph at the given position.
+||| Uses two functions for updating nodes in a graph:
+|||
+||| Once is used for the given node, the other for all other nodes.
 export
+updateNodes : {k : _} -> Fin k -> (f,g : m -> n) -> IGraph k e m -> IGraph k e n
+updateNodes x f g = mapWithCtxt (\y,a => if x == y then f a.label else g a.label)
+
+||| Updates a single node in the graph at the given position.
+export %inline
 updateNode : {k : _} -> Fin k -> (n -> n) -> IGraph k e n -> IGraph k e n
-updateNode x f = mapWithCtxt (\y,a => if x == y then f a.label else a.label)
+updateNode x f = updateNodes x f id
 
 ||| Replaces a single node in the graph at the given position.
 export %inline
 setNode : {k : _} -> Fin k -> n -> IGraph k e n -> IGraph k e n
 setNode x = updateNode x . const
 
+||| Uses two functions for updating the edge labels in a graph.
+|||
+||| Once is used for the edge connecting the two given nodes, the other for
+||| all other edges.
+export
+updateEdges :
+     {k : _}
+  -> (x,y : Fin k)
+  -> (f,g : e -> e2)
+  -> IGraph k e n
+  -> IGraph k e2 n
+updateEdges x y f g =
+  mapCtxt $ \k,(A l a) =>
+   A l $
+     if      k == x then mapKV (\m,l => if m == y then f l else g l) a
+     else if k == y then mapKV (\m,l => if m == x then f l else g l) a
+     else    map g a
+
+||| Uses a function for updating a single edge label in a graph.
+export %inline
+updateEdge :
+     {k : _}
+  -> (x,y : Fin k)
+  -> (f : e -> e)
+  -> IGraph k e n
+  -> IGraph k e n
+updateEdge x y f = updateEdges x y f id
+
+||| Insert (or replace) a single edge in a graph.
 export
 insEdges : {k : _} -> List (Edge k e) -> IGraph k e n -> IGraph k e n
 insEdges {k = 0}   es g = empty
@@ -322,24 +369,6 @@ delNodes {k = S x} ks (IG g) =
 export
 delNode : {k : _} -> Fin k -> IGraph k e n -> Graph e n
 delNode = delNodes . pure
-
--- ||| Returns the subgraph only containing the labelled nodes which
--- ||| satisfy the given predicate.
--- export
--- labnfilter : (LNode n -> Bool) -> Graph e n -> Graph e n
--- labnfilter p gr = delNodes (map node . filter (not . p) $ labNodes gr) gr
---
--- ||| Returns the subgraph only containing the nodes which satisfy the
--- ||| given predicate.
--- export
--- nfilter : (Node -> Bool) -> Graph e n -> Graph e n
--- nfilter f = labnfilter (f . node)
---
--- ||| Returns the subgraph only containing the nodes whose labels
--- ||| satisfy the given predicate.
--- export
--- labfilter : (n -> Bool) -> Graph e n -> Graph e n
--- labfilter f = labnfilter (f . label)
 
 --------------------------------------------------------------------------------
 --          Displaying Graphs

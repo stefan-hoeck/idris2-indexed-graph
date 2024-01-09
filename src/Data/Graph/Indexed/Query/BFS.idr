@@ -10,10 +10,6 @@ import Data.Graph.Indexed.Query.Visited
 parameters {k : Nat}
            (g : IGraph k e n)
 
-  -- TODO: this should be dropped and `neighbours` and `lneighbours` adjusted
-  %inline nbours : Fin k -> List (Fin k)
-  nbours x = keys $ neighbours g x
-
 --------------------------------------------------------------------------------
 -- Flat BFS traversals
 --------------------------------------------------------------------------------
@@ -30,7 +26,7 @@ parameters {k : Nat}
       Just ((d,x),q2) =>
        let False # v2 := mvisited x v
              | True # v2 => bfsL q2 f st (assert_smaller v v2)
-           q3         := enqueueAll q2 $ (S d,) <$> nbours x
+           q3         := enqueueAll q2 $ (S d,) <$> neighbours g x
            Left st2   := f st d x | Right v => Right v # v2
         in bfsL q3 f st2 (assert_smaller v $ mvisit x v2)
 
@@ -45,7 +41,7 @@ parameters {k : Nat}
       Nothing     => (Left st,v)
       Just ((d,x),q2) =>
        let False    := visited x v | True => bfsS q2 f st (assert_smaller v v)
-           q3       := enqueueAll q2 ((S d,) <$> nbours x)
+           q3       := enqueueAll q2 ((S d,) <$> neighbours g x)
            Left st2 := f st d x | Right x => (Right x, v)
         in bfsS q3 f st2 (assert_smaller v $ visit x v)
 
