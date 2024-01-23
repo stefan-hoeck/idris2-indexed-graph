@@ -370,6 +370,17 @@ export
 delNode : {k : _} -> Fin k -> IGraph k e n -> Graph e n
 delNode = delNodes . pure
 
+||| Merge two graphs that have no bonds between them.
+mergeGraphs :
+     {k,m : _}
+  -> (g1 : IGraph k e n)
+  -> (g2 : IGraph m e n)
+  -> IGraph (m + k) e n
+mergeGraphs {k} g t =
+  let vNodes := label <$> toVect t.graph
+      lEdges := incEdge k <$> edges t
+   in insNodesAndEdges g vNodes (rewrite plusCommutative m k in lEdges)
+
 --------------------------------------------------------------------------------
 --          Displaying Graphs
 --------------------------------------------------------------------------------
