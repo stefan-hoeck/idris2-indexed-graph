@@ -371,6 +371,7 @@ delNode : {k : _} -> Fin k -> IGraph k e n -> Graph e n
 delNode = delNodes . pure
 
 ||| Merge two graphs that have no bonds between them.
+export
 mergeGraphs :
      {k,m : _}
   -> (g1 : IGraph k e n)
