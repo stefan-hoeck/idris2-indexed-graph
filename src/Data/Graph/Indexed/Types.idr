@@ -505,9 +505,14 @@ export
   show r = show $ filter (`inRing` r) (allFinsFast k)
 
 export
+{k : _} -> Eq (Ring k) where
+  r1 == r2 = (value r1) == (value r2)
+
+export
 Semigroup (Ring k) where
   (<+>) r1 r2 = R (xor r1.value r2.value)
 
 export
 Monoid (Ring k) where
   neutral = R 0
+
