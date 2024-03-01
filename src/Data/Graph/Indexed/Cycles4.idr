@@ -34,9 +34,9 @@ record State k where
   rings    : List (Bool, Ring k)
 
 addFused : Bool -> Ring k -> List (Bool, Ring k) -> List (Bool, Ring k)
-addFused f y []        = [(f, y)]
+addFused f y []     = [(f, y)]
 addFused f y (x :: xs) =
-  if value y .&. (value (snd x)) > 1
+  if (value y .&. (value (snd x))) > 1
     then addFused True (R $ value y .|. (value (snd x))) xs
     else x :: addFused False y xs
 

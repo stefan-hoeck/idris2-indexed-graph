@@ -25,7 +25,7 @@ testFusedRing str xs =
     Right x =>
       let ys = map (map value) $ searchAllMA (graph x)
        in if ys == xs then "" else
-            "Expected \{pretty ys} but got \{pretty xs}"
+            "Expected \{pretty xs} but got \{pretty ys}"
 
 run : String -> IO ()
 run ""  = putStrLn "Success!"
@@ -37,9 +37,13 @@ fromList = foldl (\x,y => setBit x y) 0
 export
 main : IO ()
 main = do
-  run (testFusedRing "CCC" [])
+  run (testFusedRing "CCCC" [])
   run (testFusedRing "C1CC1" [(False, fromList [0,1,2])])
-  run (testFusedRing "COCCC1CC1" [(False, fromList [4,5,7])])
+  run (testFusedRing "COCC1CC1" [(False, fromList [3,4,5])])
   run (testFusedRing "C1CC2CC12" [(True, fromList [0..4])])
   run (testFusedRing "C1C(CC)C2C(OC)C12" [(True, fromList [0,1,4,5,8])])
+  run (testFusedRing "C1CC2CCCC2CC1" [(True, fromList [0..8])])
+  run (testFusedRing "C1CC2C(CC3CCCCC3)CCC2CC1" [(False, fromList [5..10]), (True, fromList [0,1,2,3,11,12,13,14,15])])
+  run (testFusedRing "C1CCC2(CCCC2)CC1" [(False, fromList [0,1,2,3,4,5]), (False, fromList [3,6,7,8,9])])
+  run (testFusedRing "C1CCCC12CCCCC2" [(False, fromList [0,1,2,3,4]), (False, fromList [5,6,7,8,9])])
 
