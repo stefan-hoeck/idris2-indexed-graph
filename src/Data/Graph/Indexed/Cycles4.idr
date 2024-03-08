@@ -12,6 +12,7 @@ import Data.List
 import Data.String
 import Data.Vect
 import Data.Bits
+import Data.Graph.Indexed.Ring
 
 %default total
 

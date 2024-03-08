@@ -4,6 +4,7 @@ import Data.Bits
 import Text.Smiles
 import Data.Graph.Indexed.Types
 import Data.Graph.Indexed.Cycles4
+import Data.Graph.Indexed.Ring
 
 prettyInteger : Integer -> String
 prettyInteger = go [<] 0
