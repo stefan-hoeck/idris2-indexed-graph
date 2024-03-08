@@ -15,6 +15,18 @@ import Data.Bits
 
 %default total
 
+export
+popCountInteger : Integer -> Nat
+popCountInteger = go 0
+  where
+    go : Nat -> Integer -> Nat
+    go n x =
+      case x <= 0 of
+        True  => n
+        False =>
+          let n2 := n + cast (popCount {a = Bits32} (cast x))
+           in go n2 (assert_smaller x (shiftR x 32))
+
 record PreRing (k : Nat) where
   constructor PR
   value : Integer
@@ -36,7 +48,7 @@ record State k where
 addFused : Bool -> Ring k -> List (Bool, Ring k) -> List (Bool, Ring k)
 addFused f y []     = [(f, y)]
 addFused f y (x :: xs) =
-  if (value y .&. (value (snd x))) > 1
+  if popCountInteger (value y .&. value (snd x)) > 1
     then addFused True (R $ value y .|. (value (snd x))) xs
     else x :: addFused False y xs
 
