@@ -475,19 +475,3 @@ Bifoldable (Graph) where
 export
 Bitraversable Graph where
   bitraverse f g (G s h) = G s <$> bitraverse f g h
-
-
-public export
-record Visited (k : Nat) where
-  constructor V
-  value : Integer
-
-export
-isVisited : Fin k -> Visited k -> Bool
-isVisited v vis = testBit vis.value $ finToNat v
-
-export
-visit : Fin k -> Visited k -> Visited k
-visit v vis = V . setBit vis.value $ finToNat v
-
-

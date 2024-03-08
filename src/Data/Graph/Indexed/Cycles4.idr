@@ -79,7 +79,7 @@ findRings v curr prev g (MkState prefixes rings) =
   let updpref := set v (Just curr) prefixes
       next    := add v curr
       newst   := MkState updpref rings
-      neigh   := keys $ neighbours g v
+      neigh   := neighbours g v
    in findRings' neigh v next curr prev g newst
 
 findRings' []        v next curr prev g st = st

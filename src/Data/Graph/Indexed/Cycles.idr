@@ -1,5 +1,6 @@
 module Data.Graph.Indexed.Cycles
 
+import Data.Graph.Indexed.Query.Visited
 import Data.Array.Indexed
 import Data.AssocList.Indexed
 import Data.Graph.Indexed.Types
@@ -42,7 +43,7 @@ getRings v curr prev g (MkState prefixes rings) =
   let updpref := replaceAt v (Just curr) prefixes
       next    := add v curr
       newst   := MkState updpref rings
-      neigh   := keys $ neighbours g v
+      neigh   := neighbours g v
    in getRings' neigh v next curr prev g newst
 
 getRings' []        v next curr prev g st = st
