@@ -2,8 +2,12 @@ module Main
 
 import Data.Bits
 import Data.Graph as G
+import Data.DPair
 import Data.Graph.Indexed as I
 import Data.Graph.Indexed.Query.Visited
+import Data.Graph.Indexed.Cycles
+import Data.Graph.Indexed.Cycles2
+import Data.Graph.Indexed.Cycles3
 import Profile
 
 %default total
@@ -104,9 +108,36 @@ testVisited xs = go xs ini
       if visited x v then go xs v else go xs (visit x v)
 
 --------------------------------------------------------------------------------
+--          Ring Generation
+--------------------------------------------------------------------------------
+
+getEdges : {k : _} -> List (Fin k) -> List (Maybe (Edge k ()))
+getEdges []             = []
+getEdges (FZ :: xs)     = mkEdge FZ last () :: getEdges xs
+getEdges ((FS x) :: xs) = mkEdge (weaken x) (FS x) () :: getEdges xs
+
+-- generate a single ring of size `n`
+ringN : (n : Nat) -> ArrGr () ()
+ringN n =
+  let fins := allFinsFast n
+      es   := getEdges fins
+   in G n $ mkGraph (replicate _ () ) (mapMaybe id es)
+
+searchRings : ArrGr () () -> Exists (List . Ring)
+searchRings (G _ g) = Evidence _ $ searchAll g
+
+covering
+searchRingsSM : ArrGr () () -> Exists (List . Ring)
+searchRingsSM (G _ g) = Evidence _ $ searchAllSM g
+
+covering
+searchRingsAM : ArrGr () () -> Exists (List . Ring)
+searchRingsAM (G _ g) = Evidence _ $ searchAllMA g
+--------------------------------------------------------------------------------
 --          Benchmarks
 --------------------------------------------------------------------------------
 
+covering
 bench : Benchmark Void
 bench = Group "graph_ops"
   [ Group "Visited"
@@ -167,7 +198,29 @@ bench = Group "graph_ops"
       , Single "1000"  (basic (insM 1) $ arrGraphN 1000)
       , Single "10000" (basic (insM 1) $ arrGraphN 10000)
       ]
+  , Group "searchRings" [
+       Single "1"     (basic searchRings $ ringN 1)
+      , Single "10"     (basic searchRings $ ringN 10)
+      , Single "100"     (basic searchRings $ ringN 100)
+      , Single "1000"     (basic searchRings $ ringN 1000)
+      , Single "10000"     (basic searchRings $ ringN 10000)
+      ]
+  , Group "searchRingsSM" [
+        Single "1"     (basic searchRingsSM $ ringN 1)
+      , Single "10"     (basic searchRingsSM $ ringN 10)
+      , Single "100"     (basic searchRingsSM $ ringN 100)
+      , Single "1000"     (basic searchRingsSM $ ringN 1000)
+      , Single "10000"     (basic searchRingsSM $ ringN 10000)
+      ]
+  , Group "searchRingsAM" [
+        Single "1"     (basic searchRingsAM $ ringN 1)
+      , Single "10"     (basic searchRingsAM $ ringN 10)
+      , Single "100"     (basic searchRingsAM $ ringN 100)
+      , Single "1000"     (basic searchRingsAM $ ringN 1000)
+      , Single "10000"     (basic searchRingsAM $ ringN 10000)
+      ]
   ]
 
+covering
 main : IO ()
 main = runDefault (const True) Table show bench
