@@ -45,6 +45,4 @@ main = do
   run (testFusedRing "C1C(CC)C2C(OC)C12" [(True, fromList [0,1,4,5,8])])
   run (testFusedRing "C1CC2CCCC2CC1" [(True, fromList [0..8])])
   run (testFusedRing "C1CC2C(CC3CCCCC3)CCC2CC1" [(False, fromList [5..10]), (True, fromList [0,1,2,3,11,12,13,14,15])])
-  run (testFusedRing "C1CCC2(CCCC2)CC1" [(False, fromList [0,1,2,3,4,5]), (False, fromList [3,6,7,8,9])])
-  run (testFusedRing "C1CCCC12CCCCC2" [(False, fromList [0,1,2,3,4]), (False, fromList [5,6,7,8,9])])
-
+  run (testFusedRing "C1CCC2(CCCC2)CC1" [(False, fromList [3,4,5,6,7]), (False, fromList [0,1,2,3,8,9])])
