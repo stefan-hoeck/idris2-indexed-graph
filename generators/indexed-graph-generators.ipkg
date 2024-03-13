@@ -9,5 +9,8 @@ license    = "BSD-3 Clause"
 sourcedir  = "src"
 depends    = indexed-graph
            , hedgehog
+           , parser
+           , elab-util
 
 modules = Test.Data.Graph.Indexed.Generators
+        , Text.Smiles.Simple

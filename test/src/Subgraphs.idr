@@ -1,8 +1,10 @@
 module Subgraphs
 
+import Text.Smiles.Simple
 import Data.Graph.Indexed.Util
 import Data.Graph.Indexed.Query.DFS
 import Data.Graph.Indexed.Subgraph
+import Data.List
 import Data.Vect
 import Test.Data.Graph.Indexed.Generators
 
@@ -38,36 +40,57 @@ isBiconnected g =
 -- Example Graphs
 --------------------------------------------------------------------------------
 
-ed : (x,y : Fin k) -> {auto 0 prf : CompFin x y === LT} -> Edge k ()
-ed x y = E x y ()
-
-mke : {x : _} -> Fin x -> Maybe (Edge x ())
-mke FZ     = Nothing
-mke (FS v) = mkEdge (FS v) (weaken v) ()
-
-nedges : (n : Nat) -> List (Edge n ())
-nedges n = mapMaybe mke $ allFinsFast n
-
 -- an encoding of phenole starting with the oxygen
-phenole : IGraph 7 () String
-phenole =
-  mkGraph
-    ("O" :: replicate 6 "C")
-    (ed 1 6 :: nedges 7)
+phenole : Maybe (Graph Bond Elem)
+phenole = readSmiles "OC=1CC=CC=C1"
 
--- an encoding of indole starting with the oxygen
-indole : IGraph 9 () String
-indole =
-  mkGraph
-    ("N" :: replicate 8 "C")
-    (ed 0 8 :: ed 2 8 :: nedges 9)
+-- an encoding of indole starting with the nitrogen
+indole : Maybe (Graph Bond Elem)
+indole = readSmiles "N1C=C2C=CC=CC=C12"
 
--- an encoding of scatol starting with the methyl group
-scatol : IGraph 10 () String
-scatol =
-  mkGraph
-    ("C" :: replicate 7 "C" ++ ["N", "C"])
-    (ed 1 9 :: ed 2 7 :: nedges 10)
+-- an encoding of skatole starting with the methyl group
+skatole : Maybe (Graph Bond Elem)
+skatole = readSmiles "CN1C=C2C=CC=CC=C12"
+
+-- dimethylamino pyridine
+dmap : Maybe (Graph Bond Elem)
+dmap = readSmiles "C1(N(C)C)C=CN=CC=1"
+
+-- bisphenole BP (four essential six-rings)
+bbp : Maybe (Graph Bond Elem)
+bbp = readSmiles "C(C=1CC=CC=C1)(C=1CC(O)=CC=C1)(C=1CC=CC=C1)C=1CC(O)=CC=C1"
+--                0 1        6   7     10    13  14       19 20    23    27
+
+toNodes : Graph e (Fin m, n) -> List Nat
+toNodes (G k g) = sort $ map (finToNat . fst . lab g) (nodes g)
+
+test2Comps : Maybe (Graph e n) -> List (List Nat) -> Bool
+test2Comps Nothing _ = False
+test2Comps (Just $ G o g) ns =
+  let cs := toNodes <$> biconnectedComponents g
+   in sort cs == ns
+
+prop_phenole : Property
+prop_phenole = property1 $ assert (test2Comps phenole [[1,2,3,4,5,6]])
+
+prop_indole : Property
+prop_indole = property1 $ assert (test2Comps indole [[0,1,2,3,4,5,6,7,8]])
+
+prop_skatole : Property
+prop_skatole = property1 $ assert (test2Comps skatole [[1,2,3,4,5,6,7,8,9]])
+
+prop_dmap : Property
+prop_dmap = property1 $ assert (test2Comps dmap [[0,4,5,6,7,8]])
+
+prop_bbp : Property
+prop_bbp =
+  property1 . assert $
+    test2Comps bbp
+      [ [1,2,3,4,5,6]
+      , [7,8,9,11,12,13]
+      , [14,15,16,17,18,19]
+      , [20,21,22,24,25,26]
+      ]
 
 --------------------------------------------------------------------------------
 -- Properties
@@ -151,4 +174,9 @@ props =
     , ("prop_biconnected", prop_biconnected)
     , ("prop_biconnected_nodes", prop_biconnected_nodes)
     , ("prop_biconnected_edges", prop_biconnected_edges)
+    , ("prop_phenole", prop_phenole)
+    , ("prop_indole", prop_indole)
+    , ("prop_skatole", prop_skatole)
+    , ("prop_dmap", prop_dmap)
+    , ("prop_bbp", prop_bbp)
     ]
