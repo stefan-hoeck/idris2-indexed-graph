@@ -198,5 +198,6 @@ parameters {k : Nat}
   noComponents = length components
 
   ||| Is the graph connected?
+  export %inline
   isConnected : Bool
   isConnected = noComponents == 1
