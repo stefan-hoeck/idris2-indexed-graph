@@ -1,5 +1,6 @@
 module Subgraphs
 
+import Data.Graph.Indexed.Util
 import Data.Graph.Indexed.Query.DFS
 import Data.Graph.Indexed.Subgraph
 import Data.Vect
@@ -7,8 +8,16 @@ import Test.Data.Graph.Indexed.Generators
 
 %default total
 
+--------------------------------------------------------------------------------
+-- Generators
+--------------------------------------------------------------------------------
+
 unlabeledGraphs : Gen (Graph Bits8 Bits8)
 unlabeledGraphs = sparseGraph (linear 0 30) (linear 0 100) anyBits8 anyBits8
+
+--------------------------------------------------------------------------------
+-- Tests
+--------------------------------------------------------------------------------
 
 -- test that the given edge (from the subgraph) corresponds to
 -- an edge in the original graph
@@ -24,6 +33,45 @@ testNode g h x = lab g (fst $ lab h x) == snd (lab h x)
 isBiconnected : {k : _} -> IGraph k e n -> Bool
 isBiconnected g =
   all (\(E n1 n2 _) => isConnected (delEdge n1 n2 g)) (edges g)
+
+--------------------------------------------------------------------------------
+-- Example Graphs
+--------------------------------------------------------------------------------
+
+ed : (x,y : Fin k) -> {auto 0 prf : CompFin x y === LT} -> Edge k ()
+ed x y = E x y ()
+
+mke : {x : _} -> Fin x -> Maybe (Edge x ())
+mke FZ     = Nothing
+mke (FS v) = mkEdge (FS v) (weaken v) ()
+
+nedges : (n : Nat) -> List (Edge n ())
+nedges n = mapMaybe mke $ allFinsFast n
+
+-- an encoding of phenole starting with the oxygen
+phenole : IGraph 7 () String
+phenole =
+  mkGraph
+    ("O" :: replicate 6 "C")
+    (ed 1 6 :: nedges 7)
+
+-- an encoding of indole starting with the oxygen
+indole : IGraph 9 () String
+indole =
+  mkGraph
+    ("N" :: replicate 8 "C")
+    (ed 0 8 :: ed 2 8 :: nedges 9)
+
+-- an encoding of scatol starting with the methyl group
+scatol : IGraph 10 () String
+scatol =
+  mkGraph
+    ("C" :: replicate 7 "C" ++ ["N", "C"])
+    (ed 1 9 :: ed 2 7 :: nedges 10)
+
+--------------------------------------------------------------------------------
+-- Properties
+--------------------------------------------------------------------------------
 
 -- the sum of orders of all connected components of a graph is
 -- equal to the order of the graph (we do not miss or add any vertices)
