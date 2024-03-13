@@ -81,9 +81,20 @@ connectedComponents g = subgraphL g . (<>> []) <$> components g
 
 record BCState (k : Nat) where
   constructor S
-  1 depth : MArray k Nat
-  stack   : List (Fin k)
-  comps   : List (List $ Fin k)
+  1 depths : MArray k Nat
+  stack    : List (Fin k)
+  comps    : List (List $ Fin k)
+
+pop : BCState k -@ BCState k
+pop (S d (_::t) c) = S d t c
+pop s              = s
+
+extractComp : Fin k -> BCState k -@ BCState k
+extractComp n (S d s c) = let (cmp,rem) := go [<] s in S d rem (cmp::c)
+  where
+    go : SnocList (Fin k) -> List (Fin k) -> (List $ Fin k, List $ Fin k)
+    go sx (x :: xs) = if n == x then (sx <>> [x], xs) else go (sx :< x) xs
+    go sx []        = (sx <>> [], []) -- this should not happen
 
 ||| Extracts the biconnected components of a graph (Hopcroft/Tarjan algorithm).
 |||
@@ -100,17 +111,27 @@ biconnectedComponents : {k : _} -> IGraph k e n -> List (Subgraph k e n)
 biconnectedComponents g =
   unrestricted $ alloc k 0 (\arr => go (allFinsFast k) (S arr [] []))
   where
-    scMany : List (Fin k) -> Nat -> BCState k -@ CRes Nat (BCState k)
-    scMany = ?fooobar
+    covering sc : Fin k -> Fin k -> Nat -> BCState k -@ CRes Nat (BCState k)
 
-    sc : Fin k -> Nat -> BCState k -@ CRes Nat (BCState k)
-    -- sc n depth (S d s cs) =
-    --   let 0 # d2 := get n d | dpth # d2 => dpth # S d2 s cs
-    --    in scMany (filter (/= n) $ neighbours g n) (S depth) (S d2 s cs)
+    covering scs : List (Fin k) -> Fin k -> Nat -> BCState k -@ CRes Nat (BCState k)
+    scs []      p dpt st = dpt # st
+    scs (x::xs) p dpt st =
+      let r2 # st2 := sc x p dpt st
+          r3 # st3 := scs xs p dpt st2
+       in min r2 r3 # st3
+
+    sc n p dpt (S d s cs) =
+      let Z  # d2 := get n d | dpth # d2 => dpth # S d2 s cs
+          d3      := set n dpt d2
+          dc # s3 := scs (filter (/= p) $ neighbours g n) n (S dpt) (S d3 (n::s) cs)
+       in case compare dc dpt of
+            LT => dc # s3
+            EQ => dc # extractComp n s3
+            GT => dpt # pop s3
 
     go : List (Fin k) -> BCState k -@ Ur (List $ Subgraph k e n)
     go []      (S d s cs) = discarding d (MkBang $ subgraphL g <$> cs)
     go (n::ns) (S d s cs) =
       let Z # d2 := get n d | _ # d2 => go ns (S d2 s cs)
-          _ # s2 := sc n 1 (S d2 s cs)
+          _ # s2 := assert_total $ sc n n 1 (S d2 s cs)
        in go ns s2

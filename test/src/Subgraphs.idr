@@ -2,6 +2,7 @@ module Subgraphs
 
 import Data.Graph.Indexed.Query.DFS
 import Data.Graph.Indexed.Subgraph
+import Data.Vect
 import Test.Data.Graph.Indexed.Generators
 
 %default total
@@ -19,6 +20,10 @@ testEdge g h (E n1 n2 el) =
 -- a node in the original graph
 testNode : Eq n => IGraph k e n -> ISubgraph m k e n -> Fin m -> Bool
 testNode g h x = lab g (fst $ lab h x) == snd (lab h x)
+
+isBiconnected : {k : _} -> IGraph k e n -> Bool
+isBiconnected g =
+  all (\(E n1 n2 _) => isConnected (delEdge n1 n2 g)) (edges g)
 
 -- the sum of orders of all connected components of a graph is
 -- equal to the order of the graph (we do not miss or add any vertices)
@@ -61,6 +66,31 @@ prop_connected =
     G o g <- forAll unlabeledGraphs
     assert $ all (\(G _ h) => isConnected h) (connectedComponents g)
 
+-- every biconnected component of a graph must be biconnected (doh!)
+prop_biconnected : Property
+prop_biconnected =
+  property $ do
+    G o g <- forAll unlabeledGraphs
+    assert $ all (\(G _ h) => isBiconnected h) (biconnectedComponents g)
+
+-- every node in a biconnected component can be linked to the
+-- corresponding node in the original graph with the same label
+prop_biconnected_nodes : Property
+prop_biconnected_nodes =
+  property $ do
+    G o g <- forAll unlabeledGraphs
+    assert $
+      all (\(G _ h) => all (testNode g h) (nodes h)) (biconnectedComponents g)
+
+-- every edge in a biconnected component can be linked to the
+-- corresponding edge in the original graph with the same label
+prop_biconnected_edges : Property
+prop_biconnected_edges =
+  property $ do
+    G o g <- forAll unlabeledGraphs
+    assert $
+      all (\(G _ h) => all (testEdge g h) $ edges h) (biconnectedComponents g)
+
 export
 props : Group
 props =
@@ -70,4 +100,7 @@ props =
     , ("prop_edges", prop_edges)
     , ("prop_nodes", prop_nodes)
     , ("prop_connected", prop_connected)
+    , ("prop_biconnected", prop_biconnected)
+    , ("prop_biconnected_nodes", prop_biconnected_nodes)
+    , ("prop_biconnected_edges", prop_biconnected_edges)
     ]
