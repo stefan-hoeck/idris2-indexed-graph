@@ -2,6 +2,7 @@ module Main
 
 import AssocList
 import Hedgehog
+import Subgraphs
 import Visited
 
 %default total
@@ -11,4 +12,5 @@ main =
   test
     [ AssocList.props
     , Visited.props
+    , Subgraphs.props
     ]
