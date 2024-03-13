@@ -348,6 +348,7 @@ export %inline
 insNode : {k : _} -> IGraph k e n -> n -> IGraph (S k) e n
 insNode g v = insNodes g [v]
 
+export
 adjEdges : SortedMap (Fin x) (Fin y) -> Adj x e n -> Adj y e n
 adjEdges m (A l ns) =
   let ps := mapMaybe (\(n,v) => (,v) <$> lookup n m) $ pairs ns
