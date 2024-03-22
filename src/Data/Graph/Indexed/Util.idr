@@ -130,6 +130,11 @@ export
 elab : IGraph k e n -> Fin k -> Fin k -> Maybe e
 elab (IG g) x y = lookup y . neighbours $ at g x
 
+||| Tests if the given nodes are adjecent (connected via an edge).
+export
+adjacent : IGraph k e n -> Fin k -> Fin k -> Bool
+adjacent g x y = isJust $ elab g x y
+
 ||| A list of all `LEdge`s in the `Graph` (in lexicographic order).
 export
 edges  : {k : _} -> IGraph k e n -> List (Edge k e)
