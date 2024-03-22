@@ -77,3 +77,49 @@ parameters {k : Nat}
   export %inline
   bfs : Fin k -> SnocList (Nat,Fin k)
   bfs = bfsWith' (\st,n,x => st :< (n,x)) [<]
+
+--------------------------------------------------------------------------------
+-- Shortest Path Algorithms
+--------------------------------------------------------------------------------
+
+  covering
+  shortestL :
+       SnocList (SnocList $ Fin k)
+    -> Queue (SnocList $ Fin k)
+    -> MVis k (List (SnocList $ Fin k))
+  shortestL sp q v =
+    case dequeue q of
+      Nothing => (sp <>> []) # v
+      Just (sx@(_:<x),q2) =>
+        let False # v2 := mvisited x v | True # v2 => shortestL sp q2 v2
+            ns := map (sx :<) (neighbours g x)
+         in shortestL (sp :< sx) (enqueueAll q2 ns) (mvisit x v2)
+      Just (_,q2) => shortestL sp q2 v
+
+  covering
+  shortestS :
+       SnocList (SnocList $ Fin k)
+    -> Queue (SnocList $ Fin k)
+    -> Vis k (List (SnocList $ Fin k))
+  shortestS sp q v =
+    case dequeue q of
+      Nothing => (sp <>> [],v)
+      Just (sx@(_:<x),q2) => case x `visited` v of
+        True  => shortestS sp q2 v
+        False =>
+          let ns := map (sx :<) (neighbours g x)
+           in shortestS (sp :< sx) (enqueueAll q2 ns) (x `visit` v)
+      Just (_,q2) => shortestS sp q2 v
+
+  ||| Computes the shortest paths to all nodes reachable from
+  ||| the given starting node. This is a simplified version of
+  ||| Dijkstra's algorithm for unweighted edges.
+  |||
+  ||| Runs in O(n+m) time and O(n) memory.
+  export
+  shortestPaths : Fin k -> List (SnocList $ Fin k)
+  shortestPaths x =
+    let q := fromList $ map ([<x] :<) (neighbours g x)
+     in assert_total $ if k < 64
+          then fst $ shortestS [<] q (x `visit` ini)
+          else visiting' k (\v => shortestL [<] q (x `mvisit` v))
