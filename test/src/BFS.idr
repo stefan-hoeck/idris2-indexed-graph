@@ -1,9 +1,10 @@
 module BFS
 
+import Data.Graph.Indexed.Query.BFS
 import Data.List
 import Data.SnocList
-import Data.Graph.Indexed.Query.BFS
 import Test.Data.Graph.Indexed.Generators
+import Text.Smiles.Simple
 
 %default total
 
@@ -50,6 +51,34 @@ testPaths : {k : _} -> (List (Fin k) -> Bool) -> IGraph k e n -> Bool
 testPaths p g = all (all (p . (<>> [])) . shortestPaths g) (nodes g)
 
 --------------------------------------------------------------------------------
+-- Example Graphs
+--------------------------------------------------------------------------------
+
+-- an encoding of phenole starting with the oxygen
+phenole : Maybe (Graph Bond Elem)
+phenole = readSmiles "OC=1CC=CC=C1"
+
+-- dimethylamino pyridine
+dmap : Maybe (Graph Bond Elem)
+dmap = readSmiles "C1(N(C)C)C=CN=CC=1"
+
+testSPs : Maybe (Graph e n) -> Nat -> List (List Nat) -> Bool
+testSPs Nothing        n _   = False
+testSPs (Just $ G o g) n nss =
+  let Just x := natToFin n o | Nothing => False
+   in map (map finToNat . (<>> [])) (shortestPaths g x) == nss
+
+prop_phenole : Property
+prop_phenole =
+  property1 $ assert $
+    testSPs phenole 1 [[1,0],[1,2],[1,6],[1,2,3],[1,6,5],[1,2,3,4]]
+
+prop_dmap : Property
+prop_dmap =
+  property1 $ assert $
+    testSPs dmap 0 [[0,1],[0,4],[0,8],[0,1,2],[0,1,3],[0,4,5],[0,8,7],[0,4,5,6]]
+
+--------------------------------------------------------------------------------
 -- Properties
 --------------------------------------------------------------------------------
 
@@ -91,4 +120,6 @@ props =
     , ("prop_unique", prop_unique)
     , ("prop_properPath", prop_properPath)
     , ("prop_shortestPath", prop_shortestPath)
+    , ("prop_phenole", prop_phenole)
+    , ("prop_dmap", prop_dmap)
     ]
