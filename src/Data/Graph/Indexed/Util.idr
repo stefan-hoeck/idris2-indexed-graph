@@ -117,7 +117,9 @@ neighbours g = keys . neighbours . adj g
 ||| Returns the list of edges connecting a node.
 export %inline
 edgesTo : IGraph k e n -> Fin k -> List (Edge k e)
-edgesTo g k = ctxtEdges k (adj g k) <>> []
+edgesTo g k =
+  let A _ ns := adj g k
+   in mapMaybe (\(n,l) => mkEdge k n l) $ pairs ns
 
 ||| Returns the list of neighboring nodes paired with their
 ||| corresponding labels.
