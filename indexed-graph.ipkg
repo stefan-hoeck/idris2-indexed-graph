@@ -20,5 +20,6 @@ modules = Data.AssocList.Indexed
 
         , Data.Graph.Indexed.Query.BFS
         , Data.Graph.Indexed.Query.DFS
+        , Data.Graph.Indexed.Query.Subgraph
         , Data.Graph.Indexed.Query.Visited
         , Data.Graph.Indexed.Query.Util
