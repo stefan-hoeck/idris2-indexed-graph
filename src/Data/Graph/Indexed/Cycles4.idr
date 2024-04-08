@@ -111,3 +111,16 @@ export covering
 searchAllMA : {k : _} -> (g : IGraph k e n) -> List (Bool, Ring k)
 searchAllMA g =
   unrestricted $ alloc k Nothing (\x => findAll (allFinsFast k) g (MkState x []))
+
+getBitsEdges : {k : _} -> (g : IGraph k e n) -> SortedMap (Fin k, Fin k) Integer
+getBitsEdges g =
+  let es := map (\e => (e.node1, e.node2)) $ edges g
+   in setBits es empty
+
+  where setBits : List (Fin k, Fin k) -> SortedMap (Fin k, Fin k) Integer -> SortedMap (Fin k, Fin k) Integer
+---        fillBits [] sm        = sm
+---        fillBits (y :: xs) sm =
+---          let pos := finToNat $ fst y
+---              smnew := insert y (setBit zeroBits pos) sm
+---           in fillBits xs smnew
+
