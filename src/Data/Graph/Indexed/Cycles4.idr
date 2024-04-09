@@ -115,12 +115,12 @@ searchAllMA g =
 getBitsEdges : {k : _} -> (g : IGraph k e n) -> SortedMap (Fin k, Fin k) Integer
 getBitsEdges g =
   let es := map (\e => (e.node1, e.node2)) $ edges g
-   in setBits es empty
+   in setBits es 0 empty
 
-  where setBits : List (Fin k, Fin k) -> SortedMap (Fin k, Fin k) Integer -> SortedMap (Fin k, Fin k) Integer
----        fillBits [] sm        = sm
----        fillBits (y :: xs) sm =
----          let pos := finToNat $ fst y
----              smnew := insert y (setBit zeroBits pos) sm
----           in fillBits xs smnew
+  where setBits : List (Fin k, Fin k) -> Integer -> SortedMap (Fin k, Fin k) Integer -> SortedMap (Fin k, Fin k) Integer
+        setBits []        bitp sm = sm
+        setBits (y :: xs) bitp sm =
+          let newbitp := shiftL bitp 1
+              smnew   := insert y newbitp sm
+           in setBits xs newbitp smnew
 
