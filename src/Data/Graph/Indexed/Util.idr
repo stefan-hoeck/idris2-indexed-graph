@@ -357,14 +357,10 @@ delEdge x y = delEdges [(x,y)]
 
 ||| Insert multiple `LNode`s into the `Graph`.
 export
-insNodes :
-     {k,m : _}
-  -> IGraph k e n
-  -> (ns : Vect m n)
-  -> IGraph (m + k) e n
+insNodes : {k,m : _} -> IGraph k e n -> (ns : Vect m n) -> IGraph (k + m) e n
 insNodes (IG g) ns =
   let g'  := map (weakenAdjN m) g
-   in rewrite plusCommutative m k in IG $ append g' (map fromLabel (array ns))
+   in IG $ append g' (map fromLabel (array ns))
 
 ||| Insert multiple `LNode`s into the `Graph`.
 export
@@ -372,8 +368,8 @@ insNodesAndEdges :
      {k,m : _}
   -> IGraph k e n
   -> (ns : Vect m n)
-  -> (es : List (Edge (m + k) e))
-  -> IGraph (m + k) e n
+  -> (es : List (Edge (k + m) e))
+  -> IGraph (k + m) e n
 insNodesAndEdges g ns es = insEdges es $ insNodes g ns
 
 ||| Insert a labeled node into the `Graph`.
@@ -381,7 +377,7 @@ insNodesAndEdges g ns es = insEdges es $ insNodes g ns
 ||| in the graph.
 export %inline
 insNode : {k : _} -> IGraph k e n -> n -> IGraph (S k) e n
-insNode g v = insNodes g [v]
+insNode g v = rewrite plusCommutative 1 k in insNodes g [v]
 
 export
 adjEdges : SortedMap (Fin x) (Fin y) -> Adj x e n -> Adj y e n
@@ -412,11 +408,11 @@ mergeGraphs :
      {k,m : _}
   -> (g1 : IGraph k e n)
   -> (g2 : IGraph m e n)
-  -> IGraph (m + k) e n
+  -> IGraph (k + m) e n
 mergeGraphs {k} g t =
   let vNodes := label <$> toVect t.graph
       lEdges := incEdge k <$> edges t
-   in insNodesAndEdges g vNodes (rewrite plusCommutative m k in lEdges)
+   in insNodesAndEdges g vNodes lEdges
 
 --------------------------------------------------------------------------------
 --          Displaying Graphs
