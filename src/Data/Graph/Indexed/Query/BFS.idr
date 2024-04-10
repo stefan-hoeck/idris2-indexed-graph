@@ -4,6 +4,7 @@ import Data.Queue
 import Data.Graph.Indexed
 import Data.Graph.Indexed.Query.Util
 import Data.Graph.Indexed.Query.Visited
+import Data.SnocList
 
 %default total
 
@@ -123,3 +124,55 @@ parameters {k : Nat}
      in assert_total $ if k < 64
           then fst $ shortestS [<] q (x `visit` ini)
           else visiting' k (\v => shortestL [<] q (x `mvisit` v))
+
+  covering
+  shortestL' :
+       (target : Fin k)
+    -> SnocList (SnocList $ Fin k)
+    -> Queue (SnocList $ Fin k)
+    -> MVis k (List (SnocList $ Fin k))
+  shortestL' t sp q v =
+    case dequeue q of
+      Nothing => ([]) # v
+      Just (sx@(_:<x),q2) => if x == t then ([sx]) # v else
+        let False # v2 := mvisited x v | True # v2 => shortestL' t sp q2 v2
+            ns := map (sx :<) (neighbours g x)
+         in shortestL' t (sp :< sx) (enqueueAll q2 ns) (mvisit x v2)
+      Just (_,q2) => shortestL' t sp q2 v
+
+  covering
+  shortestS' :
+       (target : Fin k)
+    -> SnocList (SnocList $ Fin k)
+    -> Queue (SnocList $ Fin k)
+    -> Vis k (List (SnocList $ Fin k))
+  shortestS' t sp q v =
+    case dequeue q of
+      Nothing => ([],v)
+      Just (sx@(_:<x),q2) => case x == t of
+        True  => ([sx],v)
+        False => case x `visited` v of
+          True  => shortestS' t sp q2 v
+          False =>
+            let ns := map (sx :<) (neighbours g x)
+             in shortestS' t (sp :< sx) (enqueueAll q2 ns) (x `visit` v)
+      Just (_,q2) => shortestS' t sp q2 v
+
+  ||| Computes the shortest paths to a specific node reachable from
+  ||| the given starting node. Should be less time consuming than computing all
+  ||| possible shortest paths from a start node and then filter this list until
+  ||| finding the only entry with the target node.
+  |||
+  ||| If there is no connection of the start and traget node, an empty list is
+  ||| returned.
+  |||
+  ||| Runs in O(n+m) time and O(n) memory.
+  export
+  shortestPathTo : (start,target : Fin k) -> List (Fin k)
+  shortestPathTo x t =
+    let q := fromList $ map ([<x] :<) (neighbours g x)
+     in assert_total $ if k < 64
+          then foldl (\acc,e => acc ++ (e <>> [])) []
+                     (fst $ shortestS' t [<] q (x `visit` ini))
+          else foldl (\acc,e => acc ++ (e <>> [])) []
+                     (visiting' k (\v => shortestL' t [<] q (x `mvisit` v)))
