@@ -109,10 +109,22 @@ export %inline
 lab : IGraph k e n -> Fin k -> n
 lab g = label . adj g
 
+||| Returns the edges connecting a node as an `AssocList`
+||| (nodes plus edge labels).
+export %inline
+neighboursAsAL : IGraph k e n -> Fin k -> AssocList k e
+neighboursAsAL g = neighbours . adj g
+
+||| Returns the edges connecting a node as a list of pairs
+||| (nodes plus edge labels).
+export %inline
+neighboursAsPairs : IGraph k e n -> Fin k -> List (Fin k, e)
+neighboursAsPairs g = pairs . neighboursAsAL g
+
 ||| Returns the list of neighbouring nodes of a node in a graph.
 export %inline
 neighbours : IGraph k e n -> Fin k -> List (Fin k)
-neighbours g = keys . neighbours . adj g
+neighbours g = keys . neighboursAsAL g
 
 ||| Returns the list of edges connecting a node.
 export %inline
@@ -126,6 +138,22 @@ edgesTo g k =
 export
 lneighbours : IGraph k e n -> Fin k -> List (Fin k, n)
 lneighbours g = map (\x => (x, lab g x)) . neighbours g
+
+||| Returns the edges connecting a node paired with the
+||| neighbouring node labels.
+export
+lneighboursAsAL : IGraph k e n -> Fin k -> AssocList k (e, n)
+lneighboursAsAL g = mapKV (\x => (, lab g x)) . neighboursAsAL g
+
+||| Returns the labels of neighbour nodes of a node.
+export
+neighbourLabels : IGraph k e n -> Fin k -> List n
+neighbourLabels g = map (lab g) . neighbours g
+
+||| Returns the labels of edges connecting a node.
+export %inline
+edgeLabels : IGraph k e n -> Fin k -> List e
+edgeLabels g = values . neighbours . adj g
 
 ||| Find the label for an `Edge`.
 export
