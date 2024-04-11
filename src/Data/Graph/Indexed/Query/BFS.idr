@@ -4,8 +4,21 @@ import Data.Queue
 import Data.Graph.Indexed
 import Data.Graph.Indexed.Query.Util
 import Data.Graph.Indexed.Query.Visited
+import Data.SnocList
 
 %default total
+
+enqueueE :
+     Queue (s, Fin k)
+  -> (s -> Fin k -> Either s a)
+  -> s
+  -> List (Fin k)
+  -> Either (Queue (s, Fin k)) a
+enqueueE q f st []      = Left q
+enqueueE q f st (x::xs) =
+  case f st x of
+    Right v => Right v
+    Left st2 => enqueueE (enqueue q (st2, x)) f st xs
 
 parameters {k : Nat}
            (g : IGraph k e n)
@@ -15,72 +28,48 @@ parameters {k : Nat}
 --------------------------------------------------------------------------------
 
   -- flat BFS implementation for large graphs
-  bfsL :
-       Queue (Nat,Fin k)
-    -> (s -> Nat -> Fin k -> Either s a)
-    -> s
-    -> MVis k (Either s a)
-  bfsL q f st v =
+  bfsL : Queue (s,Fin k) -> (s -> Fin k -> Either s a) -> MVis k (Maybe a)
+  bfsL q f v =
     case dequeue q of
-      Nothing     => Left st # v
-      Just ((d,x),q2) =>
+      Nothing => Nothing # v
+      Just ((vs,x),q2) =>
        let False # v2 := mvisited x v
-             | True # v2 => bfsL q2 f st (assert_smaller v v2)
-           q3         := enqueueAll q2 $ (S d,) <$> neighbours g x
-           Left st2   := f st d x | Right v => Right v # v2
-        in bfsL q3 f st2 (assert_smaller v $ mvisit x v2)
+             | True # v2 => bfsL q2 f (assert_smaller v v2)
+           Left q3 := enqueueE q2 f vs (neighbours g x) | Right v => Just v # v2
+        in bfsL q3 f (assert_smaller v $ mvisit x v2)
 
   -- flat BFS implementation for small graphs
-  bfsS :
-       Queue (Nat,Fin k)
-    -> (s -> Nat -> Fin k -> Either s a)
-    -> s
-    -> Vis k (Either s a)
-  bfsS q f st v =
+  bfsS : Queue (s,Fin k) -> (s -> Fin k -> Either s a) -> Vis k (Maybe a)
+  bfsS q f v =
     case dequeue q of
-      Nothing     => (Left st,v)
-      Just ((d,x),q2) =>
-       let False    := visited x v | True => bfsS q2 f st (assert_smaller v v)
-           q3       := enqueueAll q2 ((S d,) <$> neighbours g x)
-           Left st2 := f st d x | Right x => (Right x, v)
-        in bfsS q3 f st2 (assert_smaller v $ visit x v)
-
-  %inline bfsL' : Queue (Nat,Fin k) -> (s -> Nat -> Fin k -> s) -> s -> MVis k s
-  bfsL' xs acc i v = fromLeftMVis $ bfsL xs (fleft3 acc) i v
-
-  -- flat BFS implementation for small graphs
-  %inline bfsS' : Queue (Nat,Fin k) -> (s -> Nat -> Fin k -> s) -> s -> Vis k s
-  bfsS' xs acc i v = fromLeftVis $ bfsS xs (fleft3 acc) i v
+      Nothing     => (Nothing,v)
+      Just ((vs,x),q2) =>
+       let False   := visited x v | True => bfsS q2 f (assert_smaller v v)
+           Left q3 := enqueueE q2 f vs (neighbours g x) | Right x => (Just x, v)
+        in bfsS q3 f (assert_smaller v $ visit x v)
 
   ||| Traverses the graph in breadth-first order for the given
   ||| start nodes and accumulates the nodes encountered with the
   ||| given function.
   export
-  bfsWith :
-       (s -> Nat -> Fin k -> Either s a)
-    -> (init : s)
-    -> Fin k
-    -> Either s a
+  bfsWith : (s -> Fin k -> Either s a) -> (init : s) -> Fin k -> Maybe a
   bfsWith acc init x =
     if k < 64
-       then fst $ bfsS (fromList [(0,x)]) acc init ini
-       else visiting' k (bfsL (fromList [(0,x)]) acc init)
+       then fst $ bfsS (fromList [(init,x)]) acc ini
+       else visiting' k (bfsL (fromList [(init,x)]) acc)
 
-  ||| Traverses the whole graph in breadth-first order
-  ||| accumulating the nodes encountered with the given function.
+  ||| Tries to find a shortest path between the two nodes.
   export %inline
-  bfsWith' : (acc : s -> Nat -> Fin k -> s) -> (init : s) -> Fin k -> s
-  bfsWith' acc init = fromLeft . bfsWith (fleft3 acc) init
+  bfs : Fin k -> Fin k -> Maybe (SnocList (Fin k))
+  bfs start end =
+    bfsWith
+      (\sx,x => if x == end then Right (sx :< x) else Left (sx :< x))
+      [<start]
+      start
 
-  ||| Traverses the whole graph in breadth-first order
-  ||| returning the encountered nodes in a `SnocList`.
-  export %inline
-  bfs : Fin k -> SnocList (Nat,Fin k)
-  bfs = bfsWith' (\st,n,x => st :< (n,x)) [<]
-
---------------------------------------------------------------------------------
--- Shortest Path Algorithms
---------------------------------------------------------------------------------
+----------------------------------------------------------------------------------
+---- Shortest Path Algorithms
+----------------------------------------------------------------------------------
 
   covering
   shortestL :

@@ -2,6 +2,7 @@ module BFS
 
 import Data.Graph.Indexed.Query.BFS
 import Data.List
+import Data.String
 import Data.SnocList
 import Test.Data.Graph.Indexed.Generators
 import Text.Smiles.Simple
@@ -43,7 +44,7 @@ smallestLength : {k : _} -> IGraph k e n -> List (Fin k) -> Bool
 smallestLength g []      = False
 smallestLength g (x::xs) =
   let y := last x xs
-   in elem (length xs, y) (bfs g x)
+   in S (length xs) == maybe 0 length (bfs g x y)
 
 -- test the given predicate for all shortest paths for all pairs
 -- of connected nodes in a graph
@@ -62,21 +63,53 @@ phenole = readSmiles "OC=1CC=CC=C1"
 dmap : Maybe (Graph Bond Elem)
 dmap = readSmiles "C1(N(C)C)C=CN=CC=1"
 
+-- octacontane
+octac : Maybe (Graph Bond Elem)
+octac = readSmiles $ replicate 80 'C'
+
 testSPs : Maybe (Graph e n) -> Nat -> List (List Nat) -> Bool
 testSPs Nothing        n _   = False
 testSPs (Just $ G o g) n nss =
   let Just x := natToFin n o | Nothing => False
    in map (map finToNat . (<>> [])) (shortestPaths g x) == nss
 
+-- shortest path from start to target node
+testSP : Maybe (Graph e n) -> (start,target : Nat) -> List Nat -> Bool
+testSP Nothing        _ _ _  = False
+testSP (Just $ G o g) s t ns =
+  let Just x := natToFin s o | Nothing => False
+      Just y := natToFin t o | Nothing => False
+   in map ((<>> []) . map finToNat) (bfs g x y) == Just ns
+
 prop_phenole : Property
 prop_phenole =
   property1 $ assert $
     testSPs phenole 1 [[1,0],[1,2],[1,6],[1,2,3],[1,6,5],[1,2,3,4]]
 
+prop_phenole_short : Property
+prop_phenole_short =
+  property1 $ assert $
+    testSP phenole 1 3 [1,2,3]
+
 prop_dmap : Property
 prop_dmap =
   property1 $ assert $
     testSPs dmap 0 [[0,1],[0,4],[0,8],[0,1,2],[0,1,3],[0,4,5],[0,8,7],[0,4,5,6]]
+
+prop_dmap_short : Property
+prop_dmap_short =
+  property1 $ assert $
+    testSP dmap 0 5 [0,4,5]
+
+prop_dmap_short2 : Property
+prop_dmap_short2 =
+  property1 $ assert $
+    testSP dmap 5 0 [5,4,0]
+
+prop_octacontan_short : Property
+prop_octacontan_short =
+  property1 $ assert $
+    testSP octac 0 79 [0..79]
 
 --------------------------------------------------------------------------------
 -- Properties
@@ -121,5 +154,9 @@ props =
     , ("prop_properPath", prop_properPath)
     , ("prop_shortestPath", prop_shortestPath)
     , ("prop_phenole", prop_phenole)
+    , ("prop_phenole_short", prop_phenole_short)
     , ("prop_dmap", prop_dmap)
+    , ("prop_dmap_short", prop_dmap_short)
+    , ("prop_dmap_short2", prop_dmap_short2)
+    , ("prop_octacontan_short", prop_octacontan_short)
     ]
