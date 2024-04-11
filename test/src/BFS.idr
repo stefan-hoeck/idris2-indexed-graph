@@ -44,7 +44,7 @@ smallestLength : {k : _} -> IGraph k e n -> List (Fin k) -> Bool
 smallestLength g []      = False
 smallestLength g (x::xs) =
   let y := last x xs
-   in elem (length xs, y) (bfs g x)
+   in S (length xs) == maybe 0 length (bfs g x y)
 
 -- test the given predicate for all shortest paths for all pairs
 -- of connected nodes in a graph
@@ -79,7 +79,7 @@ testSP Nothing        _ _ _  = False
 testSP (Just $ G o g) s t ns =
   let Just x := natToFin s o | Nothing => False
       Just y := natToFin t o | Nothing => False
-   in map finToNat (shortestPathTo g x y) == ns
+   in map ((<>> []) . map finToNat) (bfs g x y) == Just ns
 
 prop_phenole : Property
 prop_phenole =
