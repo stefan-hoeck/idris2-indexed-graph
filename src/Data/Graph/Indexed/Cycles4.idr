@@ -117,22 +117,51 @@ getBitsEdges g =
   let es := map (\e => (e.node1, e.node2)) $ edges g
    in setBits es 0 empty
 
-  where setBits : List (Fin k, Fin k) -> Integer -> SortedMap (Fin k, Fin k) Integer -> SortedMap (Fin k, Fin k) Integer
+  where setBits : List (Fin k, Fin k)
+                  -> Integer
+                  -> SortedMap (Fin k, Fin k) Integer
+                  -> SortedMap (Fin k, Fin k) Integer
         setBits []        bitp sm = sm
         setBits (y :: xs) bitp sm =
           let newbitp := shiftL bitp 1
               smnew   := insert y newbitp sm
            in setBits xs newbitp smnew
 
+-- Resuslt LT -> same significant bit, else distinct significant bit
 testSigBit : Integer -> Integer -> Ordering
 testSigBit i j = compare (xor i j) (i .&. j)
 
--- Assuming unprocessedRs is a list of rings sorted in order of length
 testRelevance : (ring : Integer)
-                 -> (processedRs : SnocList (Integer))
-                 -> (unprocessedRs : List (Integer))
-                 -> (List Integer, Bool)
-testRelevance ring [<] []        = ([ring], True)
-testRelevance ring [<] (x :: xs) = ?addRingToBasis_rhs_3
-testRelevance ring (sx :< x) unprocessedRs = ?addRingToBasis_rhs_1
+                -> (processedRs : SnocList (Integer))
+                -> (unprocessedRs : List (Integer))
+                -> (List Integer, Bool)
+
+testRelevance ring [<] [] = ([ring], True)
+
+testRelevance ring (sx :< x) [] =
+  (toList $ sx :< x :< ring, True) -- add Ring at bottom
+
+testRelevance ring [<] (x :: xs) =
+  case testSigBit ring x of
+    -- same significant bit
+    LT => let remainder := xor ring x
+           in if remainder == 0
+                then (x :: xs, False) -- not relevant since linearly dependent from set
+                else testRelevance remainder [<x] xs --continue
+    -- distinct significant bit
+    _  => case compare ring x of
+      GT => (ring :: x :: xs, True) -- ring is signifint because ring > x (Right?)
+      _  => testRelevance ring [<x] xs --continue
+
+testRelevance ring sy (x :: xs) =
+  case testSigBit ring x of
+    -- same significant bit
+    LT => let remainder := xor ring x
+           in if remainder == 0
+                then (sy <>> x :: xs, False) -- not relevant since linearly dependent from set
+                else testRelevance remainder (sy :< x) xs -- continue
+    -- distinct significant bit
+    _  => case compare ring x of
+      GT => (sy :< ring <>> x :: xs, True) -- ring is signifint because ring > x (Right?)
+      _  => testRelevance ring (sy :< x) xs -- continue
 
