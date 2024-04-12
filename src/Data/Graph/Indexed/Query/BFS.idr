@@ -62,13 +62,54 @@ parameters {k : Nat}
   export %inline
   bfs : Fin k -> Fin k -> Maybe (SnocList (Fin k))
   bfs start end =
-    bfsWith
-      (\sx,x => if x == end then Right (sx :< x) else Left (sx :< x))
-      [<start]
-      start
+    if start == end then Just [< start]
+    else
+      bfsWith
+        (\sx,x => if x == end then Right (sx :< x) else Left (sx :< x))
+        [<start]
+        start
 
 ----------------------------------------------------------------------------------
----- Shortest Path Algorithms
+---- Generalized Breadth-First Searches
+----------------------------------------------------------------------------------
+
+  -- BFS implementation covering a whole connected component for large graphs
+  bfsAllL : SnocList s -> Queue (s,Fin k) -> (s -> Fin k -> s) -> MVis k (List s)
+  bfsAllL ss q f v =
+    case dequeue q of
+      Nothing => (ss <>> []) # v
+      Just ((vs,x),q2) =>
+       let False # v2 := mvisited x v
+             | True # v2 => bfsAllL ss q2 f (assert_smaller v v2)
+           q3 := enqueueAll q2 (map (\y => (f vs y, y)) $ neighbours g x)
+        in bfsAllL (ss :< vs) q3 f (assert_smaller v $ mvisit x v2)
+
+  -- flat BFS implementation for small graphs
+  bfsAllS : SnocList s -> Queue (s,Fin k) -> (s -> Fin k -> s) -> Vis k (List s)
+  bfsAllS ss q f v =
+    case dequeue q of
+      Nothing     => (ss <>> [],v)
+      Just ((vs,x),q2) =>
+       let False   := visited x v | True => bfsAllS ss q2 f (assert_smaller v v)
+           q3 := enqueueAll q2 (map (\y => (f vs y, y)) $ neighbours g x)
+        in bfsAllS (ss :< vs) q3 f (assert_smaller v $ visit x v)
+
+  ||| Traverses the graph in breadth-first order for the given
+  ||| start nodes and accumulates the nodes encountered with the
+  ||| given function.
+  export
+  bfsAllWith : (s -> Fin k -> s) -> (init : s) -> Fin k -> List s
+  bfsAllWith acc init x =
+    if k < 64
+       then fst $ bfsAllS [<] (fromList [(init,x)]) acc ini
+       else visiting' k (bfsAllL [<] (fromList [(init,x)]) acc)
+
+  export
+  distancesToNode : Fin k -> List (Nat, Fin k)
+  distancesToNode x = bfsAllWith (\x,y => (S $ fst x, y)) (0,x) x
+
+----------------------------------------------------------------------------------
+---- Shortest Paths
 ----------------------------------------------------------------------------------
 
   covering
