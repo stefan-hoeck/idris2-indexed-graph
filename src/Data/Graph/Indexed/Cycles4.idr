@@ -163,31 +163,33 @@ isInSet ring sy (x :: xs) =
       GT => (sy :< ring <>> x :: xs, True) -- ring is signifint because ring > x (Right?)
       _  => isInSet ring (sy :< x) xs -- continue
 
-getCrAndMCB' : (size : Nat)
+getCrAndMCB' : (v : Nat)
+               -> (size : Nat)
                -> (unprocessedRs : List Integer)
                -> (sm : List Integer)
                -> (eq : List Integer)
                -> (relC : List Integer)
                -> (mcb : List Integer)
                -> (List Integer, List Integer)
-getCrAndMCB' size [] sm eq relC mcb = (relC, mcb)
-getCrAndMCB' size (x :: xs) sm eq relC mcb =
+getCrAndMCB' v size [] sm eq relC mcb = (relC, mcb)
+getCrAndMCB' v size (x :: xs) sm eq relC mcb =
   if (cycleLength x) > size
     -- now: sm == eq
-    then case isInSet x [<] eq of
-      (_,     False) => getCrAndMCB' size xs eq eq relC mcb -- neither in Cr nor MCB, continue
-      (neweq, True)  => getCrAndMCB' (cycleLength x) xs eq neweq (x :: relC) (x :: mcb) -- in Cr and MCB
+    then if length mcb == v then (relC, mcb) else case isInSet x [<] eq of
+      (_,     False) => getCrAndMCB' v size xs eq eq relC mcb -- neither in Cr nor MCB, continue
+      (neweq, True)  => getCrAndMCB' v (cycleLength x) xs eq neweq (x :: relC) (x :: mcb) -- in Cr and MCB
 
     else case isInSet x [<] sm of
-      (_, False) => getCrAndMCB' size xs sm eq relC mcb -- neither in Cr nor MCB, continue
+      (_, False) => getCrAndMCB' v size xs sm eq relC mcb -- neither in Cr nor MCB, continue
       (_, True)  => -- is relevnt, add to relevant cycles
          case isInSet x [<] eq of
-           (_,     False) => getCrAndMCB' (cycleLength x) xs sm eq (x :: relC) mcb
-           (neweq, True)  => getCrAndMCB' (cycleLength x) xs sm neweq (x :: relC) (x :: mcb)
+           (_,     False) => getCrAndMCB' v (cycleLength x) xs sm eq (x :: relC) mcb
+           (neweq, True)  => getCrAndMCB' v (cycleLength x) xs sm neweq (x :: relC) (x :: mcb)
 
+--- Arguments: cyclomatic number (Nat) and rings (List Integer)
 --- Assuming the List of rings is ordered by ringSize in increasing order
-getCrAndMCB : List Integer -> (List Integer, List Integer)
-getCrAndMCB xs = getCrAndMCB' 0 xs [] [] [] []
+getCrAndMCB : Nat -> List Integer -> (List Integer, List Integer)
+getCrAndMCB v xs = getCrAndMCB' v 0 xs [] [] [] []
 
 
 
