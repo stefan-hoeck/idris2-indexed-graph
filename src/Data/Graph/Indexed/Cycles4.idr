@@ -133,68 +133,56 @@ testSigBit i j = compare (xor i j) (i .&. j)
 
 cycleLength : Integer -> Nat
 
-isRelevant : (ring : Integer)
+isInSet : (ring : Integer)
           -> (processedRs : SnocList (Integer))
           -> (unprocessedRs : List (Integer))
           -> (List Integer, Bool)
-
-isInMCB : (ring : Integer)
-          -> (processedRs : SnocList (Integer))
-          -> (unprocessedRs : List (Integer))
-          -> (List Integer, Bool)
-
-isInMCB ring [<] [] = ([ring], True)
-
-isInMCB ring (sx :< x) [] =
+isInSet ring [<] [] = ([ring], True)
+isInSet ring (sx :< x) [] =
   (toList $ sx :< x :< ring, True) -- add Ring at bottom
-
-isInMCB ring [<] (x :: xs) =
+isInSet ring [<] (x :: xs) =
   case testSigBit ring x of
     -- same significant bit
     LT => let remainder := xor ring x
            in if remainder == 0
                 then (x :: xs, False) -- not relevant since linearly dependent from set
-                else isInMCB remainder [<x] xs --continue
+                else isInSet remainder [<x] xs --continue
     -- distinct significant bit
     _  => case compare ring x of
       GT => (ring :: x :: xs, True) -- ring is signifint because ring > x (Right?)
-      _  => isInMCB ring [<x] xs --continue
-
-isInMCB ring sy (x :: xs) =
+      _  => isInSet ring [<x] xs --continue
+isInSet ring sy (x :: xs) =
   case testSigBit ring x of
     -- same significant bit
     LT => let remainder := xor ring x
            in if remainder == 0
                 then (sy <>> x :: xs, False) -- not relevant since linearly dependent from set
-                else isInMCB remainder (sy :< x) xs -- continue
+                else isInSet remainder (sy :< x) xs -- continue
     -- distinct significant bit
     _  => case compare ring x of
       GT => (sy :< ring <>> x :: xs, True) -- ring is signifint because ring > x (Right?)
-      _  => isInMCB ring (sy :< x) xs -- continue
+      _  => isInSet ring (sy :< x) xs -- continue
 
 getCrAndMCB' : (size : Nat)
                -> (unprocessedRs : List Integer)
                -> (smaller : List Integer)
+               -> (equal : List Integer)
                -> (relC : List Integer)
-               -> (mcb : List Integer)
                -> (List Integer, List Integer)
-getCrAndMCB' size [] smaller relC mcb = (relC, mcb)
-getCrAndMCB' size (x :: xs) smaller relC mcb =
+getCrAndMCB' size [] smaller equal relC = (relC, equal)
+getCrAndMCB' size (x :: xs) smaller equal relC =
   if (cycleLength x) > size
     -- smaller is now == mcb
-    then case isRelevant x [<] mcb of
-      (y, False) => getCrAndMCB' size xs mcb relC y -- neither in Cr nor MCB, continuefoo_3
-      (y, True)  =>
-        let newRelC := x :: relC
-         in getCrAndMCB' (cycleLength x) xs mcb newRelC y
+    then case isInSet x [<] equal of
+      (y, False) => getCrAndMCB' size xs equal y relC-- neither in Cr nor MCB, continuefoo_3
+      (y, True)  => getCrAndMCB' (cycleLength x) xs equal y (x :: relC)
 
-    else case isRelevant x [<] smaller of
-      (y, False) => getCrAndMCB' size xs smaller relC mcb -- neither in Cr nor MCB, continue
-      (y, True)  =>
-        let newRelC := x :: relC
-         in case isInMCB x [<] mcb of
-           (z, False) => getCrAndMCB' (cycleLength x) xs smaller newRelC mcb
-           (z, True)  => getCrAndMCB' (cycleLength x) xs smaller newRelC z
+    else case isInSet x [<] smaller of
+      (y, False) => getCrAndMCB' size xs smaller equal relC -- neither in Cr nor MCB, continue
+      (y, True)  => -- is relevnt, add to relevant cycles
+         case isInSet x [<] equal of
+           (z, False) => getCrAndMCB' (cycleLength x) xs smaller equal (x :: relC)
+           (z, True)  => getCrAndMCB' (cycleLength x) xs smaller z (x :: relC)
 
 --- Assuming the List of rings is ordered by ringSize in increasing order
 getCrAndMCB : List Integer -> (List Integer, List Integer)
