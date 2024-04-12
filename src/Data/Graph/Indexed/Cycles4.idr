@@ -165,28 +165,29 @@ isInSet ring sy (x :: xs) =
 
 getCrAndMCB' : (size : Nat)
                -> (unprocessedRs : List Integer)
-               -> (smaller : List Integer)
-               -> (equal : List Integer)
+               -> (sm : List Integer)
+               -> (eq : List Integer)
                -> (relC : List Integer)
+               -> (mcb : List Integer)
                -> (List Integer, List Integer)
-getCrAndMCB' size [] smaller equal relC = (relC, equal)
-getCrAndMCB' size (x :: xs) smaller equal relC =
+getCrAndMCB' size [] sm eq relC mcb = (relC, mcb)
+getCrAndMCB' size (x :: xs) sm eq relC mcb =
   if (cycleLength x) > size
-    -- smaller is now == mcb
-    then case isInSet x [<] equal of
-      (y, False) => getCrAndMCB' size xs equal y relC-- neither in Cr nor MCB, continuefoo_3
-      (y, True)  => getCrAndMCB' (cycleLength x) xs equal y (x :: relC)
+    -- now: sm == eq
+    then case isInSet x [<] eq of
+      (_,     False) => getCrAndMCB' size xs eq eq relC mcb -- neither in Cr nor MCB, continue
+      (neweq, True)  => getCrAndMCB' (cycleLength x) xs eq neweq (x :: relC) (x :: mcb) -- in Cr and MCB
 
-    else case isInSet x [<] smaller of
-      (y, False) => getCrAndMCB' size xs smaller equal relC -- neither in Cr nor MCB, continue
-      (y, True)  => -- is relevnt, add to relevant cycles
-         case isInSet x [<] equal of
-           (z, False) => getCrAndMCB' (cycleLength x) xs smaller equal (x :: relC)
-           (z, True)  => getCrAndMCB' (cycleLength x) xs smaller z (x :: relC)
+    else case isInSet x [<] sm of
+      (_, False) => getCrAndMCB' size xs sm eq relC mcb -- neither in Cr nor MCB, continue
+      (_, True)  => -- is relevnt, add to relevant cycles
+         case isInSet x [<] eq of
+           (_,     False) => getCrAndMCB' (cycleLength x) xs sm eq (x :: relC) mcb
+           (neweq, True)  => getCrAndMCB' (cycleLength x) xs sm neweq (x :: relC) (x :: mcb)
 
 --- Assuming the List of rings is ordered by ringSize in increasing order
 getCrAndMCB : List Integer -> (List Integer, List Integer)
-getCrAndMCB xs = getCrAndMCB' 0 xs [] [] []
+getCrAndMCB xs = getCrAndMCB' 0 xs [] [] [] []
 
 
 
