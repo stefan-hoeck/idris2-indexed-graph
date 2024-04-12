@@ -81,6 +81,12 @@ testSP (Just $ G o g) s t ns =
       Just y := natToFin t o | Nothing => False
    in map ((<>> []) . map finToNat) (bfs g x y) == Just ns
 
+testDistances : Maybe (Graph e n) -> Nat -> List (Nat,Nat) -> PropertyT ()
+testDistances Nothing        _ _  = failWith Nothing "invalid SMILES"
+testDistances (Just $ G o g) s ns =
+  let Just x := natToFin s o | Nothing => failWith Nothing "invalid node"
+   in map (\(a,b) => (a, finToNat b)) (distancesToNode g x) === ns
+
 prop_phenole : Property
 prop_phenole =
   property1 $ assert $
@@ -91,6 +97,11 @@ prop_phenole_short =
   property1 $ assert $
     testSP phenole 1 3 [1,2,3]
 
+prop_phenole_dist : Property
+prop_phenole_dist =
+  property1 $
+    testDistances phenole 0 [(0,0),(1,1),(2,2),(2,6),(3,3),(3,5),(4,4)]
+
 prop_dmap : Property
 prop_dmap =
   property1 $ assert $
@@ -100,6 +111,13 @@ prop_dmap_short : Property
 prop_dmap_short =
   property1 $ assert $
     testSP dmap 0 5 [0,4,5]
+
+prop_dmap_dist : Property
+prop_dmap_dist =
+  property1 $
+--  dmap = readSmiles "C1(N(C)C)C=CN=CC=1"
+--                     0  1 2 3 4 56 78
+    testDistances dmap 0 [(0,0),(1,1),(1,4),(1,8),(2,2),(2,3),(2,5),(2,7),(3,6)]
 
 prop_dmap_short2 : Property
 prop_dmap_short2 =
@@ -155,8 +173,10 @@ props =
     , ("prop_shortestPath", prop_shortestPath)
     , ("prop_phenole", prop_phenole)
     , ("prop_phenole_short", prop_phenole_short)
+    , ("prop_phenole_dist", prop_phenole_dist)
     , ("prop_dmap", prop_dmap)
     , ("prop_dmap_short", prop_dmap_short)
+    , ("prop_dmap_dist", prop_dmap_dist)
     , ("prop_dmap_short2", prop_dmap_short2)
     , ("prop_octacontan_short", prop_octacontan_short)
     ]
