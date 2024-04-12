@@ -115,8 +115,6 @@ prop_dmap_short =
 prop_dmap_dist : Property
 prop_dmap_dist =
   property1 $
---  dmap = readSmiles "C1(N(C)C)C=CN=CC=1"
---                     0  1 2 3 4 56 78
     testDistances dmap 0 [(0,0),(1,1),(1,4),(1,8),(2,2),(2,3),(2,5),(2,7),(3,6)]
 
 prop_dmap_short2 : Property
