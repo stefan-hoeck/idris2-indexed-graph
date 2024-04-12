@@ -124,3 +124,15 @@ getBitsEdges g =
               smnew   := insert y newbitp sm
            in setBits xs newbitp smnew
 
+testSigBit : Integer -> Integer -> Ordering
+testSigBit i j = compare (xor i j) (i .&. j)
+
+-- Assuming unprocessedRs is a list of rings sorted in order of length
+testRelevance : (ring : Integer)
+                 -> (processedRs : SnocList (Integer))
+                 -> (unprocessedRs : List (Integer))
+                 -> (List Integer, Bool)
+testRelevance ring [<] []        = ([ring], True)
+testRelevance ring [<] (x :: xs) = ?addRingToBasis_rhs_3
+testRelevance ring (sx :< x) unprocessedRs = ?addRingToBasis_rhs_1
+
