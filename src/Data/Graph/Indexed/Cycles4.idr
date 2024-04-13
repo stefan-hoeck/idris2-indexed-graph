@@ -131,37 +131,41 @@ getBitsEdges g =
 testSigBit : Integer -> Integer -> Ordering
 testSigBit i j = compare (xor i j) (i .&. j)
 
+-- get the length of a cycle in edges by counting the set bits
 cycleLength : Integer -> Nat
 
+-- test if ring is linearly independet from the given set
+-- returns the modified set if the ring is linearly independet
+-- and a boolan to indicate wheter the ring is linearly independent
 isInSet : (ring : Integer)
           -> (processedRs : SnocList (Integer))
           -> (unprocessedRs : List (Integer))
           -> (List Integer, Bool)
-isInSet ring [<] [] = ([ring], True)
+isInSet ring [<] [] = ([ring], True) -- linearly independent, add to empty set
 isInSet ring (sx :< x) [] =
-  (toList $ sx :< x :< ring, True) -- add Ring at bottom
+  (toList $ sx :< x :< ring, True) -- linearly independent, add Ring at the end of the set
 isInSet ring [<] (x :: xs) =
   case testSigBit ring x of
     -- same significant bit
     LT => let remainder := xor ring x
            in if remainder == 0
-                then (x :: xs, False) -- not relevant since linearly dependent from set
-                else isInSet remainder [<x] xs --continue
+                then (x :: xs, False) -- linearly dependent from set
+                else isInSet remainder [<x] xs -- continue with remainder
     -- distinct significant bit
     _  => case compare ring x of
-      GT => (ring :: x :: xs, True) -- ring is signifint because ring > x (Right?)
-      _  => isInSet ring [<x] xs --continue
+      GT => (ring :: x :: xs, True) -- linearly independent, because ring > x (Right?), add ring at top
+      _  => isInSet ring [<x] xs -- continue with ring
 isInSet ring sy (x :: xs) =
   case testSigBit ring x of
     -- same significant bit
     LT => let remainder := xor ring x
            in if remainder == 0
-                then (sy <>> x :: xs, False) -- not relevant since linearly dependent from set
-                else isInSet remainder (sy :< x) xs -- continue
+                then (sy <>> x :: xs, False) -- linearly dependent from set
+                else isInSet remainder (sy :< x) xs -- continue with remainder
     -- distinct significant bit
     _  => case compare ring x of
-      GT => (sy :< ring <>> x :: xs, True) -- ring is signifint because ring > x (Right?)
-      _  => isInSet ring (sy :< x) xs -- continue
+      GT => (sy :< ring <>> x :: xs, True) -- linearly independent, because ring > x (Right?), add ring at top
+      _  => isInSet ring (sy :< x) xs -- continue with Ring
 
 getCrAndMCB' : (v : Nat)
                -> (size : Nat)
@@ -181,10 +185,10 @@ getCrAndMCB' v size (x :: xs) sm eq relC mcb =
 
     else case isInSet x [<] sm of
       (_, False) => getCrAndMCB' v size xs sm eq relC mcb -- neither in Cr nor MCB, continue
-      (_, True)  => -- is relevnt, add to relevant cycles
+      (_, True)  => -- is relevant, add to Cr (relC)
          case isInSet x [<] eq of
-           (_,     False) => getCrAndMCB' v (cycleLength x) xs sm eq (x :: relC) mcb
-           (neweq, True)  => getCrAndMCB' v (cycleLength x) xs sm neweq (x :: relC) (x :: mcb)
+           (_,     False) => getCrAndMCB' v (cycleLength x) xs sm eq (x :: relC) mcb -- in Cr but not MCB
+           (neweq, True)  => getCrAndMCB' v (cycleLength x) xs sm neweq (x :: relC) (x :: mcb) -- in Cr and MCB
 
 --- Arguments: cyclomatic number (Nat) and rings (List Integer)
 --- Assuming the List of rings is ordered by ringSize in increasing order
