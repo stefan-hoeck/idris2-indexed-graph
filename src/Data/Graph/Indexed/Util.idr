@@ -402,6 +402,21 @@ export
 delNode : {k : _} -> Fin k -> IGraph k e n -> Graph e n
 delNode = delNodes . pure
 
+||| Merge two graphs connecting them via the given list of
+||| edges
+export
+mergeGraphsWithEdges :
+     {k,m : _}
+  -> (g1 : IGraph k e n)
+  -> (g2 : IGraph m e n)
+  -> List (Fin k, Fin m, e)
+  -> IGraph (k + m) e n
+mergeGraphsWithEdges {k} g t es =
+  let vNodes := label <$> toVect t.graph
+      cEdges := map (\(x,y,l) => compositeEdge x y l) es
+      lEdges := incEdge k <$> edges t
+   in insNodesAndEdges g vNodes (cEdges ++ lEdges)
+
 ||| Merge two graphs that have no bonds between them.
 export
 mergeGraphs :
