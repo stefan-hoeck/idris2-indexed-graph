@@ -141,21 +141,8 @@ isInSet : (ring : Integer)
           -> (processedRs : SnocList (Integer))
           -> (unprocessedRs : List (Integer))
           -> (List Integer, Bool)
-isInSet ring [<] [] = ([ring], True) -- linearly independent, add to empty set
-isInSet ring (sx :< x) [] =
-  (toList $ sx :< x :< ring, True) -- linearly independent, add Ring at the end of the set
-isInSet ring [<] (x :: xs) =
-  case testSigBit ring x of
-    -- same significant bit
-    LT => let remainder := xor ring x
-           in if remainder == 0
-                then (x :: xs, False) -- linearly dependent from set
-                else isInSet remainder [<x] xs -- continue with remainder
-    -- distinct significant bit
-    _  => case compare ring x of
-      GT => (ring :: x :: xs, True) -- linearly independent, because ring > x (Right?), add ring at top
-      _  => isInSet ring [<x] xs -- continue with ring
-isInSet ring sy (x :: xs) =
+isInSet ring sy  []        = (toList $ sy :< ring, True) -- linearly independent, add Ring at the end of the set
+isInSet ring sy  (x :: xs) =
   case testSigBit ring x of
     -- same significant bit
     LT => let remainder := xor ring x
@@ -164,12 +151,12 @@ isInSet ring sy (x :: xs) =
                 else isInSet remainder (sy :< x) xs -- continue with remainder
     -- distinct significant bit
     _  => case compare ring x of
-      GT => (sy :< ring <>> x :: xs, True) -- linearly independent, because ring > x (Right?), add ring at top
+      GT => (sy :< ring <>> x :: xs, True) -- linearly independent, add ring at top
       _  => isInSet ring (sy :< x) xs -- continue with Ring
 
 getCrAndMCB' : (v : Nat)
                -> (size : Nat)
-               -> (unprocessedRs : List Integer)
+               -> (xs : List Integer)
                -> (sm : List Integer)
                -> (eq : List Integer)
                -> (relC : List Integer)
