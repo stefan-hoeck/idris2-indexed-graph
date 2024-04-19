@@ -141,18 +141,18 @@ isInSet : (ring : Integer)
           -> (processedRs : SnocList (Integer))
           -> (unprocessedRs : List (Integer))
           -> (List Integer, Bool)
-isInSet ring sy  []        = (toList $ sy :< ring, True) -- linearly independent, add Ring at the end of the set
+isInSet ring sy  []        = (toList $ sy :< ring, True)
 isInSet ring sy  (x :: xs) =
   case testSigBit ring x of
     -- same significant bit
     LT => let remainder := xor ring x
            in if remainder == 0
-                then (sy <>> x :: xs, False) -- linearly dependent from set
-                else isInSet remainder (sy :< x) xs -- continue with remainder
+                then (sy <>> x :: xs, False)
+                else isInSet remainder (sy :< x) xs
     -- distinct significant bit
     _  => case compare ring x of
-      GT => (sy :< ring <>> x :: xs, True) -- linearly independent, add ring at top
-      _  => isInSet ring (sy :< x) xs -- continue with Ring
+      GT => (sy :< ring <>> x :: xs, True)
+      _  => isInSet ring (sy :< x) xs
 
 getCrAndMCB' : (v : Nat)
                -> (size : Nat)
@@ -181,6 +181,7 @@ getCrAndMCB' v size (x :: xs) sm eq relC mcb =
 --- Assuming the List of rings is ordered by ringSize in increasing order
 getCrAndMCB : Nat -> List Integer -> (List Integer, List Integer)
 getCrAndMCB v xs = getCrAndMCB' v 0 xs [] [] [] []
+
 
 
 
