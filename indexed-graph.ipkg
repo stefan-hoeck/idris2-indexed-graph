@@ -25,3 +25,4 @@ modules = Data.AssocList.Indexed
         , Data.Graph.Indexed.Cycles3
         , Data.Graph.Indexed.Cycles4
         , Data.Graph.Indexed.Ring
+        , Data.Graph.Indexed.Relevant
