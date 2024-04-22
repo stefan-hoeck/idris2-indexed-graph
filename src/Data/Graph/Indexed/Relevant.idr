@@ -72,6 +72,7 @@ parameters {k    : Nat}
          in shortestL sp2 (enqueueAll q2 ns) (mvisit p.last v2)
 
   covering
+--shortestS : SnocList (Path k) -> Queue (Path k) -> Visited k -> (List (Path k), Visited k)
   shortestS : SnocList (Path k) -> Queue (Path k) -> Vis k (List (Path k))
   shortestS sp q v =
     case dequeue q of
