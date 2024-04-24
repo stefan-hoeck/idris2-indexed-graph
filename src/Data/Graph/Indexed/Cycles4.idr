@@ -128,6 +128,11 @@ getBitsEdges g =
               smnew   := insert y newbitp sm
            in setBits xs newbitp smnew
 
+convertC : Cycle k -> ECycle k
+convertC [] = []
+convertC [y] = []
+convertC (x :: y :: xs) = (x,y) :: convertC (y :: xs)
+
 -- Resuslt LT -> same significant bit, else distinct significant bit
 testSigBit : Integer -> Integer -> Ordering
 testSigBit i j = compare (xor i j) (i .&. j)
@@ -182,7 +187,5 @@ getCrAndMCB' v size (x :: xs) sm eq relC mcb =
 --- Assuming the List of rings is ordered by ringSize in increasing order
 getCrAndMCB : Nat -> List Integer -> (List Integer, List Integer)
 getCrAndMCB v xs = getCrAndMCB' v 0 xs [] [] [] []
-
-convertC : Cycle k -> ECycle k
 
 
