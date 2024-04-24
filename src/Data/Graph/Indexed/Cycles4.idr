@@ -13,6 +13,7 @@ import Data.String
 import Data.Vect
 import Data.Bits
 import Data.Graph.Indexed.Ring
+import Data.Graph.Indexed.Relevant
 
 %default total
 
@@ -182,6 +183,6 @@ getCrAndMCB' v size (x :: xs) sm eq relC mcb =
 getCrAndMCB : Nat -> List Integer -> (List Integer, List Integer)
 getCrAndMCB v xs = getCrAndMCB' v 0 xs [] [] [] []
 
-
+convertC : Cycle k -> ECycle k
 
 

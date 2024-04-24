@@ -35,6 +35,10 @@ public export
 0 Cycle : Nat -> Type
 Cycle k = List (Fin k)
 
+public export
+0 ECycle : Nat -> Type
+ECycle k = List (Fin k, Fin k)
+
 revOnto : SnocList a -> SnocList a -> SnocList a
 revOnto sx [<] = sx
 revOnto sx (sy:<y) = revOnto (sx :< y) sy
