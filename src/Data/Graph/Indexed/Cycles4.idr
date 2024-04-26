@@ -194,3 +194,17 @@ getCrAndMCB' v size (x :: xs) sm eq relC mcb =
 getCrAndMCB : Nat -> List Integer -> (List Integer, List Integer)
 getCrAndMCB v xs = getCrAndMCB' v 0 xs [] [] [] []
 
+computeCyclomaticN : {k : _} -> IGraph k e n -> Nat
+
+computeCrAndMCB : {k : _} -> IGraph k e n -> Maybe (List Integer, List Integer)
+computeCrAndMCB g =
+  let ebits := getBitsEdges g
+      ci' := map convertC $ computeCI' g
+      lengths := map length ci'
+   in case traverse (\x => getBitsRing x ebits 0) ci' of
+     Nothing => Nothing
+     Just xs =>
+       let cs := zip lengths xs
+           v := computeCyclomaticN g
+        in Just $ getCrAndMCB v $ map snd cs
+
