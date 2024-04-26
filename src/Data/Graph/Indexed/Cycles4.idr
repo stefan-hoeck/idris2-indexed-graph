@@ -17,6 +17,10 @@ import Data.Graph.Indexed.Relevant
 
 %default total
 
+--------------------------------------------------------------------------------
+--          Basic Ring Search
+--------------------------------------------------------------------------------
+
 export
 popCountInteger : Integer -> Nat
 popCountInteger = go 0
@@ -113,6 +117,13 @@ searchAllMA : {k : _} -> (g : IGraph k e n) -> List (Bool, Ring k)
 searchAllMA g =
   unrestricted $ alloc k Nothing (\x => findAll (allFinsFast k) g (MkState x []))
 
+--------------------------------------------------------------------------------
+--          Relevant Cycles and MCB
+--------------------------------------------------------------------------------
+
+computeCyclomaticN : {k : _} -> IGraph k e n -> Integer
+computeCyclomaticN g = cast (size g) - cast k + 1
+
 getBitsEdges : {k : _} -> (g : IGraph k e n) -> SortedMap (Fin k, Fin k) Integer
 getBitsEdges g =
   let es := map (\e => (e.node1, e.node2)) $ edges g
@@ -190,9 +201,6 @@ getCrAndMCB' v size (x :: xs) sm eq relC mcb =
 --- Assuming the List of rings is ordered by ringSize in increasing order
 getCrAndMCB : Integer -> List (Nat, Integer) -> (List Integer, List Integer)
 getCrAndMCB v xs = getCrAndMCB' v 0 xs [] [] [] []
-
-computeCyclomaticN : {k : _} -> IGraph k e n -> Integer
-computeCyclomaticN g = cast (size g) - cast k + 1
 
 computeCrAndMCB : {k : _} -> IGraph k e n -> Maybe (List Integer, List Integer)
 computeCrAndMCB g =
