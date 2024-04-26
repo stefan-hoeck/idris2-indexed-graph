@@ -166,7 +166,7 @@ isInSet ring sy  (x :: xs) =
       GT => (sy :< ring <>> x :: xs, True)
       _  => isInSet ring (sy :< x) xs
 
-getCrAndMCB' : (v : Nat)
+getCrAndMCB' : (v : Integer)
                -> (size : Nat)
                -> (xs : List Integer)
                -> (sm : List Integer)
@@ -178,7 +178,7 @@ getCrAndMCB' v size [] sm eq relC mcb = (relC, mcb)
 getCrAndMCB' v size (x :: xs) sm eq relC mcb =
   if (cycleLength x) > size
     -- now: sm == eq
-    then if length mcb == v then (relC, mcb) else case isInSet x [<] eq of
+    then if (cast (length mcb)) == v then (relC, mcb) else case isInSet x [<] eq of
       (_,     False) => getCrAndMCB' v size xs eq eq relC mcb -- neither in Cr nor MCB, continue
       (neweq, True)  => getCrAndMCB' v (cycleLength x) xs eq neweq (x :: relC) (x :: mcb) -- in Cr and MCB
 
@@ -191,7 +191,7 @@ getCrAndMCB' v size (x :: xs) sm eq relC mcb =
 
 --- Arguments: cyclomatic number (Nat) and rings (List Integer)
 --- Assuming the List of rings is ordered by ringSize in increasing order
-getCrAndMCB : Nat -> List Integer -> (List Integer, List Integer)
+getCrAndMCB : Integer -> List Integer -> (List Integer, List Integer)
 getCrAndMCB v xs = getCrAndMCB' v 0 xs [] [] [] []
 
 computeCyclomaticN : {k : _} -> IGraph k e n -> Integer
