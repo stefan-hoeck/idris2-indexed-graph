@@ -194,8 +194,8 @@ getCrAndMCB' v size (x :: xs) sm eq relC mcb =
 getCrAndMCB : Nat -> List Integer -> (List Integer, List Integer)
 getCrAndMCB v xs = getCrAndMCB' v 0 xs [] [] [] []
 
-computeCyclomaticN : {k : _} -> IGraph k e n -> Nat
-computeCyclomaticN g = ?foo --size g - k
+computeCyclomaticN : {k : _} -> IGraph k e n -> Integer
+computeCyclomaticN g = cast (size g) - cast k + 1
 
 computeCrAndMCB : {k : _} -> IGraph k e n -> Maybe (List Integer, List Integer)
 computeCrAndMCB g =
@@ -207,5 +207,5 @@ computeCrAndMCB g =
      Just xs =>
        let cs := zip lengths xs
            v := computeCyclomaticN g
-        in Just $ getCrAndMCB v $ map snd cs
+        in ?foo --Just $ getCrAndMCB v $ map snd cs
 
