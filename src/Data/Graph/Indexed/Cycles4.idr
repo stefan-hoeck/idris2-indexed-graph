@@ -183,19 +183,23 @@ getCrAndMCB' : (v : Integer)
                -> (mcb : List Integer)
                -> (List Integer, List Integer)
 getCrAndMCB' v size [] sm eq relC mcb = (relC, mcb)
-getCrAndMCB' v size (x :: xs) sm eq relC mcb =
-  if fst x > size
+getCrAndMCB' v size ((sizex, cyclex) :: xs) sm eq relC mcb =
+  if sizex > size
     -- now: sm == eq
-    then if (cast (length mcb)) == v then (relC, mcb) else case isInSet (snd x) [<] eq of
-      (_,     False) => getCrAndMCB' v size xs eq eq relC mcb -- neither in Cr nor MCB, continue
-      (neweq, True)  => getCrAndMCB' v (fst x) xs eq neweq (snd x :: relC) (snd x :: mcb) -- in Cr and MCB
+    then if (cast (length mcb)) == v then (relC, mcb) else case isInSet cyclex [<] eq of
+      (_,     False) =>
+        getCrAndMCB' v size xs eq eq relC mcb -- neither in Cr nor MCB, continue
+      (neweq, True)  =>
+        getCrAndMCB' v sizex xs eq neweq (cyclex :: relC) (cyclex :: mcb) -- in Cr and MCB
 
-    else case isInSet (snd x) [<] sm of
+    else case isInSet cyclex [<] sm of
       (_, False) => getCrAndMCB' v size xs sm eq relC mcb -- neither in Cr nor MCB, continue
       (_, True)  => -- is relevant, add to Cr (relC)
-         case isInSet (snd x) [<] eq of
-           (_,     False) => getCrAndMCB' v (fst x) xs sm eq (snd x :: relC) mcb -- in Cr but not MCB
-           (neweq, True)  => getCrAndMCB' v (fst x) xs sm neweq (snd x :: relC) (snd x :: mcb) -- in Cr and MCB
+        case isInSet (cyclex) [<] eq of
+          (_,     False) =>
+            getCrAndMCB' v sizex xs sm eq (cyclex :: relC) mcb -- in Cr but not MCB
+          (neweq, True)  =>
+            getCrAndMCB' v sizex xs sm neweq (cyclex :: relC) (cyclex :: mcb) -- in Cr and MCB
 
 --- Arguments: cyclomatic number (Nat) and rings (List Integer)
 --- Assuming the List of rings is ordered by ringSize in increasing order
@@ -204,13 +208,13 @@ getCrAndMCB v xs = getCrAndMCB' v 0 xs [] [] [] []
 
 computeCrAndMCB : {k : _} -> IGraph k e n -> Maybe (List Integer, List Integer)
 computeCrAndMCB g =
-  let ebits := getBitsEdges g
-      ci' := map convertC $ computeCI' g
+  let ebits   := getBitsEdges g
+      ci'     := map convertC $ computeCI' g
       lengths := map length ci'
    in case traverse (\x => getBitsRing x ebits 0) ci' of
      Nothing => Nothing
      Just xs =>
        let cs := zip lengths xs
-           v := computeCyclomaticN g
+           v  := computeCyclomaticN g
         in Just $ getCrAndMCB v cs
 
