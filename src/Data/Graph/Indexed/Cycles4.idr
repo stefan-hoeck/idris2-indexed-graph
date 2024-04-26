@@ -143,9 +143,6 @@ getBitsRing (y :: xs) x i = case lookup y x of
 testSigBit : Integer -> Integer -> Ordering
 testSigBit i j = compare (xor i j) (i .&. j)
 
--- get the length of a cycle in edges by counting the set bits
-cycleLength : Integer -> Nat
-
 -- test if ring is linearly independet from the given set
 -- returns the modified set if the ring is linearly independet
 -- and a boolan to indicate wheter the ring is linearly independent
@@ -168,7 +165,7 @@ isInSet ring sy  (x :: xs) =
 
 getCrAndMCB' : (v : Integer)
                -> (size : Nat)
-               -> (xs : List Integer)
+               -> (xs : List (Nat, Integer))
                -> (sm : List Integer)
                -> (eq : List Integer)
                -> (relC : List Integer)
@@ -176,22 +173,22 @@ getCrAndMCB' : (v : Integer)
                -> (List Integer, List Integer)
 getCrAndMCB' v size [] sm eq relC mcb = (relC, mcb)
 getCrAndMCB' v size (x :: xs) sm eq relC mcb =
-  if (cycleLength x) > size
+  if fst x > size
     -- now: sm == eq
-    then if (cast (length mcb)) == v then (relC, mcb) else case isInSet x [<] eq of
+    then if (cast (length mcb)) == v then (relC, mcb) else case isInSet (snd x) [<] eq of
       (_,     False) => getCrAndMCB' v size xs eq eq relC mcb -- neither in Cr nor MCB, continue
-      (neweq, True)  => getCrAndMCB' v (cycleLength x) xs eq neweq (x :: relC) (x :: mcb) -- in Cr and MCB
+      (neweq, True)  => getCrAndMCB' v (fst x) xs eq neweq (snd x :: relC) (snd x :: mcb) -- in Cr and MCB
 
-    else case isInSet x [<] sm of
+    else case isInSet (snd x) [<] sm of
       (_, False) => getCrAndMCB' v size xs sm eq relC mcb -- neither in Cr nor MCB, continue
       (_, True)  => -- is relevant, add to Cr (relC)
-         case isInSet x [<] eq of
-           (_,     False) => getCrAndMCB' v (cycleLength x) xs sm eq (x :: relC) mcb -- in Cr but not MCB
-           (neweq, True)  => getCrAndMCB' v (cycleLength x) xs sm neweq (x :: relC) (x :: mcb) -- in Cr and MCB
+         case isInSet (snd x) [<] eq of
+           (_,     False) => getCrAndMCB' v (fst x) xs sm eq (snd x :: relC) mcb -- in Cr but not MCB
+           (neweq, True)  => getCrAndMCB' v (fst x) xs sm neweq (snd x :: relC) (snd x :: mcb) -- in Cr and MCB
 
 --- Arguments: cyclomatic number (Nat) and rings (List Integer)
 --- Assuming the List of rings is ordered by ringSize in increasing order
-getCrAndMCB : Integer -> List Integer -> (List Integer, List Integer)
+getCrAndMCB : Integer -> List (Nat, Integer) -> (List Integer, List Integer)
 getCrAndMCB v xs = getCrAndMCB' v 0 xs [] [] [] []
 
 computeCyclomaticN : {k : _} -> IGraph k e n -> Integer
@@ -207,5 +204,5 @@ computeCrAndMCB g =
      Just xs =>
        let cs := zip lengths xs
            v := computeCyclomaticN g
-        in ?foo --Just $ getCrAndMCB v $ map snd cs
+        in Just $ getCrAndMCB v cs
 
