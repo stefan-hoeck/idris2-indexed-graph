@@ -195,6 +195,7 @@ getCrAndMCB : Nat -> List Integer -> (List Integer, List Integer)
 getCrAndMCB v xs = getCrAndMCB' v 0 xs [] [] [] []
 
 computeCyclomaticN : {k : _} -> IGraph k e n -> Nat
+computeCyclomaticN g = ?foo --size g - k
 
 computeCrAndMCB : {k : _} -> IGraph k e n -> Maybe (List Integer, List Integer)
 computeCrAndMCB g =
