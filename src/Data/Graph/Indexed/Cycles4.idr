@@ -160,10 +160,10 @@ convertC (x :: y :: xs) = (x,y) :: convertC (y :: xs)
 -- The cycle is represented as node pairs corresponding to the cyclic edges.
 -- The sortedMap is a maping from each edge of the graph (node pairs) to the bit
 -- pattern corresponding to this edge.
-getBitsRing : ECycle k -> SortedMap (Fin k, Fin k) Integer -> Integer -> Maybe Integer
-getBitsRing [] x i = Just i
+getBitsRing : ECycle k -> SortedMap (Fin k, Fin k) Integer -> Integer -> Integer
+getBitsRing [] x i = i
 getBitsRing (y :: xs) x i = case lookup y x of
-  Nothing => Nothing
+  Nothing => getBitsRing xs x i -- impossible case
   Just z  => getBitsRing xs x (i .|. z)
 
 -- Tests if two integers have the same significant bit.
@@ -226,15 +226,14 @@ getCrAndMCB : Nat -> List (Nat, Integer) -> (List Integer, List Integer)
 getCrAndMCB v xs = getCrAndMCB' v 0 xs [] [] [] []
 
 -- computes the relevant cycles and minimum cycle basis for a graph
-computeCrAndMCB : {k : _} -> IGraph k e n -> Maybe (List Integer, List Integer)
+computeCrAndMCB : {k : _} -> IGraph k e n -> (List Integer, List Integer)
 computeCrAndMCB g =
   let ebits   := getBitsEdges g
       ci'     := map convertC $ computeCI' g
       lengths := map length ci'
-   in case traverse (\x => getBitsRing x ebits 0) ci' of
-     Nothing => Nothing
-     Just xs =>
+   in case map (\x => getBitsRing x ebits 0) ci' of
+     xs =>
        let cs := zip lengths xs
            v  := computeCyclomaticN g
-        in Just $ getCrAndMCB v cs
+        in getCrAndMCB v cs
 
