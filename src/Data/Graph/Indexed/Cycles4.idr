@@ -231,9 +231,8 @@ computeCrAndMCB g =
   let ebits   := getBitsEdges g
       ci'     := map convertC $ computeCI' g
       lengths := map length ci'
-   in case map (\x => getBitsRing x ebits 0) ci' of
-     xs =>
-       let cs := zip lengths xs
-           v  := computeCyclomaticN g
-        in getCrAndMCB v cs
+      xs      := map (\x => getBitsRing x ebits 0) ci'
+      cs      := zip lengths xs
+      v       := computeCyclomaticN g
+   in getCrAndMCB v cs
 
