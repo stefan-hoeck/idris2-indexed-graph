@@ -124,10 +124,10 @@ searchAllMA g =
 public export
 record Cycle (k: Nat) where
   constructor C
-  size  : Nat
-  nodes : NCycle k
-  edges : ECycle k
-  bitp  : Integer
+  size   : Nat
+  ncycle : NCycle k
+  ecycle : ECycle k
+  bitp   : Integer
 
 computeCyclomaticN : {k : _} -> IGraph k e n -> Nat
 computeCyclomaticN g = size g `minus` k + 1
@@ -192,38 +192,34 @@ isInSet ring sy  (x :: xs) =
         _  => isInSet ring (sy :< x) xs
 
 -- Recursive function to compute the set of relevant rings and minimum cycle basis.
-getCrAndMCB' : (v : Nat)
-               -> (size : Nat)
-               -> (xs : List (Cycle k))
-               -> (sm : List Integer)
-               -> (eq : List Integer)
-               -> (relC : List (Cycle k))
-               -> (mcb : List (Cycle k))
+getCrAndMCB' : (v, size: Nat)
+               -> (sm, eq : List Integer)
+               -> (xs, cr, mcb : List (Cycle k))
                -> (List (Cycle k), List (Cycle k))
-getCrAndMCB' v size [] sm eq relC mcb = (relC, mcb)
-getCrAndMCB' v size (c :: cs) sm eq relC mcb =
+getCrAndMCB' v size sm eq [] cr mcb        = (cr, mcb)
+getCrAndMCB' v size sm eq (c :: cs) cr mcb =
   if c.size > size -- now: sm == eq
-    then if (cast (length mcb)) == v then (relC, mcb) else case isInSet c.bitp [<] eq of
+    then if (cast (length mcb)) == v then (cr, mcb) else case isInSet c.bitp [<] eq of
       (_,     False) => -- neither in Cr nor MCB, continue
-        getCrAndMCB' v size cs eq eq relC mcb
+        getCrAndMCB' v size eq eq cs cr mcb
       (neweq, True)  => -- in Cr and MCB
-        getCrAndMCB' v c.size cs eq neweq (c :: relC) (c :: mcb)
+        getCrAndMCB' v c.size eq neweq cs (c :: cr) (c :: mcb)
     else case isInSet c.bitp [<] sm of
       (_, False) => -- neither in Cr nor MCB, continue
-        getCrAndMCB' v size cs sm eq relC mcb
+        getCrAndMCB' v size sm eq cs cr mcb
       (_, True)  =>
         case isInSet c.bitp [<] eq of
           (_,     False) => -- in Cr but not MCB
-            getCrAndMCB' v c.size cs sm eq (c :: relC) mcb
+            getCrAndMCB' v c.size sm eq cs (c :: cr) mcb
           (neweq, True)  => -- in Cr and MCB
-            getCrAndMCB' v c.size cs sm neweq (c :: relC) (c :: mcb)
+            getCrAndMCB' v c.size sm neweq cs (c :: cr) (c :: mcb)
 
 -- Initalizes the recursive function getCrAndMCB' to get the relevant cycles and MCB
 -- from the cyclomatic number and the set of potentially relevant cycles (CI', given
 -- as a list of pairs with cycle size and the cycle represented as a bit pattern of edges).
 -- The potentially relevant cycles are ordered by size.
 getCrAndMCB : Nat -> List (Cycle k) -> (List (Cycle k), List (Cycle k))
-getCrAndMCB v xs = getCrAndMCB' v 0 xs [] [] [] []
+getCrAndMCB v xs = getCrAndMCB' v 0 [] [] xs [] []
 
 -- computes the relevant cycles and minimum cycle basis for a graph
 public export
@@ -236,9 +232,9 @@ computeCrAndMCB g =
    in getCrAndMCB v cs
 
    where getCycle : SortedMap (Fin k, Fin k) Integer -> NCycle k ->  Cycle k
-         getCycle sm nc =
+         getCycle ebits nc =
            let ec := convertC nc
                size := length nc
-               bitp := getBitsRing sm 0 ec
+               bitp := getBitsRing ebits 0 ec
             in C size nc ec bitp
 
