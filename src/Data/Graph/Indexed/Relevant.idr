@@ -32,8 +32,8 @@ record Path (k : Nat) where
 %runElab deriveIndexed "Path" [Show,Eq]
 
 public export
-0 Cycle : Nat -> Type
-Cycle k = List (Fin k)
+0 NCycle : Nat -> Type
+NCycle k = List (Fin k)
 
 public export
 0 ECycle : Nat -> Type
@@ -107,7 +107,7 @@ parameters {k    : Nat}
 -- path with all successors of equal length (resulting in odd cycles) and
 -- one node longer (resulting in even cycles) and connect the pair if it
 -- builds a proper, disjoint cycle.
-mergePaths : {o : _} -> Fin o -> ISubgraph o k e n -> List (Path o) -> List (Cycle k)
+mergePaths : {o : _} -> Fin o -> ISubgraph o k e n -> List (Path o) -> List (NCycle k)
 mergePaths x g = go [<]
   where
     -- check if the two paths (their ending nodes are given explicitly) are
@@ -115,10 +115,10 @@ mergePaths x g = go [<]
     %inline check : Path o -> Path o -> Bool
     check x y = x.first /= y.first && adjacent g x.last y.last
 
-    %inline cycle : Path o -> Path o -> Cycle k
+    %inline cycle : Path o -> Path o -> NCycle k
     cycle y z = fst . lab g <$> toCycle x y.path z.path
 
-    addCs : SnocList (Cycle k) -> Path o -> List (Path o) -> SnocList (Cycle k)
+    addCs : SnocList (NCycle k) -> Path o -> List (Path o) -> SnocList (NCycle k)
     addCs sc p [] = sc
     addCs sc p (q::qs) =
       case S p.length >= q.length of
@@ -128,7 +128,7 @@ mergePaths x g = go [<]
     -- for the current path, we take from the remaining paths those
     -- that are at most one node longer and try to pair them to
     -- form a cycle.
-    go : SnocList (Cycle k) -> List (Path o) -> List (Cycle k)
+    go : SnocList (NCycle k) -> List (Path o) -> List (NCycle k)
     go sxs []        = sxs <>> []
     go sxs (p :: ps) = go (addCs sxs p ps) ps
 
@@ -136,10 +136,10 @@ mergePaths x g = go [<]
 -- paths sharing the starting node. To make sure we compute each
 -- cycle only once, we only consider shortest paths consisting
 -- of nodes smaller than the starting node.
-cycleSystem : {o : _} -> ISubgraph o k e n -> Fin o -> List (Cycle k)
+cycleSystem : {o : _} -> ISubgraph o k e n -> Fin o -> List (NCycle k)
 cycleSystem g n = mergePaths n g (shortestPaths g n (deg g n))
 
-findCycles : Subgraph k e n -> List (Cycle k)
+findCycles : Subgraph k e n -> List (NCycle k)
 findCycles (G 0 g) = []
 findCycles (G (S k) g) =
   case filter ((2 <) . deg g) (nodes g) of
@@ -149,5 +149,5 @@ findCycles (G (S k) g) =
 -- cuts a graph into strongly connected components and computes
 -- the potential relevant cycles for each component in isolation.
 export
-computeCI' : {k : _} -> IGraph k e n -> List (Cycle k)
+computeCI' : {k : _} -> IGraph k e n -> List (NCycle k)
 computeCI' g = biconnectedComponents g >>= findCycles

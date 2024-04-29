@@ -121,6 +121,14 @@ searchAllMA g =
 --          Relevant Cycles and MCB
 --------------------------------------------------------------------------------
 
+public export
+record Cycle (k: Nat) where
+  constructor C
+  size  : Nat
+  nodes : NCycle k
+  edges : ECycle k
+  bitp  : Integer
+
 computeCyclomaticN : {k : _} -> IGraph k e n -> Integer
 computeCyclomaticN g = cast (size g) - cast k + 1
 
@@ -143,7 +151,7 @@ getBitsEdges g =
 
 -- Convert cycle representation List (Fin k) corresponding to cyclic nodes to the cycle
 -- representation List (Fin k, Fin k) corresponding to the cyclic edges.
-convertC : Cycle k -> ECycle k
+convertC : NCycle k -> ECycle k
 convertC [] = []
 convertC [y] = []
 convertC (x :: y :: xs) = (x,y) :: convertC (y :: xs)
