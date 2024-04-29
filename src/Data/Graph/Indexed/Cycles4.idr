@@ -196,7 +196,7 @@ getCrAndMCB' : (v, size: Nat)
                -> (sm, eq : List Integer)
                -> (xs, cr, mcb : List (Cycle k))
                -> (List (Cycle k), List (Cycle k))
-getCrAndMCB' v size sm eq [] cr mcb        = (cr, mcb)
+getCrAndMCB' v size sm eq []        cr mcb = (cr, mcb)
 getCrAndMCB' v size sm eq (c :: cs) cr mcb =
   if c.size > size -- now: sm == eq
     then if (cast (length mcb)) == v then (cr, mcb) else case isInSet c.bitp [<] eq of
