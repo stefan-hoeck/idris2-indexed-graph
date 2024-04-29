@@ -129,8 +129,8 @@ record Cycle (k: Nat) where
   edges : ECycle k
   bitp  : Integer
 
-computeCyclomaticN : {k : _} -> IGraph k e n -> Integer
-computeCyclomaticN g = cast (size g) - cast k + 1
+computeCyclomaticN : {k : _} -> IGraph k e n -> Nat
+computeCyclomaticN g = size g `minus` k + 1
 
 -- Compute a sortedMap corresponding to a mapping from all edges of a graph to their
 -- respective bit pattern.
@@ -192,7 +192,7 @@ isInSet ring sy  (x :: xs) =
         _  => isInSet ring (sy :< x) xs
 
 -- Recursive function to compute the set of relevant rings and minimum cycle basis.
-getCrAndMCB' : (v : Integer)
+getCrAndMCB' : (v : Nat)
                -> (size : Nat)
                -> (xs : List (Nat, Integer))
                -> (sm : List Integer)
@@ -222,7 +222,7 @@ getCrAndMCB' v size ((sizex, cyclex) :: xs) sm eq relC mcb =
 -- from the cyclomatic number and the set of potentially relevant cycles (CI', given
 -- as a list of pairs with cycle size and the cycle represented as a bit pattern of edges).
 -- The potentially relevant cycles are ordered by size.
-getCrAndMCB : Integer -> List (Nat, Integer) -> (List Integer, List Integer)
+getCrAndMCB : Nat -> List (Nat, Integer) -> (List Integer, List Integer)
 getCrAndMCB v xs = getCrAndMCB' v 0 xs [] [] [] []
 
 -- computes the relevant cycles and minimum cycle basis for a graph
