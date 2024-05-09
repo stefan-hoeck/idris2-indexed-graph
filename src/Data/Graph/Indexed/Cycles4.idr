@@ -136,7 +136,7 @@ record CycleSets (k : Nat) where
   mcb : List (Cycle k)
 
 computeCyclomaticN : {k : _} -> IGraph k e n -> Nat
-computeCyclomaticN g = size g `minus` k + 1
+computeCyclomaticN g = (size g `minus` k) + 1
 
 -- Compute a sortedMap corresponding to a mapping from all edges of a graph to their
 -- respective bit pattern.
