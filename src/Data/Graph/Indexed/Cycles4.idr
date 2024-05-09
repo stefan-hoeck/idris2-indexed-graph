@@ -129,6 +129,12 @@ record Cycle (k: Nat) where
   ecycle : ECycle k
   bitp   : Integer
 
+public export
+record CycleSets (k : Nat) where
+  constructor CS
+  cr : List (Cycle k)
+  mcb : List (Cycle k)
+
 computeCyclomaticN : {k : _} -> IGraph k e n -> Nat
 computeCyclomaticN g = size g `minus` k + 1
 
@@ -223,13 +229,14 @@ getCrAndMCB v xs = getCrAndMCB' v 0 [] [] xs [] []
 
 -- computes the relevant cycles and minimum cycle basis for a graph
 public export
-computeCrAndMCB : {k : _} -> IGraph k e n -> (List (Cycle k), List (Cycle k))
+computeCrAndMCB : {k : _} -> IGraph k e n -> CycleSets k
 computeCrAndMCB g =
   let ebits := getBitsEdges g
       ci'   := sortBy (compare `on` length) $ computeCI' g
       cs    := map (getCycle ebits) ci'
       v     := computeCyclomaticN g
-   in getCrAndMCB v cs
+   in case getCrAndMCB v cs of
+     (cr, mcb) => CS cr mcb
 
    where getCycle : SortedMap (Fin k, Fin k) Integer -> NCycle k ->  Cycle k
          getCycle ebits nc =
