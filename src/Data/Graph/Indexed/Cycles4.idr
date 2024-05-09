@@ -201,11 +201,11 @@ isInSet ring sy  (x :: xs) =
 getCrAndMCB' : (v, size: Nat)
                -> (sm, eq : List Integer)
                -> (xs, cr, mcb : List (Cycle k))
-               -> (List (Cycle k), List (Cycle k))
-getCrAndMCB' v size sm eq []        cr mcb = (cr, mcb)
+               -> CycleSets k
+getCrAndMCB' v size sm eq []        cr mcb = CS cr mcb
 getCrAndMCB' v size sm eq (c :: cs) cr mcb =
   if c.size > size -- now: sm == eq
-    then if (cast (length mcb)) == v then (cr, mcb) else case isInSet c.bitp [<] eq of
+    then if (cast (length mcb)) == v then CS cr mcb else case isInSet c.bitp [<] eq of
       (_,     False) => -- neither in Cr nor MCB, continue
         getCrAndMCB' v size eq eq cs cr mcb
       (neweq, True)  => -- in Cr and MCB
@@ -224,7 +224,7 @@ getCrAndMCB' v size sm eq (c :: cs) cr mcb =
 -- from the cyclomatic number and the set of potentially relevant cycles (CI', given
 -- as a list of pairs with cycle size and the cycle represented as a bit pattern of edges).
 -- The potentially relevant cycles are ordered by size.
-getCrAndMCB : Nat -> List (Cycle k) -> (List (Cycle k), List (Cycle k))
+getCrAndMCB : Nat -> List (Cycle k) -> CycleSets k
 getCrAndMCB v xs = getCrAndMCB' v 0 [] [] xs [] []
 
 -- computes the relevant cycles and minimum cycle basis for a graph
@@ -235,8 +235,7 @@ computeCrAndMCB g =
       ci'   := sortBy (compare `on` length) $ computeCI' g
       cs    := map (getCycle ebits) ci'
       v     := computeCyclomaticN g
-   in case getCrAndMCB v cs of
-     (cr, mcb) => CS cr mcb
+   in getCrAndMCB v cs
 
    where getCycle : SortedMap (Fin k, Fin k) Integer -> NCycle k ->  Cycle k
          getCycle ebits nc =
