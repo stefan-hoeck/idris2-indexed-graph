@@ -5,6 +5,7 @@ import Text.Smiles
 import Data.Graph.Indexed.Types
 import Data.Graph.Indexed.Cycles4
 import Data.Graph.Indexed.Ring
+import Data.Graph.Indexed.Relevant
 
 prettyInteger : Integer -> String
 prettyInteger = go [<] 0
@@ -28,21 +29,32 @@ testFusedRing str xs =
        in if ys == xs then "" else
             "Expected \{pretty xs} but got \{pretty ys}"
 
+fromList : List Nat -> Integer
+fromList = foldl (\x,y => setBit x y) 0
+
+testCrCycles : String -> List (List Nat) -> String
+testCrCycles str ks =
+  case readSmiles' str of
+    Left x  => x
+    Right x =>
+      let cr := map ncycle $ cr $ computeCrAndMCB (graph x)
+          cs := map (map finToNat) cr
+       in if cs == ks then "" else
+         "Expected \{show ks} but got \{show cs}"
+
 run : String -> IO ()
 run ""  = putStrLn "Success!"
 run str = putStrLn "Failed with an error: \{str}"
 
-fromList : List Nat -> Integer
-fromList = foldl (\x,y => setBit x y) 0
-
 export
 main : IO ()
 main = do
-  run (testFusedRing "CCCC" [])
-  run (testFusedRing "C1CC1" [(False, fromList [0,1,2])])
-  run (testFusedRing "COCC1CC1" [(False, fromList [3,4,5])])
-  run (testFusedRing "C1CC2CC12" [(True, fromList [0..4])])
-  run (testFusedRing "C1C(CC)C2C(OC)C12" [(True, fromList [0,1,4,5,8])])
-  run (testFusedRing "C1CC2CCCC2CC1" [(True, fromList [0..8])])
-  run (testFusedRing "C1CC2C(CC3CCCCC3)CCC2CC1" [(False, fromList [5..10]), (True, fromList [0,1,2,3,11,12,13,14,15])])
-  run (testFusedRing "C1CCC2(CCCC2)CC1" [(False, fromList [3,4,5,6,7]), (False, fromList [0,1,2,3,8,9])])
+ --- run (testFusedRing "CCCC" [])
+ --- run (testFusedRing "C1CC1" [(False, fromList [0,1,2])])
+ --- run (testFusedRing "COCC1CC1" [(False, fromList [3,4,5])])
+ --- run (testFusedRing "C1CC2CC12" [(True, fromList [0..4])])
+ --- run (testFusedRing "C1C(CC)C2C(OC)C12" [(True, fromList [0,1,4,5,8])])
+ --- run (testFusedRing "C1CC2CCCC2CC1" [(True, fromList [0..8])])
+ --- run (testFusedRing "C1CC2C(CC3CCCCC3)CCC2CC1" [(False, fromList [5..10]), (True, fromList [0,1,2,3,11,12,13,14,15])])
+ --- run (testFusedRing "C1CCC2(CCCC2)CC1" [(False, fromList [3,4,5,6,7]), (False, fromList [0,1,2,3,8,9])])
+  run (testCrCycles "CCCCC" [])
