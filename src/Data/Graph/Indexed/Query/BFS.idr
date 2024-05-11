@@ -51,23 +51,52 @@ parameters {k : Nat}
   ||| Traverses the graph in breadth-first order for the given
   ||| start nodes and accumulates the nodes encountered with the
   ||| given function.
+  |||
+  ||| Unlike `bfsWith`, this takes a list of nodes that are taboo, that is
+  ||| that will already be set to `visited`. This allows us exclude certain
+  ||| pathways from our search.
+  |||
+  ||| One use case is to find the shortest cycle containing a given
+  ||| edge or sequence of edges.
   export
-  bfsWith : (s -> Fin k -> Either s a) -> (init : s) -> Fin k -> Maybe a
-  bfsWith acc init x =
+  limitedBfsWith :
+       (taboo : List (Fin k))
+    -> (s -> Fin k -> Either s a)
+    -> (init : s)
+    -> Fin k
+    -> Maybe a
+  limitedBfsWith taboo acc init x =
     if k < 64
-       then fst $ bfsS (fromList [(init,x)]) acc ini
-       else visiting' k (bfsL (fromList [(init,x)]) acc)
+       then fst $ bfsS (fromList [(init,x)]) acc (visitAll taboo ini)
+       else visiting' k (bfsL (fromList [(init,x)]) acc . mvisitAll taboo)
+
+  ||| Traverses the graph in breadth-first order for the given
+  ||| start nodes and accumulates the nodes encountered with the
+  ||| given function.
+  export %inline
+  bfsWith : (s -> Fin k -> Either s a) -> (init : s) -> Fin k -> Maybe a
+  bfsWith = limitedBfsWith []
+
+  ||| Tries to find a shortest path between the two nodes.
+  export %inline
+  limitedBfs :
+       (taboo : List (Fin k))
+     -> Fin k
+     -> Fin k
+     -> Maybe (SnocList (Fin k))
+  limitedBfs taboo start end =
+    if start == end then Just [< start]
+    else
+      limitedBfsWith
+        taboo
+        (\sx,x => if x == end then Right (sx :< x) else Left (sx :< x))
+        [<start]
+        start
 
   ||| Tries to find a shortest path between the two nodes.
   export %inline
   bfs : Fin k -> Fin k -> Maybe (SnocList (Fin k))
-  bfs start end =
-    if start == end then Just [< start]
-    else
-      bfsWith
-        (\sx,x => if x == end then Right (sx :< x) else Left (sx :< x))
-        [<start]
-        start
+  bfs = limitedBfs []
 
 ----------------------------------------------------------------------------------
 ---- Generalized Breadth-First Searches

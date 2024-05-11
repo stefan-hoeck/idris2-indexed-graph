@@ -75,6 +75,12 @@ mvisit i (MV b) =
   let o   := ix i
    in MV $ set' o (setBit (prim__getByte b o) i) b
 
+||| Set all given nodes to "visited"
+export
+mvisitAll : List (Fin k) -> MVisited k -@ MVisited k
+mvisitAll []      m = m
+mvisitAll (v::vs) m = mvisitAll vs (mvisit v m)
+
 ||| Test, if the current node has been visited.
 export
 mvisited : Fin k -> MVisited k -@ CRes Bool (MVisited k)
@@ -129,6 +135,11 @@ ini = V 0
 export
 visit : Fin k -> Visited k -> Visited k
 visit i (V b) = V $ setBit b (finToNat i)
+
+||| Set all given nodes to "visited".
+export %inline
+visitAll : List (Fin k) -> Visited k -> Visited k
+visitAll vs v = foldl (flip visit) v vs
 
 ||| Test, if the current node has been visited.
 export
