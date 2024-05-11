@@ -67,6 +67,9 @@ dmap = readSmiles "C1(N(C)C)C=CN=CC=1"
 octac : Maybe (Graph Bond Elem)
 octac = readSmiles $ replicate 80 'C'
 
+tricycle : Maybe (Graph Bond Elem)
+tricycle = readSmiles "C12C3CCCC3C(CC2)CC1"
+
 testSPs : Maybe (Graph e n) -> Nat -> List (List Nat) -> Bool
 testSPs Nothing        n _   = False
 testSPs (Just $ G o g) n nss =
@@ -74,12 +77,22 @@ testSPs (Just $ G o g) n nss =
    in map (map finToNat . (<>> [])) (shortestPaths g x) == nss
 
 -- shortest path from start to target node
-testSP : Maybe (Graph e n) -> (start,target : Nat) -> List Nat -> Bool
-testSP Nothing        _ _ _  = False
-testSP (Just $ G o g) s t ns =
+limitedTestSP :
+     (taboo : List Nat)
+  -> Maybe (Graph e n)
+  -> (start,target : Nat)
+  -> List Nat
+  -> Bool
+limitedTestSP _  Nothing        _ _ _  = False
+limitedTestSP ts (Just $ G o g) s t ns =
   let Just x := natToFin s o | Nothing => False
       Just y := natToFin t o | Nothing => False
-   in map ((<>> []) . map finToNat) (bfs g x y) == Just ns
+      tsFin  := mapMaybe tryNatToFin ts
+   in map ((<>> []) . map finToNat) (limitedBfs g tsFin x y) == Just ns
+
+-- shortest path from start to target node
+testSP : Maybe (Graph e n) -> (start,target : Nat) -> List Nat -> Bool
+testSP = limitedTestSP []
 
 testDistances : Maybe (Graph e n) -> Nat -> List (Nat,Nat) -> PropertyT ()
 testDistances Nothing        _ _  = failWith Nothing "invalid SMILES"
@@ -126,6 +139,21 @@ prop_octacontan_short : Property
 prop_octacontan_short =
   property1 $ assert $
     testSP octac 0 79 [0..79]
+
+prop_tricycle18 : Property
+prop_tricycle18 =
+  property1 $ assert $
+    limitedTestSP [0] tricycle 1 8 [1,5,6,7,8]
+
+prop_tricycle25 : Property
+prop_tricycle25 =
+  property1 $ assert $
+    limitedTestSP [1] tricycle 2 5 [2,3,4,5]
+
+prop_tricycle25Short : Property
+prop_tricycle25Short =
+  property1 $ assert $
+    limitedTestSP [] tricycle 2 5 [2,1,5]
 
 --------------------------------------------------------------------------------
 -- Properties
@@ -177,4 +205,7 @@ props =
     , ("prop_dmap_dist", prop_dmap_dist)
     , ("prop_dmap_short2", prop_dmap_short2)
     , ("prop_octacontan_short", prop_octacontan_short)
+    , ("prop_tricycle18", prop_tricycle18)
+    , ("prop_tricycle25", prop_tricycle25)
+    , ("prop_tricycle25Short", prop_tricycle25Short)
     ]
