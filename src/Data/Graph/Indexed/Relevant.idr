@@ -124,7 +124,7 @@ parameters {o    : Nat}
       -- for the current path, we take from the remaining paths those
       -- that are at most one node longer and try to pair them to
       -- form a cycle.
-      go : SnocList (Cycle k) -> List (Path o) -> List (NCycle k)
+      go : SnocList (NCycle k) -> List (Path o) -> List (NCycle k)
       go sxs []        = sxs <>> []
       go sxs (p :: ps) = go (addCs sxs p ps) ps
 
