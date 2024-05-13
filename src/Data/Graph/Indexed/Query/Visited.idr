@@ -22,7 +22,7 @@ prim__setByte : Buffer -> (offset : Integer) -> (val : Bits8) -> PrimIO ()
 
 %foreign "scheme:blodwen-new-buffer"
          "node:lambda:s=>Buffer.alloc(s)"
-         "browser:lambda:s=>new UInt8Array(s)"
+         "browser:lambda:s=>new Uint8Array(s)"
 prim__newBuf : Bits32 -> Buffer
 
 destroy : (1 _ : %World) -> a -> a
