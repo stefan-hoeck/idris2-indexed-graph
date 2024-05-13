@@ -1,7 +1,7 @@
 module RingTest
 
 import Data.Bits
-import Text.Smiles
+import Text.Smiles.Simple
 import Data.Graph.Indexed.Types
 import Data.Graph.Indexed.Cycles4
 import Data.Graph.Indexed.Ring
@@ -22,9 +22,9 @@ pretty = show . map (map prettyInteger)
 
 testFusedRing : String -> List (Bool,Integer) -> String
 testFusedRing str xs =
-  case readSmiles' str of
-    Left x  => x
-    Right x =>
+  case readSmiles str of
+    Nothing  => "invalid SMILES"
+    Just x =>
       let ys = map (map value) $ searchAllMA (graph x)
        in if ys == xs then "" else
             "Expected \{pretty xs} but got \{pretty ys}"
@@ -34,9 +34,9 @@ fromList = foldl (\x,y => setBit x y) 0
 
 testCrCycles : String -> List (List Nat) -> String
 testCrCycles str ks =
-  case readSmiles' str of
-    Left x  => x
-    Right x =>
+  case readSmiles str of
+    Nothing  => "invalid SMILES"
+    Just x =>
       let cr := map ncycle $ cr $ computeCrAndMCB (graph x)
           cs := map (map finToNat) cr
        in if cs == ks then "" else
@@ -44,9 +44,9 @@ testCrCycles str ks =
 
 testMCBCycles : String -> List (List Nat) -> String
 testMCBCycles str ks =
-  case readSmiles' str of
-    Left x  => x
-    Right x =>
+  case readSmiles str of
+    Nothing  => "invalid SMILES"
+    Just x =>
       let cr := map ncycle $ mcb $ computeCrAndMCB (graph x)
           cs := map (map finToNat) cr
        in if cs == ks then "" else
@@ -54,9 +54,9 @@ testMCBCycles str ks =
 
 testCrSize : String -> Nat -> String
 testCrSize str k =
-  case readSmiles' str of
-    Left x  => x
-    Right x =>
+  case readSmiles str of
+    Nothing  => "invalid SMILES"
+    Just x =>
       let cr := cr $ computeCrAndMCB (graph x)
           len := length cr
        in if len == k then "" else
@@ -64,9 +64,9 @@ testCrSize str k =
 
 testMCBSize : String -> Nat -> String
 testMCBSize str k =
-  case readSmiles' str of
-    Left x  => x
-    Right x =>
+  case readSmiles str of
+    Nothing  => "invalid SMILES"
+    Just x =>
       let mcb := mcb $ computeCrAndMCB (graph x)
           len := length mcb
        in if len == k then "" else
@@ -74,9 +74,9 @@ testMCBSize str k =
 
 testCiSize : String -> Nat -> String
 testCiSize str k =
-  case readSmiles' str of
-    Left x  => x
-    Right x =>
+  case readSmiles str of
+    Nothing  => "invalid SMILES"
+    Just x =>
       let ci := computeCI' (graph x)
           len := length ci
        in if len == k then "" else

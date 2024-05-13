@@ -11,3 +11,4 @@ depends    = indexed-graph
            , hedgehog
 
 modules = Test.Data.Graph.Indexed.Generators
+        , Text.Smiles.Simple

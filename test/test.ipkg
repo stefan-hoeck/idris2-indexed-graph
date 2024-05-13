@@ -8,7 +8,6 @@ license    = "BSD-3 Clause"
 sourcedir  = "src"
 
 depends    = indexed-graph-generators
-           , chem
 
 executable = "indexed-graph-test"
 main       = Main
