@@ -11,15 +11,18 @@ import public Data.Array.Mutable
 --------------------------------------------------------------------------------
 
 %foreign "scheme:blodwen-buffer-getbyte"
-         "javascript:lambda:(buf,offset)=>buf.readUInt8(Number(offset))"
+         "node:lambda:(buf,offset)=>buf.readUInt8(Number(offset))"
+         "browser:lambda:(buf,offset)=>buf[Number(offset)]"
 prim__getByte : Buffer -> (offset : Integer) -> Bits8
 
 %foreign "scheme:blodwen-buffer-setbyte"
-         "javascript:lambda:(buf,offset,value)=>buf.writeUInt8(value, Number(offset))"
+         "node:lambda:(buf,offset,value)=>buf.writeUInt8(value, Number(offset))"
+         "browser:lambda:(buf,offset,value,w)=>{buf[Number(offset)] = value;}"
 prim__setByte : Buffer -> (offset : Integer) -> (val : Bits8) -> PrimIO ()
 
 %foreign "scheme:blodwen-new-buffer"
-         "javascript:lambda:s=>Buffer.alloc(s)"
+         "node:lambda:s=>Buffer.alloc(s)"
+         "browser:lambda:s=>new UInt8Array(s)"
 prim__newBuf : Bits32 -> Buffer
 
 destroy : (1 _ : %World) -> a -> a
