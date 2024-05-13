@@ -46,26 +46,26 @@ revOnto sx (sy:<y) = revOnto (sx :< y) sy
 toCycle : a -> SnocList a -> SnocList a -> List a
 toCycle r sx sy = r :: (revOnto sx sy <>> [r])
 
-parameters {k    : Nat}
-           (g    : IGraph k e n)
-           (root : Fin k)
+parameters {o    : Nat}
+           (g    : ISubgraph o k e n)
+           (root : Fin o)
            (rdeg : Nat)
 
-  %inline smaller : Fin k -> Bool
+  %inline smaller : Fin o -> Bool
   smaller n =
     case compare (deg g n) rdeg of
       LT => True
-      EQ => root <= n
+      EQ => root < n
       GT => False
 
-  init : Fin k -> Path k
+  init : Fin o -> Path o
   init n = P 1 (smaller n) [<n] n n
 
-  append : Path k -> Fin k -> Path k
+  append : Path o -> Fin o -> Path o
   append (P l kp p fs ls) n = P (S l) (kp && smaller n) (p :< n) fs n
 
   covering
-  shortestL : SnocList (Path k) -> Queue (Path k) -> MVis k (List (Path k))
+  shortestL : SnocList (Path o) -> Queue (Path o) -> MVis o (List (Path o))
   shortestL sp q v =
     case dequeue q of
       Nothing => (sp <>> []) # v
@@ -76,8 +76,7 @@ parameters {k    : Nat}
          in shortestL sp2 (enqueueAll q2 ns) (mvisit p.last v2)
 
   covering
---shortestS : SnocList (Path k) -> Queue (Path k) -> Visited k -> (List (Path k), Visited k)
-  shortestS : SnocList (Path k) -> Queue (Path k) -> Vis k (List (Path k))
+  shortestS : SnocList (Path o) -> Queue (Path o) -> Vis o (List (Path o))
   shortestS sp q v =
     case dequeue q of
       Nothing => (sp <>> [],v)
@@ -94,57 +93,47 @@ parameters {k    : Nat}
   |||
   ||| Runs in O(n+m) time and O(n) memory.
   export
-  shortestPaths : List (Path k)
+  shortestPaths : List (Path o)
   shortestPaths =
     let q := fromList $ map init (neighbours g root)
-     in assert_total $ if k < 64
+     in assert_total $ if o < 64
           then fst $ shortestS [<] q (root `visit` ini)
-          else visiting' k (\v => shortestL [<] q (root `mvisit` v))
+          else visiting' o (\v => shortestL [<] q (root `mvisit` v))
 
--- Takes a list of reverse paths starting all from the same node and
--- sorted by length (this is by construction: the `shortestPaths` algorithm
--- will produce shorter paths earlier than longer paths). It will pair every
--- path with all successors of equal length (resulting in odd cycles) and
--- one node longer (resulting in even cycles) and connect the pair if it
--- builds a proper, disjoint cycle.
-mergePaths : {o : _} -> Fin o -> ISubgraph o k e n -> List (Path o) -> List (NCycle k)
-mergePaths x g = go [<]
-  where
-    -- check if the two paths (their ending nodes are given explicitly) are
-    -- connected via a bond but are otherwise disjoint
-    %inline check : Path o -> Path o -> Bool
-    check x y = x.first /= y.first && adjacent g x.last y.last
+  -- Takes a list of reverse paths starting all from the same node and
+  -- sorted by length (this is by construction: the `shortestPaths` algorithm
+  -- will produce shorter paths earlier than longer paths). It will pair every
+  -- path with all successors of equal length (resulting in odd cycles) and
+  -- one node longer (resulting in even cycles) and connect the pair if it
+  -- builds a proper, disjoint cycle.
+  cycleSystem : List (NCycle k)
+  cycleSystem = go [<] shortestPaths
+    where
+      %inline cycle : (p1,p2 : SnocList (Fin o)) -> NCycle k
+      cycle p1 p2 = fst . lab g <$> toCycle root p1 p2
 
-    %inline cycle : Path o -> Path o -> NCycle k
-    cycle y z = fst . lab g <$> toCycle x y.path z.path
+      addCs : SnocList (NCycle k) -> Path o -> List (Path o) -> SnocList (NCycle k)
+      addCs sc p [] = sc
+      addCs sc p@(P len1 _ p1 f1 l1) (P len2 _ p2 f2 l2::qs) =
+        let True  := len1 == len2     | False => sc
+            False := f1 == f2         | True  => addCs sc p qs
+            False := adjacent g l1 l2 | True  => addCs (sc :< cycle p1 p2) p qs
+            ns    := keys $ intersect (neighboursAsAL g l1) (neighboursAsAL g l2)
+         in addCs (sc <>< map (cycle p1 . (p2 :<)) (filter smaller ns)) p qs
 
-    addCs : SnocList (NCycle k) -> Path o -> List (Path o) -> SnocList (NCycle k)
-    addCs sc p [] = sc
-    addCs sc p (q::qs) =
-      case S p.length >= q.length of
-        False => sc
-        True  => if check p q then addCs (sc :< cycle p q) p qs else addCs sc p qs
-
-    -- for the current path, we take from the remaining paths those
-    -- that are at most one node longer and try to pair them to
-    -- form a cycle.
-    go : SnocList (NCycle k) -> List (Path o) -> List (NCycle k)
-    go sxs []        = sxs <>> []
-    go sxs (p :: ps) = go (addCs sxs p ps) ps
-
--- We compute potentially relevant cycles by merging shortest
--- paths sharing the starting node. To make sure we compute each
--- cycle only once, we only consider shortest paths consisting
--- of nodes smaller than the starting node.
-cycleSystem : {o : _} -> ISubgraph o k e n -> Fin o -> List (NCycle k)
-cycleSystem g n = mergePaths n g (shortestPaths g n (deg g n))
+      -- for the current path, we take from the remaining paths those
+      -- that are at most one node longer and try to pair them to
+      -- form a cycle.
+      go : SnocList (Cycle k) -> List (Path o) -> List (NCycle k)
+      go sxs []        = sxs <>> []
+      go sxs (p :: ps) = go (addCs sxs p ps) ps
 
 findCycles : Subgraph k e n -> List (NCycle k)
 findCycles (G 0 g) = []
 findCycles (G (S k) g) =
   case filter ((2 <) . deg g) (nodes g) of
     [] => [Builtin.fst . lab g <$> (nodes g ++ [FZ])] -- this is already an elementary cycle
-    ns => ns >>= cycleSystem g -- this is a system of cycles
+    ns => ns >>= \n => cycleSystem g n (deg g n) -- this is a system of cycles
 
 -- cuts a graph into strongly connected components and computes
 -- the potential relevant cycles for each component in isolation.
