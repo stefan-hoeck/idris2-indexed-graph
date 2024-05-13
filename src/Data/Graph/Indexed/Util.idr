@@ -12,6 +12,19 @@ import Data.Vect
 
 %default total
 
+||| Generates the list of all `Fin n` in linear type.
+|||
+||| This is a lot faster than `Data.Fin.allFins`, which runs in quadratic
+||| time.
+export
+allFinsFast : (n : Nat) -> List (Fin n)
+allFinsFast 0 = []
+allFinsFast (S n) = go [] last
+  where
+    go : List (Fin $ S n) -> Fin (S n) -> List (Fin $ S n)
+    go xs FZ     = FZ :: xs
+    go xs (FS x) = go (FS x :: xs) (assert_smaller (FS x) $ weaken x)
+
 --------------------------------------------------------------------------------
 --          Internal utilities
 --------------------------------------------------------------------------------
@@ -96,21 +109,51 @@ export %inline
 lab : IGraph k e n -> Fin k -> n
 lab g = label . adj g
 
+||| Returns the edges connecting a node as an `AssocList`
+||| (nodes plus edge labels).
+export %inline
+neighboursAsAL : IGraph k e n -> Fin k -> AssocList k e
+neighboursAsAL g = neighbours . adj g
+
+||| Returns the edges connecting a node as a list of pairs
+||| (nodes plus edge labels).
+export %inline
+neighboursAsPairs : IGraph k e n -> Fin k -> List (Fin k, e)
+neighboursAsPairs g = pairs . neighboursAsAL g
+
 ||| Returns the list of neighbouring nodes of a node in a graph.
 export %inline
 neighbours : IGraph k e n -> Fin k -> List (Fin k)
-neighbours g = keys . neighbours . adj g
+neighbours g = keys . neighboursAsAL g
 
 ||| Returns the list of edges connecting a node.
 export %inline
 edgesTo : IGraph k e n -> Fin k -> List (Edge k e)
-edgesTo g k = ctxtEdges k (adj g k) <>> []
+edgesTo g k =
+  let A _ ns := adj g k
+   in mapMaybe (\(n,l) => mkEdge k n l) $ pairs ns
 
 ||| Returns the list of neighboring nodes paired with their
 ||| corresponding labels.
 export
 lneighbours : IGraph k e n -> Fin k -> List (Fin k, n)
 lneighbours g = map (\x => (x, lab g x)) . neighbours g
+
+||| Returns the edges connecting a node paired with the
+||| neighbouring node labels.
+export
+lneighboursAsAL : IGraph k e n -> Fin k -> AssocList k (e, n)
+lneighboursAsAL g = mapKV (\x => (, lab g x)) . neighboursAsAL g
+
+||| Returns the labels of neighbour nodes of a node.
+export
+neighbourLabels : IGraph k e n -> Fin k -> List n
+neighbourLabels g = map (lab g) . neighbours g
+
+||| Returns the labels of edges connecting a node.
+export %inline
+edgeLabels : IGraph k e n -> Fin k -> List e
+edgeLabels g = values . neighbours . adj g
 
 ||| Find the label for an `Edge`.
 export
@@ -314,14 +357,10 @@ delEdge x y = delEdges [(x,y)]
 
 ||| Insert multiple `LNode`s into the `Graph`.
 export
-insNodes :
-     {k,m : _}
-  -> IGraph k e n
-  -> (ns : Vect m n)
-  -> IGraph (m + k) e n
+insNodes : {k,m : _} -> IGraph k e n -> (ns : Vect m n) -> IGraph (k + m) e n
 insNodes (IG g) ns =
   let g'  := map (weakenAdjN m) g
-   in rewrite plusCommutative m k in IG $ append g' (map fromLabel (array ns))
+   in IG $ append g' (map fromLabel (array ns))
 
 ||| Insert multiple `LNode`s into the `Graph`.
 export
@@ -329,8 +368,8 @@ insNodesAndEdges :
      {k,m : _}
   -> IGraph k e n
   -> (ns : Vect m n)
-  -> (es : List (Edge (m + k) e))
-  -> IGraph (m + k) e n
+  -> (es : List (Edge (k + m) e))
+  -> IGraph (k + m) e n
 insNodesAndEdges g ns es = insEdges es $ insNodes g ns
 
 ||| Insert a labeled node into the `Graph`.
@@ -338,8 +377,9 @@ insNodesAndEdges g ns es = insEdges es $ insNodes g ns
 ||| in the graph.
 export %inline
 insNode : {k : _} -> IGraph k e n -> n -> IGraph (S k) e n
-insNode g v = insNodes g [v]
+insNode g v = rewrite plusCommutative 1 k in insNodes g [v]
 
+export
 adjEdges : SortedMap (Fin x) (Fin y) -> Adj x e n -> Adj y e n
 adjEdges m (A l ns) =
   let ps := mapMaybe (\(n,v) => (,v) <$> lookup n m) $ pairs ns
@@ -362,17 +402,32 @@ export
 delNode : {k : _} -> Fin k -> IGraph k e n -> Graph e n
 delNode = delNodes . pure
 
+||| Merge two graphs connecting them via the given list of
+||| edges
+export
+mergeGraphsWithEdges :
+     {k,m : _}
+  -> (g1 : IGraph k e n)
+  -> (g2 : IGraph m e n)
+  -> List (Fin k, Fin m, e)
+  -> IGraph (k + m) e n
+mergeGraphsWithEdges {k} g t es =
+  let vNodes := label <$> toVect t.graph
+      cEdges := map (\(x,y,l) => compositeEdge x y l) es
+      lEdges := incEdge k <$> edges t
+   in insNodesAndEdges g vNodes (cEdges ++ lEdges)
+
 ||| Merge two graphs that have no bonds between them.
 export
 mergeGraphs :
      {k,m : _}
   -> (g1 : IGraph k e n)
   -> (g2 : IGraph m e n)
-  -> IGraph (m + k) e n
+  -> IGraph (k + m) e n
 mergeGraphs {k} g t =
   let vNodes := label <$> toVect t.graph
       lEdges := incEdge k <$> edges t
-   in insNodesAndEdges g vNodes (rewrite plusCommutative m k in lEdges)
+   in insNodesAndEdges g vNodes lEdges
 
 --------------------------------------------------------------------------------
 --          Displaying Graphs
