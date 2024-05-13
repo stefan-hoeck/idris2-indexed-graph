@@ -3,6 +3,7 @@ module Data.Graph.Indexed.Ring
 import Data.Bits
 import Data.Fin
 import Data.Graph.Indexed.Types
+import Data.Graph.Indexed.Util
 
 public export
 record Ring k where
