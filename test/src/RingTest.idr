@@ -106,19 +106,22 @@ main = do
 --- run (testFusedRing "C1CC2CCCC2CC1" [(True, fromList [0..8])])
 --- run (testFusedRing "C1CC2C(CC3CCCCC3)CCC2CC1" [(False, fromList [5..10]), (True, fromList [0,1,2,3,11,12,13,14,15])])
 --- run (testFusedRing "C1CCC2(CCCC2)CC1" [(False, fromList [3,4,5,6,7]), (False, fromList [0,1,2,3,8,9])])
---   run (testCrCycles "CCCCC" [])
---   run (testMCBCycles "CCCCC" [])
---   run (testCrSize "CCCCC" 0)
---   run (testCrSize "CCCCC" 0)
---
---   run (testCrSize "C1CC1" 1)
---   run (testMCBSize "C1CC1" 1)
---   run (testCrCycles "C1CC1" [[2,1,0,2]])
---   run (testMCBCycles "C1CC1" [[2,1,0,2]])
---
---   run (testMCBSize "C3CCC2CC1CCCCC1CC2C3" 3)
---   run (testCrSize "C3CCC2CC1CCCCC1CC2C3" 3)
---   run (testCyclomaticNr "C1CC2CCC1CC2" 2)
+
+  run (testCrCycles "CCCCC" [])
+  run (testMCBCycles "CCCCC" [])
+  run (testCrSize "CCCCC" 0)
+  run (testCrSize "CCCCC" 0)
+
+  run (testCrSize "C1CC1" 1)
+  run (testMCBSize "C1CC1" 1)
+  run (testCrCycles "C1CC1" [[2,1,0,2]])
+  run (testMCBCycles "C1CC1" [[2,1,0,2]])
+
+  run (testMCBSize "C3CCC2CC1CCCCC1CC2C3" 3)
+  run (testCrSize "C3CCC2CC1CCCCC1CC2C3" 3)
+
   run (testMCBSize "C1CC2CCC1CC2" 2)
---  run (testCrSize "C1CC2CCC1CC2" 3)
---  run (testCiSize "C1CC2CCC1CC2" 3)
+  run (testCrSize "C1CC2CCC1CC2" 3)
+
+  run (testMCBSize "C1CC2CCC1C3CCCCC23" 3)
+  run (testCrSize "C1CC2CCC1C3CCCCC23" 4)
