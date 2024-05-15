@@ -180,58 +180,25 @@ getBitsRing sm i (x :: xs) = case lookup x sm of
 testSigBit : Integer -> Integer -> Ordering
 testSigBit i j = compare (xor i j) (i .&. j)
 
-pretty' :
-    (ring         : Integer)
-  -> (processed   : SnocList Integer)
-  -> (current     : Integer)
-  -> (unprocessed : List Integer)
-  -> String
-pretty' r p c u =
-  """
-
-  isInSet':
-  ring: \{show r}
-  processed: \{show p}
-  current: \{show c}
-  unprocessed: \{show u}
-  """
-
-pretty :
-     (ring         : Integer)
-  -> (unprocessed : List Integer)
-  -> String
-pretty r u =
-  """
-
-  isInSet:
-  ring: \{show r}
-  unprocessed: \{show u}
-  """
-
 -- Tests if a ring, represented as a bit pattern of edges, is linearly independet
 -- from the given set of rings. Returns the modified set if the ring is linearly
 -- independet and a boolan to indicate wheter the ring is linearly independent.
-isInSet' : (ring : Integer)
+isInSet : (ring : Integer)
           -> (processedRs : SnocList (Integer))
           -> (unprocessedRs : List (Integer))
           -> (List Integer, Bool)
-isInSet' ring sy  []        = (toList $ sy :< ring, True)
-isInSet' ring sy  (x :: xs) =
-  trace (pretty' ring sy x xs) $ case testSigBit ring x of
+isInSet ring sy  []        = (toList $ sy :< ring, True)
+isInSet ring sy  (x :: xs) =
+  case testSigBit ring x of
     LT => -- same significant bit
       let remainder := xor ring x
            in if remainder == 0
                 then (sy <>> x :: xs, False)
-                else isInSet' remainder (sy :< x) xs
+                else isInSet remainder (sy :< x) xs
     _  => -- distinct significant bit
       case compare ring x of
         GT => (sy :< ring <>> x :: xs, True)
-        _  => isInSet' ring (sy :< x) xs
-
-isInSet : (ring : Integer)
-          -> (unprocessedRs : List (Integer))
-          -> (List Integer, Bool)
-isInSet r u = trace (pretty r u) $ isInSet' r [<] u
+        _  => isInSet ring (sy :< x) xs
 
 -- Recursive function to compute the set of relevant rings and minimum cycle basis.
 getCrAndMCB' : (v, size: Nat)
@@ -241,16 +208,16 @@ getCrAndMCB' : (v, size: Nat)
 getCrAndMCB' v size sm eq []        cr mcb = CS cr mcb
 getCrAndMCB' v size sm eq (c :: cs) cr mcb =
   if c.size > size -- now: sm == eq
-    then if (cast (length mcb)) == v then CS cr mcb else case isInSet c.bitp eq of
+    then if (cast (length mcb)) == v then CS cr mcb else case isInSet c.bitp [<] eq of
       (_,     False) => -- neither in Cr nor MCB, continue
         getCrAndMCB' v size eq eq cs cr mcb
       (neweq, True)  => -- in Cr and MCB
         getCrAndMCB' v c.size eq neweq cs (c :: cr) (c :: mcb)
-    else case isInSet c.bitp sm of
+    else case isInSet c.bitp [<] sm of
       (_, False) => -- neither in Cr nor MCB, continue
         getCrAndMCB' v size sm eq cs cr mcb
       (_, True)  =>
-        case isInSet c.bitp eq of
+        case isInSet c.bitp [<] eq of
           (_,     False) => -- in Cr but not MCB
             getCrAndMCB' v c.size sm eq cs (c :: cr) mcb
           (neweq, True)  => -- in Cr and MCB
@@ -263,23 +230,12 @@ getCrAndMCB' v size sm eq (c :: cs) cr mcb =
 getCrAndMCB : Nat -> List (Cycle k) -> CycleSets k
 getCrAndMCB v xs = getCrAndMCB' v 0 [] [] xs [] []
 
-prettyCycle : Cycle k -> String
-prettyCycle (C size ncycle ecycle bitp) =
-  """
-
-  Cycle
-  size  : \{show size}
-  nodes : \{show ncycle}
-  edges : \{show ecycle}
-  bitp  : \{show bitp}
-  """
-
 -- computes the relevant cycles and minimum cycle basis for a graph
 public export
 computeCrAndMCB : {k : _} -> IGraph k e n -> CycleSets k
 computeCrAndMCB g =
   let ebits := getBitsEdges g
-      ci'   := trace (show ebits) $ sortBy (compare `on` length) $ computeCI' g
+      ci'   := sortBy (compare `on` length) $ computeCI' g
       cs    := map (getCycle ebits) ci'
       v     := computeCyclomaticN g
    in getCrAndMCB v cs
@@ -289,6 +245,5 @@ computeCrAndMCB g =
            let ec := convertC nc
                size := length nc
                bitp := getBitsRing ebits 0 ec
-               res  := C size nc ec bitp
-            in trace (prettyCycle res) res
+            in C size nc ec bitp
 
