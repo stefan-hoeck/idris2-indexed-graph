@@ -154,8 +154,8 @@ getBitsEdges g =
                   -> SortedMap (Fin k, Fin k) Integer
         setBits []        bitp sm = sm
         setBits (y :: xs) bitp sm =
-          let newbitp := shiftL bitp 1
-              smnew   := insert y bitp sm
+          let smnew   := insert y bitp sm
+              newbitp := shiftL bitp 1
            in setBits xs newbitp smnew
 
 -- Convert cycle representation List (Fin k) corresponding to cyclic nodes to the cycle
