@@ -8,6 +8,7 @@ import Data.Graph.Indexed.Query.Visited
 import Data.Graph.Indexed.Cycles
 import Data.Graph.Indexed.Cycles2
 import Data.Graph.Indexed.Cycles3
+import Data.Graph.Indexed.Ring
 import Profile
 
 %default total
@@ -123,6 +124,7 @@ ringN n =
       es   := getEdges fins
    in G n $ mkGraph (replicate _ () ) (mapMaybe id es)
 
+covering
 searchRings : ArrGr () () -> Exists (List . Ring)
 searchRings (G _ g) = Evidence _ $ searchAll g
 
