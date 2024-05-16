@@ -50,24 +50,62 @@ parameters {k : Nat}
   ||| This abborts if the function returns a `Right`, otherwise it
   ||| continues with the traversal. The result is either the
   ||| accumulated state or the final result (if any).
+  |||
+  ||| Unlike `dfsWith`, this takes a list of nodes that are taboo, that is
+  ||| that will already be set to `visited`. This allows us exclude certain
+  ||| pathways from our search.
   export
-  dfsWith : (s -> Fin k -> Either s a) -> (init : s) -> Fin k -> Either s a
-  dfsWith acc init x =
+  limitedDfsWith :
+       (taboo : List (Fin k))
+    -> (s -> Fin k -> Either s a)
+    -> (init : s)
+    -> Fin k
+    -> Either s a
+  limitedDfsWith taboo acc init x =
     if k < 64
-       then fst $ dfsS [x] acc init ini
-       else visiting' k (dfsL [x] acc init)
+       then fst $ dfsS [x] acc init (visitAll taboo ini)
+       else visiting' k (dfsL [x] acc init . mvisitAll taboo)
+
+  ||| Traverses the graph in depth-first order from the given
+  ||| start node and accumulates the nodes encountered with the
+  ||| given function.
+  |||
+  ||| This abborts if the function returns a `Right`, otherwise it
+  ||| continues with the traversal. The result is either the
+  ||| accumulated state or the final result (if any).
+  export %inline
+  dfsWith : (s -> Fin k -> Either s a) -> (init : s) -> Fin k -> Either s a
+  dfsWith = limitedDfsWith []
+
+  ||| Like `dfsWith` but accumulates the whole connected component
+  ||| from the given starting node in depth-first order.
+  export %inline
+  limitedDfsWith' :
+       (taboo : List (Fin k))
+    -> (acc : s -> Fin k -> s)
+    -> (init : s)
+    -> Fin k
+    -> s
+  limitedDfsWith' taboo acc init =
+    fromLeft . limitedDfsWith taboo (fleft2 acc) init
 
   ||| Like `dfsWith` but accumulates the whole connected component
   ||| from the given starting node in depth-first order.
   export %inline
   dfsWith' : (acc : s -> Fin k -> s) -> (init : s) -> Fin k -> s
-  dfsWith' acc init = fromLeft . dfsWith (fleft2 acc) init
+  dfsWith' = limitedDfsWith' []
+
+  ||| Traverses the graph in depth-first order for the given start nodes
+  ||| returning the encountered nodes in a `SnocList`.
+  export %inline
+  limitedDfs : (taboo : List (Fin k)) -> Fin k -> SnocList (Fin k)
+  limitedDfs taboo = limitedDfsWith' taboo (:<) [<]
 
   ||| Traverses the graph in depth-first order for the given start nodes
   ||| returning the encountered nodes in a `SnocList`.
   export %inline
   dfs : Fin k -> SnocList (Fin k)
-  dfs = dfsWith' (:<) [<]
+  dfs = limitedDfs []
 
 --------------------------------------------------------------------------------
 -- Component-wise DFS traversals
