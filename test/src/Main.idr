@@ -2,6 +2,7 @@ module Main
 
 import AssocList
 import BFS
+import DFS
 import Hedgehog
 import SubgraphIso
 import Subgraphs
@@ -18,5 +19,6 @@ main =
     , Visited.props
     , Subgraphs.props
     , BFS.props
+    , DFS.props
     , SubgraphIso.props
     ]
