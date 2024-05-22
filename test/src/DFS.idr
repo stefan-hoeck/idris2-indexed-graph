@@ -27,37 +27,8 @@ limitedDfsWithTest _  Nothing        _ _  = False
 limitedDfsWithTest ts (Just $ G o g) s ns =
   let Just b  := natToFin s o | Nothing => False
       tsFin   := mapMaybe tryNatToFin ts
-      dfsWith := limitedDfsWith
-        {a=List (Fin o)}
-        g
-        tsFin
-        (\xs,x => Left (x :: xs))
-        Prelude.Nil
-        b
-   in case dfsWith of
-        Right _ => False
-        Left ls => reverse (map finToNat ls) == ns
+   in map cast (limitedDfs g tsFin b <>> []) == ns
 
-limitedDfsWithTest' :
-     (taboo : List Nat)
-  -> Maybe (Graph e n)
-  -> (start : Nat)
-  -> List Nat
-  -> List Nat
-limitedDfsWithTest' _  Nothing        _ _  = []
-limitedDfsWithTest' ts (Just $ G o g) s ns =
-  let Just b  := natToFin s o | Nothing => []
-      tsFin   := mapMaybe tryNatToFin ts
-      dfsWith := limitedDfsWith
-        {a=List (Fin o)}
-        g
-        tsFin
-        (\xs,x => Left (x :: xs))
-        Prelude.Nil
-        b
-   in case dfsWith of
-        Right _ => []
-        Left ls => reverse $ map finToNat ls
 
 --------------------------------------------------------------------------------
 -- Properties
