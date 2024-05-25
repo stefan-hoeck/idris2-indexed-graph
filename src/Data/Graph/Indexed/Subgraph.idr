@@ -75,6 +75,22 @@ export
 connectedComponents : {k : _} -> IGraph k e n -> List (Subgraph k e n)
 connectedComponents g = subgraphL g . (<>> []) <$> components g
 
+||| Converts the node of a subgraph to the corresponding node in the
+||| original graph.
+export
+origin : ISubgraph k m e n -> Fin k -> Fin m
+origin s = fst . lab s
+
+||| Converts the edge of a subgraph to the corresponding edge in the
+||| original graph.
+|||
+||| This comes with the potential of failure, since we cannot prove that
+||| the subgraph is injective, that is, distinct nodes in the subgraph
+||| point at distinct nodes in the original graph.
+export
+originEdge : ISubgraph k m e n -> Edge k e -> Maybe (Edge m e)
+originEdge s (E x y l) = mkEdge (origin s x) (origin s y) l
+
 --------------------------------------------------------------------------------
 -- Biconnected Components
 --------------------------------------------------------------------------------
