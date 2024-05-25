@@ -1,6 +1,7 @@
 module Ring.Bonds
 
 import Data.Graph.Indexed.Ring.Bonds
+import Data.Graph.Indexed.Ring.Util
 import Data.SortedSet
 import Test.Data.Graph.Indexed.Generators
 import Text.Smiles.Simple
@@ -17,9 +18,7 @@ rbTest : String -> List (Nat,Nat) -> Property
 rbTest s ps =
   property1 $ assert $ case readSmiles s of
     Nothing => False
-    Just (G o g) =>
-      let rbs := ringBonds g
-       in all (maybe False (`contains` rbs) . toEdge) ps
+    Just (G o g) => ringBonds g == toEdgeSet ps
 
 prop_ethanol : Property
 prop_ethanol = rbTest "CCO" []

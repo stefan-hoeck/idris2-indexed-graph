@@ -5,9 +5,10 @@ import BFS
 import DFS
 import Hedgehog
 import Ring.Bonds
+import Ring.Util as RU
 import SubgraphIso
 import Subgraphs
-import Util
+import Util as U
 import Visited
 
 %default total
@@ -19,8 +20,9 @@ main =
     , BFS.props
     , DFS.props
     , Ring.Bonds.props
+    , RU.props
     , SubgraphIso.props
     , Subgraphs.props
-    , Util.props
+    , U.props
     , Visited.props
     ]

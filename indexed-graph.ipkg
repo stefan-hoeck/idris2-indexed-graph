@@ -25,3 +25,4 @@ modules = Data.AssocList.Indexed
         , Data.Graph.Indexed.Query.Util
 
         , Data.Graph.Indexed.Ring.Bonds
+        , Data.Graph.Indexed.Ring.Util
