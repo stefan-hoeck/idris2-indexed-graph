@@ -1,6 +1,7 @@
 module RingTest
 
 import Data.Vect
+import Data.List
 import Data.Bits
 import Data.Graph.Indexed
 import Text.Smiles.Simple
@@ -110,15 +111,15 @@ toNext : {n : Nat} -> (x : Nat) -> Maybe (Edge n ())
 toNext x = natEdge x (S x)
 
 ----- a chain of `n` fused cyclohexane rings
----chain : (n : Nat) -> IGraph (4*n+2) () ()
----chain n =
----  let tot := 4*n + 2
----   in mkGraph
----        (replicate _ ())
----        (catMaybes $ map toNext [0..tot] ++ map close [0..n])
----  where
----    close : Nat -> Maybe (Edge (4*n+2) ())
----    close x = natEdge (2 * x) ((4*n+1) `minus` (2*x))
+chain : (n : Nat) -> IGraph (4*n+2) () ()
+chain n =
+  let tot := 4*n + 2
+   in mkGraph
+        (replicate _ ())
+        (catMaybes $ map toNext [0..tot] ++ map close [0..n])
+  where
+    close : Nat -> Maybe (Edge (4*n+2) ())
+    close x = natEdge (2 * x) ((4*n+1) `minus` (2*x))
 
 -- an `S m x S n` square grid
 grid : (m,n : Nat) -> IGraph (S m * S n) () ()
