@@ -10,6 +10,10 @@ import Data.Graph.Indexed.Cycles4
 import Data.Graph.Indexed.Ring
 import Data.Graph.Indexed.Relevant
 
+--------------------------------------------------------------------------------
+--          Utilities
+--------------------------------------------------------------------------------
+
 prettyInteger : Integer -> String
 prettyInteger = go [<] 0
   where
@@ -23,6 +27,19 @@ prettyInteger = go [<] 0
 pretty : List (Bool,Integer) -> String
 pretty = show . map (map prettyInteger)
 
+fromList : List Nat -> Integer
+fromList = foldl (\x,y => setBit x y) 0
+
+natEdge : {n : Nat} -> (x,y : Nat) -> Maybe (Edge n ())
+natEdge x y = join [| mkEdge (tryNatToFin x) (tryNatToFin y) (pure ()) |]
+
+toNext : {n : Nat} -> (x : Nat) -> Maybe (Edge n ())
+toNext x = natEdge x (S x)
+
+--------------------------------------------------------------------------------
+--          Basic Ring Search Tests
+--------------------------------------------------------------------------------
+
 testFusedRing : String -> List (Bool,Integer) -> String
 testFusedRing str xs =
   case readSmiles str of
@@ -32,28 +49,28 @@ testFusedRing str xs =
        in if ys == xs then "" else
             "Expected \{pretty xs} but got \{pretty ys}"
 
-fromList : List Nat -> Integer
-fromList = foldl (\x,y => setBit x y) 0
+--------------------------------------------------------------------------------
+--          Ring Sets Testfunctionalities
+--------------------------------------------------------------------------------
 
-testCrCycles : String -> List (List Nat) -> String
-testCrCycles str ks =
+testCyclomaticNr : String -> Nat -> String
+testCyclomaticNr str k =
+  case readSmiles str of
+    Nothing  => "invalid SMILES"
+    Just (G o g) =>
+      if computeCyclomaticN g == k
+         then ""
+         else "Expected \{show k} but got \{show $ computeCyclomaticN g}"
+
+testCiSize : String -> Nat -> String
+testCiSize str k =
   case readSmiles str of
     Nothing  => "invalid SMILES"
     Just x =>
-      let cr := map ncycle $ cr $ computeCrAndMCB (graph x)
-          cs := map (map finToNat) cr
-       in if cs == ks then "" else
-         "Expected \{show ks} but got \{show cs}"
-
-testMCBCycles : String -> List (List Nat) -> String
-testMCBCycles str ks =
-  case readSmiles str of
-    Nothing  => "invalid SMILES"
-    Just x =>
-      let cr := map ncycle $ mcb $ computeCrAndMCB (graph x)
-          cs := map (map finToNat) cr
-       in if cs == ks then "" else
-         "Expected \{show ks} but got \{show cs}"
+      let ci := computeCI' (graph x)
+          len := length ci
+       in if len == k then "" else
+         "Expected \{show k} but got \{show len}"
 
 testCrSize : String -> Nat -> String
 testCrSize str k =
@@ -75,24 +92,29 @@ testMCBSize str k =
        in if len == k then "" else
          "Expected \{show k} but got \{show len}"
 
-testCyclomaticNr : String -> Nat -> String
-testCyclomaticNr str k =
-  case readSmiles str of
-    Nothing  => "invalid SMILES"
-    Just (G o g) =>
-      if computeCyclomaticN g == k
-         then ""
-         else "Expected \{show k} but got \{show $ computeCyclomaticN g}"
-
-testCiSize : String -> Nat -> String
-testCiSize str k =
+testCrCycles : String -> List (List Nat) -> String
+testCrCycles str ks =
   case readSmiles str of
     Nothing  => "invalid SMILES"
     Just x =>
-      let ci := computeCI' (graph x)
-          len := length ci
-       in if len == k then "" else
-         "Expected \{show k} but got \{show len}"
+      let cr := map ncycle $ cr $ computeCrAndMCB (graph x)
+          cs := map (map finToNat) cr
+       in if cs == ks then "" else
+         "Expected \{show ks} but got \{show cs}"
+
+testMCBCycles : String -> List (List Nat) -> String
+testMCBCycles str ks =
+  case readSmiles str of
+    Nothing  => "invalid SMILES"
+    Just x =>
+      let cr := map ncycle $ mcb $ computeCrAndMCB (graph x)
+          cs := map (map finToNat) cr
+       in if cs == ks then "" else
+         "Expected \{show ks} but got \{show cs}"
+
+--------------------------------------------------------------------------------
+--          Specific Testcases
+--------------------------------------------------------------------------------
 
 c60 : Maybe (Graph Bond Elem)
 c60 =
@@ -103,12 +125,6 @@ c70 : Maybe (Graph Bond Elem)
 c70 =
   let s := "C12=C3C4=C5C6=C7C8=C9C%10=C%11C%12=C%13C%10=C%10C8=C5C1=C%10C1=C%13C5=C8C1=C2C1=C3C2=C3C%10=C%13C%14=C3C1=C8C1=C3C5=C%12C5=C8C%11=C%11C9=C7C7=C9C6=C4C2=C2C%10=C4C(=C29)C2=C6C(=C8C8=C9C6=C4C%13=C9C(=C%141)C3=C85)C%11=C27"
    in readSmiles s
-
-natEdge : {n : Nat} -> (x,y : Nat) -> Maybe (Edge n ())
-natEdge x y = join [| mkEdge (tryNatToFin x) (tryNatToFin y) (pure ()) |]
-
-toNext : {n : Nat} -> (x : Nat) -> Maybe (Edge n ())
-toNext x = natEdge x (S x)
 
 ----- a chain of `n` fused cyclohexane rings
 chain : (n : Nat) -> IGraph (4*n+2) () ()
