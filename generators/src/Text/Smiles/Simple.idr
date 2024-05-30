@@ -98,6 +98,10 @@ tok st c ('6'::t) (SA r) = rng st (c+1) 6 t r
 tok st c ('7'::t) (SA r) = rng st (c+1) 7 t r
 tok st c ('8'::t) (SA r) = rng st (c+1) 8 t r
 tok st c ('9'::t) (SA r) = rng st (c+1) 9 t r
+tok st c ('%'::x::y::t) (SA r) =
+  if isDigit x && isDigit y
+     then rng st (c+2) (cast $ digit x * 10 + digit y) t r
+     else Nothing
 tok st c (x  ::t) (SA r) = Nothing
 tok st c []       _      = Just (st <>> [])
 
