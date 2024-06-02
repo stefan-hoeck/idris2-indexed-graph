@@ -218,7 +218,6 @@ main = do
   _::t <- getArgs | _ => die "Invalid # arguments"
   Right g <- pure $ readGraph t | Left err => putStrLn err
   putStrLn $ testSetsSize g
-  putStrLn "Done :)"
 
 
 
