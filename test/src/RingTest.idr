@@ -219,8 +219,6 @@ main = do
   Right g <- pure $ readGraph t | Left err => putStrLn err
   putStrLn $ testSetsSize g
 
-
-
 --- run (testFusedRing "CCCC" [])
 --- run (testFusedRing "C1CC1" [(False, fromList [0,1,2])])
 --- run (testFusedRing "COCC1CC1" [(False, fromList [3,4,5])])
