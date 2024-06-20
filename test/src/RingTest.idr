@@ -9,6 +9,7 @@ import Data.Graph.Indexed.Types
 import Data.Graph.Indexed.Cycles4
 import Data.Graph.Indexed.Ring
 import Data.Graph.Indexed.Relevant
+import System
 
 --------------------------------------------------------------------------------
 --          Utilities
@@ -195,17 +196,14 @@ readGraph [s]             =
   case readSmiles s of
     Nothing => Left "Invalid Smiles: \{show s}"
     Just x  => Right $ bimap (const ()) (const ()) x
-readGraph ss              = Left "Invalid args: \{show ss}"
+readGraph ss              = Left "Invalid argss: \{show ss}"
 
-testSetsSize : List String -> String
-testSetsSize strs =
-  case readGraph strs of
-    Left s  => s
-    Right x =>
-      let sets := computeCrAndMCB (graph x)
-          mcb  := length $ mcb sets
-          cr   := length $ cr sets
-          in "Length MCB: \{show mcb} length CR: \{show cr}"
+testSetsSize : Graph () () -> String
+testSetsSize (G o g) =
+  let sets := computeCrAndMCB (graph $ G o g)
+      mcb  := length $ mcb sets
+      cr   := length $ cr sets
+   in "Length MCB: \{show mcb} length CR: \{show cr}, (order: \{show o}, size: \{show $ length $ edges g})"
 
 run : String -> IO ()
 run ""  = putStrLn "Success!"
@@ -217,6 +215,10 @@ run' str = putStrLn str
 export
 main : IO ()
 main = do
+  _::t <- getArgs | _ => die "Invalid # arguments"
+  Right g <- pure $ readGraph t | Left err => putStrLn err
+  putStrLn $ testSetsSize g
+
 --- run (testFusedRing "CCCC" [])
 --- run (testFusedRing "C1CC1" [(False, fromList [0,1,2])])
 --- run (testFusedRing "COCC1CC1" [(False, fromList [3,4,5])])
@@ -226,25 +228,25 @@ main = do
 --- run (testFusedRing "C1CC2C(CC3CCCCC3)CCC2CC1" [(False, fromList [5..10]), (True, fromList [0,1,2,3,11,12,13,14,15])])
 --- run (testFusedRing "C1CCC2(CCCC2)CC1" [(False, fromList [3,4,5,6,7]), (False, fromList [0,1,2,3,8,9])])
 
-  run (testCrCycles "CCCCC" [])
-  run (testMCBCycles "CCCCC" [])
-  run (testCrSize "CCCCC" 0)
-  run (testCrSize "CCCCC" 0)
-
-  run (testCrSize "C1CC1" 1)
-  run (testMCBSize "C1CC1" 1)
-  run (testCrCycles "C1CC1" [[2,1,0,2]])
-  run (testMCBCycles "C1CC1" [[2,1,0,2]])
-
-  run (testMCBSize "C3CCC2CC1CCCCC1CC2C3" 3)
-  run (testCrSize "C3CCC2CC1CCCCC1CC2C3" 3)
-
-  run (testMCBSize "C1CC2CCC1CC2" 2)
-  run (testCrSize "C1CC2CCC1CC2" 3)
-
-  run (testMCBSize "C1CC2CCC1C3CCCCC23" 3)
-  run (testCrSize "C1CC2CCC1C3CCCCC23" 4)
-
-  run' $ testSetsSize [ "chain", "10" ]
-  run' $ testSetsSize [ "bracelet", "10" ]
-  run' $ testSetsSize ["c60"]
+---  run (testCrCycles "CCCCC" [])
+---  run (testMCBCycles "CCCCC" [])
+---  run (testCrSize "CCCCC" 0)
+---  run (testCrSize "CCCCC" 0)
+---
+---  run (testCrSize "C1CC1" 1)
+---  run (testMCBSize "C1CC1" 1)
+---  run (testCrCycles "C1CC1" [[2,1,0,2]])
+---  run (testMCBCycles "C1CC1" [[2,1,0,2]])
+---
+---  run (testMCBSize "C3CCC2CC1CCCCC1CC2C3" 3)
+---  run (testCrSize "C3CCC2CC1CCCCC1CC2C3" 3)
+---
+---  run (testMCBSize "C1CC2CCC1CC2" 2)
+---  run (testCrSize "C1CC2CCC1CC2" 3)
+---
+---  run (testMCBSize "C1CC2CCC1C3CCCCC23" 3)
+---  run (testCrSize "C1CC2CCC1C3CCCCC23" 4)
+---
+---  run' $ testSetsSize [ "chain", "10" ]
+---  run' $ testSetsSize [ "bracelet", "10" ]
+---  run' $ testSetsSize ["c60"]

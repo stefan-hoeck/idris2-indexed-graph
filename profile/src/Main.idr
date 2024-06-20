@@ -142,69 +142,77 @@ searchRingsAM (G _ g) = Evidence _ $ searchAllMA g
 covering
 bench : Benchmark Void
 bench = Group "graph_ops"
-  [ Group "Visited"
-      [ Single "1"     (basic testVisited $ allFinsFast 1)
-      , Single "32"    (basic testVisited $ allFinsFast 32)
-      , Single "64"    (basic testVisited $ allFinsFast 64)
-      , Single "128"   (basic testVisited $ allFinsFast 128)
-      , Single "1024"  (basic testVisited $ allFinsFast 1024)
-      , Single "65536" (basic testVisited $ allFinsFast 65536)
-      ]
-  , Group "MVisited"
-      [ Single "1"     (basic testMVisited $ allFinsFast 1)
-      , Single "32"    (basic testMVisited $ allFinsFast 32)
-      , Single "64"    (basic testMVisited $ allFinsFast 64)
-      , Single "128"   (basic testMVisited $ allFinsFast 128)
-      , Single "1024"  (basic testMVisited $ allFinsFast 1024)
-      , Single "65536" (basic testMVisited $ allFinsFast 65536)
-      ]
-  , Group "mkGraph map-based"
-      [ Single "1"     (basic graph $ pairs 1)
-      , Single "10"    (basic graph $ pairs 10)
-      , Single "100"   (basic graph $ pairs 100)
-      , Single "1000"  (basic graph $ pairs 1000)
-      , Single "10000" (basic graph $ pairs 10000)
-      ]
-  , Group "mkGraph array-based"
-      [ Single "1"     (basic arrGraph $ graphData 1)
-      , Single "10"    (basic arrGraph $ graphData 10)
-      , Single "100"   (basic arrGraph $ graphData 100)
-      , Single "1000"  (basic arrGraph $ graphData 1000)
-      , Single "10000" (basic arrGraph $ graphData 10000)
-      ]
-  , Group "lab map-based"
-      [ Single "1"     (basic (`lab` 0)    $ graphN 1)
-      , Single "10"    (basic (`lab` 5)    $ graphN 10)
-      , Single "100"   (basic (`lab` 50)   $ graphN 100)
-      , Single "1000"  (basic (`lab` 500)  $ graphN 1000)
-      , Single "10000" (basic (`lab` 5000) $ graphN 10000)
-      ]
-  , Group "lab array-based"
-      [ Single "1"     (basic (labM 0)    $ arrGraphN 1)
-      , Single "10"    (basic (labM 5)    $ arrGraphN 10)
-      , Single "100"   (basic (labM 50)   $ arrGraphN 100)
-      , Single "1000"  (basic (labM 500)  $ arrGraphN 1000)
-      , Single "10000" (basic (labM 5000) $ arrGraphN 10000)
-      ]
-  , Group "insert map-based"
-      [ Single "1"     (basic (insNode 1 1)     $ graphN 1)
-      , Single "10"    (basic (insNode 11 1)    $ graphN 10)
-      , Single "100"   (basic (insNode 111 1)   $ graphN 100)
-      , Single "1000"  (basic (insNode 1111 1)  $ graphN 1000)
-      , Single "10000" (basic (insNode 11111 1) $ graphN 10000)
-      ]
-  , Group "insert array-based"
-      [ Single "1"     (basic (insM 1) $ arrGraphN 1)
-      , Single "10"    (basic (insM 1) $ arrGraphN 10)
-      , Single "100"   (basic (insM 1) $ arrGraphN 100)
-      , Single "1000"  (basic (insM 1) $ arrGraphN 1000)
-      , Single "10000" (basic (insM 1) $ arrGraphN 10000)
-      ]
-  , Group "searchRings" [
+---  [ Group "Visited"
+---      [ Single "1"     (basic testVisited $ allFinsFast 1)
+---      , Single "32"    (basic testVisited $ allFinsFast 32)
+---      , Single "64"    (basic testVisited $ allFinsFast 64)
+---      , Single "128"   (basic testVisited $ allFinsFast 128)
+---      , Single "1024"  (basic testVisited $ allFinsFast 1024)
+---      , Single "65536" (basic testVisited $ allFinsFast 65536)
+---      ]
+---  , Group "MVisited"
+---      [ Single "1"     (basic testMVisited $ allFinsFast 1)
+---      , Single "32"    (basic testMVisited $ allFinsFast 32)
+---      , Single "64"    (basic testMVisited $ allFinsFast 64)
+---      , Single "128"   (basic testMVisited $ allFinsFast 128)
+---      , Single "1024"  (basic testMVisited $ allFinsFast 1024)
+---      , Single "65536" (basic testMVisited $ allFinsFast 65536)
+---      ]
+---  , Group "mkGraph map-based"
+---      [ Single "1"     (basic graph $ pairs 1)
+---      , Single "10"    (basic graph $ pairs 10)
+---      , Single "100"   (basic graph $ pairs 100)
+---      , Single "1000"  (basic graph $ pairs 1000)
+---      , Single "10000" (basic graph $ pairs 10000)
+---      ]
+---  , Group "mkGraph array-based"
+---      [ Single "1"     (basic arrGraph $ graphData 1)
+---      , Single "10"    (basic arrGraph $ graphData 10)
+---      , Single "100"   (basic arrGraph $ graphData 100)
+---      , Single "1000"  (basic arrGraph $ graphData 1000)
+---      , Single "10000" (basic arrGraph $ graphData 10000)
+---      ]
+---  , Group "lab map-based"
+---      [ Single "1"     (basic (`lab` 0)    $ graphN 1)
+---      , Single "10"    (basic (`lab` 5)    $ graphN 10)
+---      , Single "100"   (basic (`lab` 50)   $ graphN 100)
+---      , Single "1000"  (basic (`lab` 500)  $ graphN 1000)
+---      , Single "10000" (basic (`lab` 5000) $ graphN 10000)
+---      ]
+---  , Group "lab array-based"
+---      [ Single "1"     (basic (labM 0)    $ arrGraphN 1)
+---      , Single "10"    (basic (labM 5)    $ arrGraphN 10)
+---      , Single "100"   (basic (labM 50)   $ arrGraphN 100)
+---      , Single "1000"  (basic (labM 500)  $ arrGraphN 1000)
+---      , Single "10000" (basic (labM 5000) $ arrGraphN 10000)
+---      ]
+---  , Group "insert map-based"
+---      [ Single "1"     (basic (insNode 1 1)     $ graphN 1)
+---      , Single "10"    (basic (insNode 11 1)    $ graphN 10)
+---      , Single "100"   (basic (insNode 111 1)   $ graphN 100)
+---      , Single "1000"  (basic (insNode 1111 1)  $ graphN 1000)
+---      , Single "10000" (basic (insNode 11111 1) $ graphN 10000)
+---      ]
+---  , Group "insert array-based"
+---      [ Single "1"     (basic (insM 1) $ arrGraphN 1)
+---      , Single "10"    (basic (insM 1) $ arrGraphN 10)
+---      , Single "100"   (basic (insM 1) $ arrGraphN 100)
+---      , Single "1000"  (basic (insM 1) $ arrGraphN 1000)
+---      , Single "10000" (basic (insM 1) $ arrGraphN 10000)
+---      ]
+  [ Group "searchRings" [
        Single "1"     (basic searchRings $ ringN 1)
       , Single "10"     (basic searchRings $ ringN 10)
       , Single "100"     (basic searchRings $ ringN 100)
       , Single "1000"     (basic searchRings $ ringN 1000)
+      , Single "2000"     (basic searchRings $ ringN 2000)
+      , Single "3000"     (basic searchRings $ ringN 3000)
+      , Single "4000"     (basic searchRings $ ringN 4000)
+      , Single "5000"     (basic searchRings $ ringN 5000)
+      , Single "6000"     (basic searchRings $ ringN 6000)
+      , Single "7000"     (basic searchRings $ ringN 7000)
+      , Single "8000"     (basic searchRings $ ringN 8000)
+      , Single "9000"     (basic searchRings $ ringN 9000)
       , Single "10000"     (basic searchRings $ ringN 10000)
       ]
   , Group "searchRingsSM" [
@@ -212,6 +220,14 @@ bench = Group "graph_ops"
       , Single "10"     (basic searchRingsSM $ ringN 10)
       , Single "100"     (basic searchRingsSM $ ringN 100)
       , Single "1000"     (basic searchRingsSM $ ringN 1000)
+      , Single "2000"     (basic searchRingsSM $ ringN 2000)
+      , Single "3000"     (basic searchRingsSM $ ringN 3000)
+      , Single "4000"     (basic searchRingsSM $ ringN 4000)
+      , Single "5000"     (basic searchRingsSM $ ringN 5000)
+      , Single "6000"     (basic searchRingsSM $ ringN 6000)
+      , Single "7000"     (basic searchRingsSM $ ringN 7000)
+      , Single "8000"     (basic searchRingsSM $ ringN 8000)
+      , Single "9000"     (basic searchRingsSM $ ringN 9000)
       , Single "10000"     (basic searchRingsSM $ ringN 10000)
       ]
   , Group "searchRingsAM" [
@@ -219,6 +235,14 @@ bench = Group "graph_ops"
       , Single "10"     (basic searchRingsAM $ ringN 10)
       , Single "100"     (basic searchRingsAM $ ringN 100)
       , Single "1000"     (basic searchRingsAM $ ringN 1000)
+      , Single "2000"     (basic searchRingsSM $ ringN 2000)
+      , Single "3000"     (basic searchRingsSM $ ringN 3000)
+      , Single "4000"     (basic searchRingsSM $ ringN 4000)
+      , Single "5000"     (basic searchRingsSM $ ringN 5000)
+      , Single "6000"     (basic searchRingsSM $ ringN 6000)
+      , Single "7000"     (basic searchRingsSM $ ringN 7000)
+      , Single "8000"     (basic searchRingsSM $ ringN 8000)
+      , Single "9000"     (basic searchRingsSM $ ringN 9000)
       , Single "10000"     (basic searchRingsAM $ ringN 10000)
       ]
   ]
