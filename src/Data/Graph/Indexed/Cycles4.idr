@@ -16,6 +16,7 @@ import Data.Vect
 import Data.Bits
 import Data.Graph.Indexed.Ring
 import Data.Graph.Indexed.Relevant
+import Data.Graph.Indexed.Subgraph
 
 %default total
 
@@ -230,20 +231,35 @@ getCrAndMCB' v size sm eq (c :: cs) cr mcb =
 getCrAndMCB : Nat -> List (Cycle k) -> CycleSets k
 getCrAndMCB v xs = getCrAndMCB' v 0 [] [] xs [] []
 
--- computes the relevant cycles and minimum cycle basis for a graph
-public export
-computeCrAndMCB : {k : _} -> IGraph k e n -> CycleSets k
-computeCrAndMCB g =
+convert : ISubgraph o k e n -> CycleSets o -> CycleSets k
+convert g (CS m b) = CS (map convertC m) (map convertC b)
+  where
+    convertC : Cycle o -> Cycle k
+    convertC (C s nc ec bitp) =
+      C s (map (fst . lab g) nc) (map (\(x,y) => (fst (lab g x), fst (lab g y))) ec) bitp
+
+fromCandidates : Candidates k e n -> CycleSets k
+fromCandidates Empty = CS [] []
+fromCandidates (Isolate x xs) =
+  let c := C (length xs) xs (convertC xs) 0
+   in CS [c] [c]
+fromCandidates (System o g xss) =
   let ebits := getBitsEdges g
-      ci'   := sortBy (compare `on` length) $ computeCI' g
+      ci'   := sortBy (compare `on` length) xss
       cs    := map (getCycle ebits) ci'
       v     := computeCyclomaticN g
-   in getCrAndMCB v cs
+   in convert g $ getCrAndMCB v cs
 
-   where getCycle : SortedMap (Fin k, Fin k) Integer -> NCycle k ->  Cycle k
+   where getCycle : SortedMap (Fin o, Fin o) Integer -> NCycle o ->  Cycle o
          getCycle ebits nc =
            let ec := convertC nc
                size := length nc
                bitp := getBitsRing ebits 0 ec
             in C size nc ec bitp
 
+-- computes the relevant cycles and minimum cycle basis for a graph
+public export
+computeCrAndMCB : {k : _} -> IGraph k e n -> CycleSets k
+computeCrAndMCB g =
+  let css := map fromCandidates (computeCI' g)
+   in CS (css >>= cr) (css >>= mcb)

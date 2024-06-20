@@ -106,13 +106,13 @@ parameters {o    : Nat}
   -- path with all successors of equal length (resulting in odd cycles) and
   -- one node longer (resulting in even cycles) and connect the pair if it
   -- builds a proper, disjoint cycle.
-  cycleSystem : List (NCycle k)
+  cycleSystem : List (NCycle o)
   cycleSystem = go [<] shortestPaths
     where
-      %inline cycle : (p1,p2 : SnocList (Fin o)) -> NCycle k
-      cycle p1 p2 = fst . lab g <$> toCycle root p1 p2
+      %inline cycle : (p1,p2 : SnocList (Fin o)) -> NCycle o
+      cycle p1 p2 = toCycle root p1 p2
 
-      addCs : SnocList (NCycle k) -> Path o -> List (Path o) -> SnocList (NCycle k)
+      addCs : SnocList (NCycle o) -> Path o -> List (Path o) -> SnocList (NCycle o)
       addCs sc p [] = sc
       addCs sc p@(P len1 _ p1 f1 l1) (P len2 _ p2 f2 l2::qs) =
         let True  := len1 == len2     | False => sc
@@ -124,19 +124,29 @@ parameters {o    : Nat}
       -- for the current path, we take from the remaining paths those
       -- that are at most one node longer and try to pair them to
       -- form a cycle.
-      go : SnocList (NCycle k) -> List (Path o) -> List (NCycle k)
+      go : SnocList (NCycle o) -> List (Path o) -> List (NCycle o)
       go sxs []        = sxs <>> []
       go sxs (p :: ps) = go (addCs sxs p ps) ps
 
-findCycles : Subgraph k e n -> List (NCycle k)
-findCycles (G 0 g) = []
-findCycles (G (S k) g) =
+public export
+data Candidates : (k : Nat) -> (e,n : Type) -> Type where
+  Empty   : Candidates k e n
+  Isolate : Subgraph k e n -> NCycle k -> Candidates k e n
+  System  :
+       (o : Nat)
+    -> ISubgraph o k e n
+    -> List (NCycle o)
+    -> Candidates k e n
+
+findCandidates : Subgraph k e n -> Candidates k e n
+findCandidates (G 0 g) = Empty
+findCandidates sg@(G (S k) g) =
   case filter ((2 <) . deg g) (nodes g) of
-    [] => [Builtin.fst . lab g <$> (nodes g ++ [FZ])] -- this is already an elementary cycle
-    ns => ns >>= \n => cycleSystem g n (deg g n) -- this is a system of cycles
+    [] => Isolate sg  (Builtin.fst . lab g <$> (nodes g ++ [FZ]))
+    ns => System (S k) g (ns >>= \n => cycleSystem g n (deg g n))
 
 -- cuts a graph into strongly connected components and computes
 -- the potential relevant cycles for each component in isolation.
 export
-computeCI' : {k : _} -> IGraph k e n -> List (NCycle k)
-computeCI' g = biconnectedComponents g >>= findCycles
+computeCI' : {k : _} -> IGraph k e n -> List (Candidates k e n)
+computeCI' g = map findCandidates $ biconnectedComponents g
