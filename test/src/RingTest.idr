@@ -160,9 +160,10 @@ grid m n =
       let p := x + S m * y
       toList $ natEdge p (p + S m)
 
+-- previous version
 -- a bracelet of `n` fused cyclohexane rings
-bracelet : (n : Nat) -> IGraph (4*n+2) () ()
-bracelet n =
+braceletOld : (n : Nat) -> IGraph (4*n+2) () ()
+braceletOld n =
   let tot := 4*n + 2
    in mkGraph
         (replicate _ ())
@@ -176,7 +177,7 @@ seq : (n : Nat) -> IGraph (6*n) () ()
 seq n =
   mkGraph
     (replicate _ ())
-    (catMaybes $ ([0..n] >>= ring . (6*)) ++ map link [0..n])
+    (catMaybes $ ([0.. pred n] >>= ring . (6*)) ++ map link [0.. pred n])
   where
     ring : Nat -> List (Maybe $ Edge (6*n) ())
     ring k = natEdge k (k+5) :: map (\x => natEdge (k+x) (k+x+1)) [0..4]
@@ -184,12 +185,18 @@ seq n =
     link : Nat -> Maybe (Edge (6*n) ())
     link k = natEdge (k*6 + 3) (k*6 + 6)
 
+-- a bracelet of `n` isolate cyclohexane rings
+bracelet : (n : Nat) -> IGraph (6*n) () ()
+bracelet n =
+  insEdges (catMaybes [natEdge 0 ((6 * n) `minus` 3)]) (seq n)
+
 readGraph : List String -> Either String (Graph () ())
 readGraph [ "fullerene" ] = c60
 readGraph [ "c60" ]       = c60
 readGraph [ "c70" ]       = c70
 readGraph ["chain", n]    = Right (G _ $ chain (cast n))
 readGraph ["bracelet", n] = Right (G _ $ bracelet (cast n))
+readGraph ["bracelet_old", n] = Right (G _ $ braceletOld (cast n))
 readGraph ["seq", n]      = Right (G _ $ seq (cast n))
 readGraph ["grid", m,n]   = Right (G _ $ grid (cast m) (cast n))
 readGraph [s]             =
@@ -202,7 +209,7 @@ testSetsSize : Graph () () -> String
 testSetsSize (G o g) =
   let sets := computeCrAndMCB (graph $ G o g)
       mcb  := length $ mcb sets
-      cr   := length $ cr sets
+      cr   := sum $ map (combos . ncycle) (cr sets)
    in "Length MCB: \{show mcb} length CR: \{show cr}, (order: \{show o}, size: \{show $ length $ edges g})"
 
 run : String -> IO ()
