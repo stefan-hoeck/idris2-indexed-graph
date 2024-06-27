@@ -1,104 +1,43 @@
 module Data.Graph.Indexed.Relevant
 
-import Data.Graph.Indexed
-import Data.Graph.Indexed.Subgraph
-import Data.Graph.Indexed.Query.Util
-import Data.Graph.Indexed.Query.Visited
-import Data.List
-import Data.Queue
+import public Data.Graph.Indexed.ShortestPath
 import Data.SnocList
-import Debug.Trace
 import Derive.Prelude
 
 %default total
 %language ElabReflection
 
-||| A shortest path of length `length` from a starting node to node `last`.
-||| Boolean `keep` indicates if all nodes are strictly smaller than
-||| the starting node (according to an ordering `<`, where x < y means that
-||| deg x <= deg y; this is the ordering `pi` given in the paper).
-|||
-||| Node `first` is the first node after the root node, and is used to
-||| check if two paths are disjoint.
 public export
-record Path (k : Nat) where
-  constructor P
+record NCycle (k : Nat) where
+  constructor NC
+  path   : List (Fin k)
   length : Nat
-  keep   : Bool
-  path   : SnocList (Fin k)
-  first  : Fin k
-  last   : Fin k
+  combos : Nat
 
-%runElab deriveIndexed "Path" [Show,Eq]
+%runElab deriveIndexed "NCycle" [Show]
 
-public export
-0 NCycle : Nat -> Type
-NCycle k = List (Fin k)
+export
+origin : ISubgraph o k e n -> NCycle o -> NCycle k
+origin g = {path $= map (Subgraph.origin g)}
 
-public export
-0 ECycle : Nat -> Type
-ECycle k = List (Fin k, Fin k)
+isolate : {o : _} -> ISubgraph (S o) k e n -> NCycle k
+isolate g = NC (map (origin g) $ nodes g ++ [FZ]) (o + 2) 1
 
-revOnto : SnocList a -> SnocList a -> SnocList a
-revOnto sx [<] = sx
-revOnto sx (sy:<y) = revOnto (sx :< y) sy
-
-toCycle : a -> SnocList a -> SnocList a -> List a
-toCycle r sx sy = r :: (revOnto sx sy <>> [r])
+notLast : Fin k -> SnocList (Fin k) -> Bool
+notLast x (_ :< y :< _) = x /= y
+notLast x _             = True
 
 parameters {o    : Nat}
-           (g    : ISubgraph o k e n)
+           (g    : ISubgraph o k e Nat)
            (root : Fin o)
            (rdeg : Nat)
 
-  %inline smaller : Fin o -> Bool
-  smaller n =
-    case compare (deg g n) rdeg of
-      LT => True
-      EQ => root < n
-      GT => False
+  revOnto : SnocList (Fin o) -> SnocList (Fin o) -> List (Fin o)
+  revOnto sx [<] = sx <>> []
+  revOnto sx (sy:<y) = revOnto (sx :< y) sy
 
-  init : Fin o -> Path o
-  init n = P 1 (smaller n) [<n] n n
-
-  append : Path o -> Fin o -> Path o
-  append (P l kp p fs ls) n = P (S l) (kp && smaller n) (p :< n) fs n
-
-  covering
-  shortestL : SnocList (Path o) -> Queue (Path o) -> MVis o (List (Path o))
-  shortestL sp q v =
-    case dequeue q of
-      Nothing => (sp <>> []) # v
-      Just (p,q2) =>
-        let False # v2 := mvisited p.last v | True # v2 => shortestL sp q2 v2
-            ns  := map (append p) (neighbours g p.last)
-            sp2 := if p.keep then sp :< p else sp
-         in shortestL sp2 (enqueueAll q2 ns) (mvisit p.last v2)
-
-  covering
-  shortestS : SnocList (Path o) -> Queue (Path o) -> Vis o (List (Path o))
-  shortestS sp q v =
-    case dequeue q of
-      Nothing => (sp <>> [],v)
-      Just (p,q2) => case p.last `visited` v of
-        True  => shortestS sp q2 v
-        False =>
-          let ns  := map (append p) (neighbours g p.last)
-              sp2 := if p.keep then sp :< p else sp
-           in shortestS sp2 (enqueueAll q2 ns) (p.last `visit` v)
-
-  ||| Computes the shortest paths to all nodes reachable from
-  ||| the given starting node. This is a simplified version of
-  ||| Dijkstra's algorithm for unweighted edges.
-  |||
-  ||| Runs in O(n+m) time and O(n) memory.
-  export
-  shortestPaths : List (Path o)
-  shortestPaths =
-    let q := fromList $ map init (neighbours g root)
-     in assert_total $ if o < 64
-          then fst $ shortestS [<] q (root `visit` ini)
-          else visiting' o (\v => shortestL [<] q (root `mvisit` v))
+  connector : SnocList (Fin o) -> SnocList (Fin o) -> Fin o -> Bool
+  connector sx sy x = smaller g root rdeg x && notLast x sx && notLast x sy
 
   -- Takes a list of reverse paths starting all from the same node and
   -- sorted by length (this is by construction: the `shortestPaths` algorithm
@@ -107,19 +46,35 @@ parameters {o    : Nat}
   -- one node longer (resulting in even cycles) and connect the pair if it
   -- builds a proper, disjoint cycle.
   cycleSystem : List (NCycle o)
-  cycleSystem = go [<] shortestPaths
+  cycleSystem =
+    let ps := shortestPaths g root rdeg
+     in go [<] ps
     where
-      %inline cycle : (p1,p2 : SnocList (Fin o)) -> NCycle o
-      cycle p1 p2 = toCycle root p1 p2
+      %inline odd : (p1,p2 : Path o) -> NCycle o
+      odd p1 p2 =
+        NC
+          (revOnto p1.path p2.path)
+          (p1.length + p2.length + 1)
+          (p1.combos * p2.combos)
+
+      %inline even : (p1,p2 : Path o) -> Fin o -> Maybe (NCycle o)
+      even p1 p2 x =
+        if connector p1.path p2.path x
+           then
+             Just $ NC
+               (revOnto (p1.path :< x) p2.path)
+               (p1.length + p2.length + 2)
+               (p1.combos * p2.combos)
+            else Nothing
 
       addCs : SnocList (NCycle o) -> Path o -> List (Path o) -> SnocList (NCycle o)
       addCs sc p [] = sc
-      addCs sc p@(P len1 _ p1 f1 l1) (P len2 _ p2 f2 l2::qs) =
+      addCs sc p@(P len1 p1 _ f1 l1 _) (q@(P len2 p2 _ f2 l2 _)::qs) =
         let True  := len1 == len2     | False => sc
             False := f1 == f2         | True  => addCs sc p qs
-            False := adjacent g l1 l2 | True  => addCs (sc :< cycle p1 p2) p qs
+            False := adjacent g l1 l2 | True  => addCs (sc :< odd p q) p qs
             ns    := keys $ intersect (neighboursAsAL g l1) (neighboursAsAL g l2)
-         in addCs (sc <>< map (cycle p1 . (p2 :<)) (filter smaller ns)) p qs
+         in addCs (sc <>< mapMaybe (even p q) ns) p qs
 
       -- for the current path, we take from the remaining paths those
       -- that are at most one node longer and try to pair them to
@@ -129,24 +84,38 @@ parameters {o    : Nat}
       go sxs (p :: ps) = go (addCs sxs p ps) ps
 
 public export
-data Candidates : (k : Nat) -> (e,n : Type) -> Type where
-  Empty   : Candidates k e n
-  Isolate : Subgraph k e n -> NCycle k -> Candidates k e n
+data Candidates : (k : Nat) -> (e : Type) -> Type where
+  Empty   : Candidates k e
+  Isolate : Subgraph k e Nat -> NCycle k -> Candidates k e
   System  :
        (o : Nat)
-    -> ISubgraph o k e n
+    -> ISubgraph o k e Nat
     -> List (NCycle o)
-    -> Candidates k e n
+    -> Candidates k e
 
-findCandidates : Subgraph k e n -> Candidates k e n
+findSP : (g : Subgraph k e Nat) -> Nat
+findSP (G 0 g) = 0
+findSP sg@(G (S k) g) =
+  case filter ((2 <) . deg g) (nodes g) of
+    [] => 0
+    ns => length $ ns >>= \n => shortestPaths g n (deg g n)
+
+findCandidates : Subgraph k e Nat -> Candidates k e
 findCandidates (G 0 g) = Empty
 findCandidates sg@(G (S k) g) =
   case filter ((2 <) . deg g) (nodes g) of
-    [] => Isolate sg  (Builtin.fst . lab g <$> (nodes g ++ [FZ]))
+    [] => Isolate sg $ isolate g
     ns => System (S k) g (ns >>= \n => cycleSystem g n (deg g n))
+
+toDegs : Subgraph k e n -> Subgraph k e Nat
+toDegs (G o g) = G o $ mapAdj (\(A (x,_) ns) => A (x, length ns) ns) g
 
 -- cuts a graph into strongly connected components and computes
 -- the potential relevant cycles for each component in isolation.
 export
-computeCI' : {k : _} -> IGraph k e n -> List (Candidates k e n)
-computeCI' g = map findCandidates $ biconnectedComponents g
+computeCI' : {k : _} -> IGraph k e n -> List (Candidates k e)
+computeCI' g = map (findCandidates . toDegs) $ biconnectedComponents g
+
+export
+computeSPs : {k : _} -> IGraph k e n -> Nat
+computeSPs g = sum . map (findSP . toDegs) $ biconnectedComponents g

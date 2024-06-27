@@ -44,6 +44,10 @@ public export
 0 ISubgraph : (k,m : Nat) -> (e,n : Type) -> Type
 ISubgraph k m e n = IGraph k e (Fin m, n)
 
+export %inline
+origin : ISubgraph k m e n -> Fin k -> Fin m
+origin g = fst . lab g
+
 ||| An graph that represents a subgraph on another one.
 |||
 ||| Every node is linked to the node in the original graph.

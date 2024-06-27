@@ -112,6 +112,10 @@ record Edge (k : Nat) (e : Type) where
   {auto 0 prf : CompFin node1 node2 === LT}
 
 export
+Functor (Edge k) where
+  map f (E x y l) = E x y (f l)
+
+export
 fromNat :
      (x,y : Nat)
   -> {auto 0 p1 : LT x k}

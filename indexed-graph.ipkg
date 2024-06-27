@@ -26,4 +26,5 @@ modules = Data.AssocList.Indexed
         , Data.Graph.Indexed.Cycles4
         , Data.Graph.Indexed.Ring
         , Data.Graph.Indexed.Relevant
+        , Data.Graph.Indexed.ShortestPath
         , Data.Graph.Indexed.Subgraph
