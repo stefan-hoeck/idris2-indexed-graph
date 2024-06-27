@@ -112,10 +112,6 @@ record Edge (k : Nat) (e : Type) where
   {auto 0 prf : CompFin node1 node2 === LT}
 
 export
-Functor (Edge k) where
-  map f (E x y l) = E x y (f l)
-
-export
 fromNat :
      (x,y : Nat)
   -> {auto 0 p1 : LT x k}
@@ -184,10 +180,33 @@ public export
 Eq e => Eq (Edge k e) where
   E m1 n1 l1 == E m2 n2 l2 = m1 == m2 && n1 == n2 && l1 == l2
 
+public export
+Ord e => Ord (Edge k e) where
+  compare (E m1 n1 l1) (E m2 n2 l2) =
+    let EQ := compare m1 m2 | r => r
+        EQ := compare n1 n2 | r => r
+     in compare l1 l2
+
 export
 Show e => Show (Edge k e) where
   showPrec p (E x y l) =
     showCon p "E" $ showArg (finToNat x) ++ showArg (finToNat y) ++ showArg l
+
+export
+Functor (Edge k) where
+  map f (E x y l) = E x y (f l)
+
+export
+Foldable (Edge k) where
+  foldl f x (E _ _ l) = f x l
+  foldr f x (E _ _ l) = f l x
+  toList (E _ _ l)    = [l]
+  foldMap f (E _ _ l) = f l
+  null _              = False
+
+export
+Traversable (Edge k) where
+  traverse f (E x y l) = map (\v => E x y v) (f l)
 
 --------------------------------------------------------------------------------
 --          Context

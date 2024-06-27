@@ -98,7 +98,7 @@ testCrCycles str ks =
   case readSmiles str of
     Nothing  => "invalid SMILES"
     Just x =>
-      let cr := map ncycle $ cr $ computeCrAndMCB (graph x)
+      let cr := map (path . ncycle) $ cr $ computeCrAndMCB (graph x)
           cs := map (map finToNat) cr
        in if cs == ks then "" else
          "Expected \{show ks} but got \{show cs}"
@@ -108,7 +108,7 @@ testMCBCycles str ks =
   case readSmiles str of
     Nothing  => "invalid SMILES"
     Just x =>
-      let cr := map ncycle $ mcb $ computeCrAndMCB (graph x)
+      let cr := map (path . ncycle) $ mcb $ computeCrAndMCB (graph x)
           cs := map (map finToNat) cr
        in if cs == ks then "" else
          "Expected \{show ks} but got \{show cs}"
