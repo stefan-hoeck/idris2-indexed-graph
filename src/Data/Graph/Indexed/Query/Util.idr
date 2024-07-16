@@ -39,4 +39,3 @@ fromLeftMVis (x # m) = fromLeft x # m
 export %inline
 fromLeftVis : (Either a Void, Visited k) -> (a, Visited k)
 fromLeftVis (v,x) = (fromLeft v, x)
-

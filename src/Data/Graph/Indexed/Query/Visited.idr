@@ -36,14 +36,6 @@ mvisited x t =
     1 # t => True  # t
     _ # t => False # t
 
--- ||| Allocate a linear byte array and use it to run the given
--- ||| computation.
--- export %inline
--- visiting : (k : Nat) -> (MVisited k -@ Ur a) -> a
--- visiting k f =
---   let i := cast {to = Integer} k `shiftR` bits
---    in unrestricted $ f (MV $ prim__newBuf (1 + cast i))
---
 ||| Allocate a linear byte array and use it to run the given
 ||| computation, discarding it at the end.
 |||

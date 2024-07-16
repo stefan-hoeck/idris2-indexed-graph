@@ -2,9 +2,10 @@
 ||| algorithm.
 module Data.Graph.Indexed.Query.Subgraph
 
-import Data.AssocList.Indexed
 import Data.Array.Mutable
+import Data.AssocList.Indexed
 import Data.Graph.Indexed
+import Data.Linear.List
 import Data.Vect
 
 %default total
@@ -13,53 +14,39 @@ import Data.Vect
 -- Local mutable State
 --------------------------------------------------------------------------------
 
--- When running a query, we use two mutable arrays to associate
--- query nodes with target nodes and vice versa.
-record ST (q,t : Nat) where
-  constructor S
-  1 mapped   : MArray q (Maybe $ Fin t)
-  1 assigned : MArray t (Maybe $ Fin q)
+data Tag = Q | T
 
--- Cleanup once we are done.
-discardST : a -> ST q t -@ Ur a
-discardST x (S m a) =
-  let () := discarding m ()
-      () := discarding a ()
-   in MkBang x
+parameters {auto mq : MArray Q s q (Maybe $ Fin t)}
+           {auto mt : MArray T s t (Maybe $ Fin q)}
 
--- Link a query node to a target node.
-assign : Fin q -> Fin t -> ST q t -@ ST q t
-assign x y (S mp as) =
-  let mp2 := set x (Just y) mp
-      as2 := set y (Just x) as
-   in S mp2 as2
+  -- Link a query node to a target node.
+  assign : Fin q -> Fin t -> F1' s
+  assign x y t = Core.setAt Q x (Just y) (Core.setAt T y (Just x) t)
 
--- Undo an assignment. We use this when backtracking
--- from an assignment that didn't work.
-unassign : Fin q -> Fin t -> ST q t -@ ST q t
-unassign x y (S mp as) =
-  let mp2 := set x Nothing mp
-      as2 := set y Nothing as
-   in S mp2 as2
+  -- Undo an assignment. We use this when backtracking
+  -- from an assignment that didn't work.
+  unassign : Fin q -> Fin t -> F1' s
+  unassign x y t = Core.setAt Q x Nothing (Core.setAt T y Nothing t)
 
 --------------------------------------------------------------------------------
 -- Linear Utilities
 --------------------------------------------------------------------------------
 
-0 Fun1 : Nat -> Type -> Type -> Type
-Fun1 k s t = MArray k t -@ CRes s (MArray k t)
-
 -- Test if the value at the given position in a mutable array is still unset.
-%inline unset : Fin k -> Fun1 k Bool (Maybe a)
-unset v arr = let m # arr2 := get v arr in isNothing m # arr2
+%inline unset : (0 tag : _) -> MArray tag s k (Maybe a) => Fin k -> F1 s Bool
+unset tag x t = let m # t2 := Core.getAt tag x t in isNothing m # t2
 
 -- Either extracts the target nodes from a successful query, or finds the
 -- first unassigned query node.
-findUnassigned : {k : _} -> Fun1 k (Either (Fin k) (Vect k a)) (Maybe a)
-findUnassigned m =
-  let vs # m2 = toVectWith (\x => maybe (Left x) Right) m
-   in sequence vs # m2
-
+findUnassigned :
+     {k : _}
+  -> (0 tag : _)
+  -> {auto arr : MArray tag s k (Maybe a)}
+  -> F1 s (Either (Fin k) (Vect k a))
+findUnassigned tag t =
+  let vs # t2 = toVectWith tag (\x => maybe (Left x) Right) t
+   in sequence vs # t2
+--
 --------------------------------------------------------------------------------
 -- Candidates
 --------------------------------------------------------------------------------
@@ -90,10 +77,12 @@ intersect _ _ = []
 
 parameters {0 eq,et,nq,nt : Type}
            {q,t : Nat}
-           (me     : eq -> et -> Bool) -- edge label matcher
-           (mn     : nq -> nt -> Bool) -- node label matcher
-           (query  : IGraph q eq nq)   -- query node
-           (target : IGraph t et nt)   -- target node
+           {auto mq : MArray Q s q (Maybe $ Fin t)}
+           {auto mt : MArray T s t (Maybe $ Fin q)}
+           (me      : eq -> et -> Bool) -- edge label matcher
+           (mn      : nq -> nt -> Bool) -- node label matcher
+           (query   : IGraph q eq nq)   -- query node
+           (target  : IGraph t et nt)   -- target node
 
   -- Computes a list of candidate mappings from lists of query nodes
   -- and target nodes (both the neighbours - plus edge labels - of the
@@ -111,34 +100,34 @@ parameters {0 eq,et,nq,nt : Type}
       cand : Fin q -> eq -> List (Fin t)
       cand x lq = mapMaybe (match lq $ lab query x) (pairs qs)
 
-  align : Fin q -> Fin t -> Matrix q t -> ST q t -@ CRes (Matrix q t) (ST q t)
-  align x y m (S m1 a1) =
-    let nsX # m2 := Indexed.filterLin unset (neighbours $ adj query x) m1
-        nsY # a2 := Indexed.filterLin unset (neighbours $ adj target y) a1
-     in unionWith intersect (remove y m) (candidates nsX nsY) # S m2 a2
+  align : Fin q -> Fin t -> Matrix q t -> F1 s (Matrix q t)
+  align x y m t =
+    let nsX # t2 := filterLin (unset Q) (neighbours $ adj query x) t
+        nsY # t3 := filterLin (unset T) (neighbours $ adj target y) t2
+     in unionWith intersect (remove y m) (candidates nsX nsY) # t3
 
   covering
-  tryAll : Matrix q t -> ST q t -@ CRes Bool (ST q t)
+  tryAll : Matrix q t -> F1 s Bool
 
   covering
-  try : Fin q -> List (Fin t) -> Matrix q t -> ST q t -@ CRes Bool (ST q t)
+  try : Fin q -> List (Fin t) -> Matrix q t -> F1 s Bool
 
   -- There are no valid mappings left for query node `x`, so we abort
   -- with `False`.
-  try x []      cs st = False # st
+  try x []      cs t = False # t
 
-  try x (v::vs) cs st =
-    let st2 := assign x v st -- map query node `x` to target node `v`
+  try x (v::vs) cs t =
+    let t2 := assign x v t -- map query node `x` to target node `v`
 
         -- Align the neighbours of x and v and update the candidate matrix.
-        cs2 # st3   := align x v cs st2 --
+        cs2 # t3   := align x v cs t2 --
 
         -- Iterate over the matrix of candidates to assign the
         -- remaining query nodes to target nodes. If this fails,
         -- undo the the mapping from `x` to `v` and try another
         -- one from `vs`.
-        False # st3 := tryAll cs2 st3 | res => res
-     in try x vs cs (unassign x v st3)
+        False # t4 := tryAll cs2 t3 | res => res
+     in try x vs cs (unassign x v t4)
 
   -- This extracts the query node with the lowest number of
   -- candidate nodes from the target. If there is no node left,
@@ -151,19 +140,28 @@ parameters {0 eq,et,nq,nt : Type}
   -- Tries to align all connected components of the query graph
   -- with nodes of the target graph.
   covering
-  run : ST q t -@ Ur (Maybe $ Vect q (Fin t))
-  run (S m1 a1) =
-    let Left x # m2 := findUnassigned m1
-          | Right arr # m2 => discardST (Just arr) (S m2 a1)
-        ns # a2 := Mutable.filterLin unset (nodes target) a1
+  run : F1 s (Maybe $ Vect q (Fin t))
+  run t = -- (S m1 a1) =
+    let Left x # t2 := findUnassigned Q t | Right arr # t2 => Just arr # t2
+        ns # t3 := filter1 (unset T) (nodes target) t2
         ns'     := filter (\y => mn (lab query x) (lab target y)) ns
-        True # s2 := try x ns' empty (S m2 a2)
-          | False # s2 => discardST Nothing s2
-     in run s2
+        True # t4 := try x ns' empty t3 | False # t4 => Nothing # t4
+     in run t4
 
-  ||| Using the given matching functions for node and edge labels, this
-  ||| tries to align the `query` graph with the `target` graph in such
-  ||| a way, that each query node is linked to a single target node.
-  export covering
-  query : Maybe (Vect q (Fin t))
-  query = unrestricted $ alloc q Nothing $ \mq => alloc t Nothing (run . S mq)
+||| Using the given matching functions for node and edge labels, this
+||| tries to align the `query` graph with the `target` graph in such
+||| a way, that each query node is linked to a single target node.
+export covering
+query :
+     {0 eq,et,nq,nt : Type}
+  -> {q,t : Nat}
+  -> (me      : eq -> et -> Bool) -- edge label matcher
+  -> (mn      : nq -> nt -> Bool) -- node label matcher
+  -> (query   : IGraph q eq nq)   -- query node
+  -> (target  : IGraph t et nt)   -- target node
+  -> Maybe (Vect q (Fin t))
+query me mn que tgt =
+  run1 $ \t1 =>
+    let aq # t2 := newMArrayAt Q q (the (Maybe $ Fin t) Nothing) t1
+        at # t3 := newMArrayAt T t (the (Maybe $ Fin q) Nothing) t2
+     in run me mn que tgt t3

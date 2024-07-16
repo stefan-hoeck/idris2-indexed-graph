@@ -6,6 +6,7 @@ import Data.AssocList.Indexed
 import Data.Graph.Indexed.Query.DFS
 import Data.Graph.Indexed.Types
 import Data.Graph.Indexed.Util
+import Data.Linear.Ref1
 import Data.SortedMap
 
 %default total
@@ -95,18 +96,23 @@ originEdge s (E x y l) = mkEdge (origin s x) (origin s y) l
 -- Biconnected Components
 --------------------------------------------------------------------------------
 
-record BCState (k : Nat) where
-  constructor S
-  1 depths : MArray k Nat
-  stack    : List (Fin k)
-  comps    : List (List $ Fin k)
+data BCS = ST | CO
 
-pop : BCState k -@ BCState k
-pop (S d (_::t) c) = S d t c
-pop s              = s
+0 Stack : Type -> Nat -> Type
+Stack s n = Ref1 ST s (List $ Fin n)
 
-extractComp : Fin k -> BCState k -@ BCState k
-extractComp n (S d s c) = let (cmp,rem) := go [<] s in S d rem (cmp::c)
+0 Comps : Type -> Nat -> Type
+Comps s n = Ref1 CO s (List (List $ Fin n))
+
+pop : Stack s k => F1' s
+pop = mod1At ST $ \case h::t => t; [] => []
+
+extractComp : Fin k -> Stack s k => Comps s k => F1' s
+extractComp n t =
+  let st # t2 := read1At ST t
+      (cmp,rem) := go [<] st
+   in write1At ST rem (mod1At CO (cmp::) t2)
+
   where
     go : SnocList (Fin k) -> List (Fin k) -> (List $ Fin k, List $ Fin k)
     go sx (x :: xs) = if n == x then (sx <>> [x], xs) else go (sx :< x) xs
@@ -125,29 +131,52 @@ extractComp n (S d s c) = let (cmp,rem) := go [<] s in S d rem (cmp::c)
 export
 biconnectedComponents : {k : _} -> IGraph k e n -> List (Subgraph k e n)
 biconnectedComponents g =
-  unrestricted $ alloc k 0 (\arr => go (allFinsFast k) (S arr [] []))
+  alloc k 0 $ \t =>
+    let st # t2 := ref1At ST (the (List $ Fin k) []) t
+        co # t3 := ref1At CO (the (List (List $ Fin k)) []) t2
+     in go (allFinsFast k) t3
   where
-    covering sc : Fin k -> Fin k -> Nat -> BCState k -@ CRes Nat (BCState k)
+    covering sc :
+         Fin k
+      -> Fin k
+      -> Nat
+      -> {auto _ : Stack s k}
+      -> {auto _ : Comps s k}
+      -> {auto _ : MArray () s k Nat}
+      -> F1 s Nat
 
-    covering scs : List (Fin k) -> Fin k -> Nat -> BCState k -@ CRes Nat (BCState k)
-    scs []      p dpt st = dpt # st
-    scs (x::xs) p dpt st =
-      let r2 # st2 := sc x p dpt st
-          r3 # st3 := scs xs p dpt st2
-       in min r2 r3 # st3
+    covering scs :
+         List (Fin k)
+      -> Fin k
+      -> Nat
+      -> {auto _ : Stack s k}
+      -> {auto _ : Comps s k}
+      -> {auto _ : MArray () s k Nat}
+      -> F1 s Nat
+    scs []      p dpt t = dpt # t
+    scs (x::xs) p dpt t =
+      let r2 # t2 := sc x p dpt t
+          r3 # t3 := scs xs p dpt t2
+       in min r2 r3 # t3
 
-    sc n p dpt (S d s cs) =
-      let Z  # d2 := get n d | dpth # d2 => dpth # S d2 s cs
-          d3      := set n dpt d2
-          dc # s3 := scs (filter (/= p) $ neighbours g n) n (S dpt) (S d3 (n::s) cs)
+    sc n p dpt t =
+      let Z  # t2 := get n t | res => res
+          t3      := set n dpt t2
+          t4      := mod1At ST (n::) t3
+          dc # t5 := scs (filter (/= p) $ neighbours g n) n (S dpt) t4
        in case compare dc dpt of
-            LT => dc # s3
-            EQ => dc # extractComp n s3
-            GT => dpt # pop s3
+            LT => dc # t5
+            EQ => dc # extractComp n t5
+            GT => dpt # pop t5
 
-    go : List (Fin k) -> BCState k -@ Ur (List $ Subgraph k e n)
-    go []      (S d s cs) = discarding d (MkBang $ subgraphL g <$> cs)
-    go (n::ns) (S d s cs) =
-      let Z # d2 := get n d | _ # d2 => go ns (S d2 s cs)
-          _ # s2 := assert_total $ sc n n 1 (S d2 s cs)
-       in go ns s2
+    go :
+         List (Fin k)
+      -> {auto _ : Stack s k}
+      -> {auto _ : Comps s k}
+      -> {auto _ : MArray () s k Nat}
+      -> F1 s (List $ Subgraph k e n)
+    go []      t = mapR1 (map (subgraphL g)) (read1At CO t)
+    go (n::ns) t =
+      let Z # t2 := get n t | _ # t2 => go ns t2
+          _ # t3 := assert_total $ sc n n 1 t2
+       in go ns t3

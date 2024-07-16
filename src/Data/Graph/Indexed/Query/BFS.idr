@@ -68,7 +68,7 @@ parameters {k : Nat}
   limitedBfsWith taboo acc init x =
     if k < 64
        then fst $ bfsS (fromList [(init,x)]) acc (visitAll taboo ini)
-       else visiting' k (bfsL (fromList [(init,x)]) acc . mvisitAll taboo)
+       else visiting k (bfsL (fromList [(init,x)]) acc . mvisitAll taboo)
 
   ||| Traverses the graph in breadth-first order for the given
   ||| start nodes and accumulates the nodes encountered with the
@@ -131,7 +131,7 @@ parameters {k : Nat}
   bfsAllWith acc init x =
     if k < 64
        then fst $ bfsAllS [<] (fromList [(init,x)]) acc ini
-       else visiting' k (bfsAllL [<] (fromList [(init,x)]) acc)
+       else visiting k (bfsAllL [<] (fromList [(init,x)]) acc)
 
   export
   distancesToNode : Fin k -> List (Nat, Fin k)
@@ -181,4 +181,4 @@ parameters {k : Nat}
     let q := fromList $ map ([<x] :<) (neighbours g x)
      in assert_total $ if k < 64
           then fst $ shortestS [<] q (x `visit` ini)
-          else visiting' k (\v => shortestL [<] q (x `mvisit` v))
+          else visiting k (\v => shortestL [<] q (x `mvisit` v))

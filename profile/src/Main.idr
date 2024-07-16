@@ -3,6 +3,7 @@ module Main
 import Data.Bits
 import Data.Graph as G
 import Data.Graph.Indexed as I
+import Data.Graph.Indexed.Query.Util
 import Data.Graph.Indexed.Query.Visited
 import Profile
 
@@ -88,12 +89,11 @@ graphN = graph . pairs
 testMVisited : {k : _} -> List (Fin k) -> Bool
 testMVisited xs = visiting k (go xs)
   where
-    go : List (Fin k) -> MVisited k -@ Ur Bool
-    go []        v = done True v
-    go (x :: xs) v =
-      let False # v2 := mvisited x v | True # v2 => go xs v2
-          v3         := mvisit x v2
-       in go xs v3
+    go : List (Fin k) -> MVis k Bool
+    go []        t = True # t
+    go (x :: xs) t =
+      let False # t2 := mvisited x t | True # t2 => go xs t2
+       in go xs (mvisit x t2)
 
 testVisited : {k : _} -> List (Fin k) -> Bool
 testVisited xs = go xs ini
