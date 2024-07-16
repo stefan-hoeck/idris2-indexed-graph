@@ -22,7 +22,7 @@ ipkg   = "indexed-graph-profile.ipkg"
 [custom.all.array]
 type   = "git"
 url    = "https://github.com/stefan-hoeck/idris2-array"
-commit = "latest:main"
+commit = "latest:external_token"
 ipkg   = "array.ipkg"
 
 [custom.all.containers]

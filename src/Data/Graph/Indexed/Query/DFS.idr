@@ -64,7 +64,7 @@ parameters {k : Nat}
   limitedDfsWith taboo acc init x =
     if k < 64
        then fst $ dfsS [x] acc init (visitAll taboo ini)
-       else visiting' k (dfsL [x] acc init . mvisitAll taboo)
+       else visiting k (dfsL [x] acc init . mvisitAll taboo)
 
   ||| Traverses the graph in depth-first order from the given
   ||| start node and accumulates the nodes encountered with the
@@ -137,7 +137,7 @@ parameters {k : Nat}
   cdfsWith acc init xs =
     if k < 64
        then fst $ cdfsS acc init [<] xs ini
-       else visiting' k (cdfsL acc init [<] xs)
+       else visiting k (cdfsL acc init [<] xs)
 
   ||| Traverses the whole graph in depth-first order
   ||| accumulates the nodes encountered with the given function.
@@ -162,7 +162,7 @@ parameters {k : Nat}
 --------------------------------------------------------------------------------
 
   -- tree-based DFS implementation for large graphs
-  dffL : (Fin k -> t) -> List (Fin k) -> MVisited k -@ CRes (Forest t) (MVisited k)
+  dffL : (Fin k -> s) -> List (Fin k) -> MVis k (Forest s)
   dffL f []      v = [] # v
   dffL f (x::xs) v =
       let False # v2 := mvisited x v
@@ -192,7 +192,7 @@ parameters {k : Nat}
   dffWith f xs =
     if k < 64
        then fst $ dffS f xs ini
-       else visiting k $ \v => let fs # v2 := dffL f xs v in done fs v2
+       else visiting k $ \t => dffL f xs t
 
   ||| Traverses the whole graph in depth-first order
   ||| converts the nodes encountered with the given function.

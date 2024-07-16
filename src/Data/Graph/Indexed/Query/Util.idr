@@ -30,10 +30,10 @@ Vis k s = Visited k -> (s, Visited k)
 ||| Internal alias for stateful functions when visiting large graphs
 public export
 0 MVis : Nat -> Type -> Type
-MVis k s = MVisited k -@ CRes s (MVisited k)
+MVis k a = {0 t : _} -> MVisited t k => F1 t a
 
 export %inline
-fromLeftMVis : CRes (Either a Void) (MVisited k) -@ CRes a (MVisited k)
+fromLeftMVis : R1 s (Either a Void) -@ R1 s a
 fromLeftMVis (x # m) = fromLeft x # m
 
 export %inline

@@ -1,5 +1,6 @@
 module Data.AssocList.Indexed
 
+import Data.Linear.List
 import Data.Array
 import Data.Array.Mutable
 import Data.List
@@ -295,14 +296,10 @@ intersect = intersectWith const
 
 ||| Filter an assoc list via a linear function.
 export %inline
-filterLin :
-     (Fin k -> m -@ CRes Bool m)
-  -> AssocList k e
-  -> m
-  -@ CRes (AssocList k e) m
-filterLin f (AL ps) m1 =
-  let ps2 # m2 := Mutable.filterLin (\(x,_) => f x) ps m1
-   in AL ps2 # m2
+filterLin : (Fin k -> F1 s Bool) -> AssocList k e -> F1 s (AssocList k e)
+filterLin f (AL ps) t1 =
+  let ps2 # t2 := filter1 (\(x,_) => f x) ps t1
+   in AL ps2 # t2
 
 ||| Using a comparator, find the minimal value and its
 ||| index in an assoc list.
