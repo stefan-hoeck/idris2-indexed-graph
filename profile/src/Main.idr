@@ -90,10 +90,10 @@ testMVisited : {k : _} -> List (Fin k) -> Bool
 testMVisited xs = visiting k (go xs)
   where
     go : List (Fin k) -> MVis k Bool
-    go []        t = True # t
-    go (x :: xs) t =
-      let False # t2 := mvisited x t | True # t2 => go xs t2
-       in go xs (mvisit x t2)
+    go []        r t = True # t
+    go (x :: xs) r t =
+      let False # t := mvisited r x t | True # t => go xs r t
+       in go xs r (mvisit r x t)
 
 testVisited : {k : _} -> List (Fin k) -> Bool
 testVisited xs = go xs ini
