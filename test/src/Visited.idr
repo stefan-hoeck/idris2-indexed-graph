@@ -13,7 +13,7 @@ prop_minitUnset = property $ do
 
   where
     test : {k : _} -> Fin k -> Bool
-    test n = visiting k $ \t => mapR1 not (mvisited n t)
+    test n = visiting k $ \r,t => mapR1 not (mvisited r n t)
 
 prop_iniUnset : Property
 prop_iniUnset = property $ do
@@ -29,7 +29,7 @@ prop_mset = property $ do
 
   where
     test : {k : _} -> Fin k -> Bool
-    test n = visiting k $ \t => mvisited n (mvisit n t)
+    test n = visiting k $ \r,t => mvisited r n (mvisit r n t)
 
 prop_set : Property
 prop_set = property $ do

@@ -63,7 +63,7 @@ parameters {k : Nat}
   limitedDfsWith taboo acc init x =
     if k < 64
        then fst $ dfsS [x] acc init (visitAll taboo ini)
-       else visiting k $ (\r => dfsL [x] acc init r . mvisitAll r taboo)
+       else visiting k $ \r => dfsL [x] acc init r . mvisitAll r taboo
 
   ||| Traverses the graph in depth-first order from the given
   ||| start node and accumulates the nodes encountered with the
@@ -191,7 +191,7 @@ parameters {k : Nat}
   dffWith f xs =
     if k < 64
        then fst $ dffS f xs ini
-       else visiting k $ \t => dffL f xs t
+       else visiting k (dffL f xs)
 
   ||| Traverses the whole graph in depth-first order
   ||| converts the nodes encountered with the given function.

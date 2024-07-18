@@ -29,14 +29,14 @@ parameters {k : Nat}
 
   -- flat BFS implementation for large graphs
   bfsL : Queue (s,Fin k) -> (s -> Fin k -> Either s a) -> MVis k (Maybe a)
-  bfsL q f v =
+  bfsL q f r t =
     case dequeue q of
-      Nothing => Nothing # v
+      Nothing => Nothing # t
       Just ((vs,x),q2) =>
-       let False # v2 := mvisited x v
-             | True # v2 => bfsL q2 f (assert_smaller v v2)
-           Left q3 := enqueueE q2 f vs (neighbours g x) | Right v => Just v # v2
-        in bfsL q3 f (assert_smaller v $ mvisit x v2)
+       let False # t := mvisited r x t
+             | True # t => bfsL q2 f (assert_smaller r r) t
+           Left q3 := enqueueE q2 f vs (neighbours g x) | Right v => Just v # t
+        in bfsL q3 f (assert_smaller r r) (mvisit r x t)
 
   -- flat BFS implementation for small graphs
   bfsS : Queue (s,Fin k) -> (s -> Fin k -> Either s a) -> Vis k (Maybe a)
@@ -68,7 +68,7 @@ parameters {k : Nat}
   limitedBfsWith taboo acc init x =
     if k < 64
        then fst $ bfsS (fromList [(init,x)]) acc (visitAll taboo ini)
-       else visiting k (bfsL (fromList [(init,x)]) acc . mvisitAll taboo)
+       else visiting k $ \r => bfsL (fromList [(init,x)]) acc r . mvisitAll r taboo
 
   ||| Traverses the graph in breadth-first order for the given
   ||| start nodes and accumulates the nodes encountered with the
@@ -104,14 +104,14 @@ parameters {k : Nat}
 
   -- BFS implementation covering a whole connected component for large graphs
   bfsAllL : SnocList s -> Queue (s,Fin k) -> (s -> Fin k -> s) -> MVis k (List s)
-  bfsAllL ss q f v =
+  bfsAllL ss q f r t =
     case dequeue q of
-      Nothing => (ss <>> []) # v
+      Nothing => (ss <>> []) # t
       Just ((vs,x),q2) =>
-       let False # v2 := mvisited x v
-             | True # v2 => bfsAllL ss q2 f (assert_smaller v v2)
+       let False # t := mvisited r x t
+             | True # t => bfsAllL ss q2 f (assert_smaller r r) t
            q3 := enqueueAll q2 (map (\y => (f vs y, y)) $ neighbours g x)
-        in bfsAllL (ss :< vs) q3 f (assert_smaller v $ mvisit x v2)
+        in bfsAllL (ss :< vs) q3 f (assert_smaller r r) (mvisit r x t)
 
   -- flat BFS implementation for small graphs
   bfsAllS : SnocList s -> Queue (s,Fin k) -> (s -> Fin k -> s) -> Vis k (List s)
@@ -146,14 +146,14 @@ parameters {k : Nat}
        SnocList (SnocList $ Fin k)
     -> Queue (SnocList $ Fin k)
     -> MVis k (List (SnocList $ Fin k))
-  shortestL sp q v =
+  shortestL sp q r t =
     case dequeue q of
-      Nothing => (sp <>> []) # v
+      Nothing => (sp <>> []) # t
       Just (sx@(_:<x),q2) =>
-        let False # v2 := mvisited x v | True # v2 => shortestL sp q2 v2
+        let False # t := mvisited r x t | True # t => shortestL sp q2 r t
             ns := map (sx :<) (neighbours g x)
-         in shortestL (sp :< sx) (enqueueAll q2 ns) (mvisit x v2)
-      Just (_,q2) => shortestL sp q2 v
+         in shortestL (sp :< sx) (enqueueAll q2 ns) r (mvisit r x t)
+      Just (_,q2) => shortestL sp q2 r t
 
   covering
   shortestS :
@@ -181,4 +181,4 @@ parameters {k : Nat}
     let q := fromList $ map ([<x] :<) (neighbours g x)
      in assert_total $ if k < 64
           then fst $ shortestS [<] q (x `visit` ini)
-          else visiting k (\v => shortestL [<] q (x `mvisit` v))
+          else visiting k $ \r => shortestL [<] q r . mvisit r x

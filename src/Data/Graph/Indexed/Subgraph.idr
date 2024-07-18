@@ -96,27 +96,55 @@ originEdge s (E x y l) = mkEdge (origin s x) (origin s y) l
 -- Biconnected Components
 --------------------------------------------------------------------------------
 
-data BCS = ST | CO
+0 Stack : Nat -> Type
+Stack n = Ref1 (List $ Fin n)
 
-0 Stack : Type -> Nat -> Type
-Stack s n = Ref1 ST s (List $ Fin n)
+0 Comps : Nat -> Type
+Comps n = Ref1 (List (List $ Fin n))
 
-0 Comps : Type -> Nat -> Type
-Comps s n = Ref1 CO s (List (List $ Fin n))
+pop : (s : Stack k) -> F1' [d,s,c]
+pop s = mod1 s $ \case h::t => t; [] => []
 
-pop : Stack s k => F1' s
-pop = mod1At ST $ \case h::t => t; [] => []
-
-extractComp : Fin k -> Stack s k => Comps s k => F1' s
-extractComp n t =
-  let st # t2 := read1At ST t
+extractComp : Fin k -> (s : Stack k) -> (c : Comps k) -> F1' [d,s,c]
+extractComp n s c t =
+  let st # t := read1 s t
       (cmp,rem) := go [<] st
-   in write1At ST rem (mod1At CO (cmp::) t2)
+   in write1 s rem (mod1 c (cmp::) t)
 
   where
     go : SnocList (Fin k) -> List (Fin k) -> (List $ Fin k, List $ Fin k)
     go sx (x :: xs) = if n == x then (sx <>> [x], xs) else go (sx :< x) xs
     go sx []        = (sx <>> [], []) -- this should not happen
+
+parameters (g : IGraph k e n)
+           (d : MArray k Nat)
+           (s : Stack k)
+           (c : Comps k)
+    covering sc : Fin k -> Fin k -> Nat -> F1 [d,s,c] Nat
+
+    covering scs : List (Fin k) -> Fin k -> Nat -> F1 [d,s,c] Nat
+    scs []      p dpt t = dpt # t
+    scs (x::xs) p dpt t =
+      let r2 # t2 := sc x p dpt t
+          r3 # t3 := scs xs p dpt t2
+       in min r2 r3 # t3
+
+    sc n p dpt t =
+      let Z  # t := get d n t | res => res
+          t      := set d n dpt t
+          t      := mod1 s (n::) t
+          dc # t := scs (filter (/= p) $ neighbours g n) n (S dpt) t
+       in case compare dc dpt of
+            LT => dc # t
+            EQ => dc # extractComp n s c t
+            GT => dpt # pop s t
+
+    go : List (Fin k) -> F1 [d,s,c] (List $ Subgraph k e n)
+    go []      t = mapR1 (map (subgraphL g)) (read1 c t)
+    go (n::ns) t =
+      let Z # t := get d n t | _ # t => go ns t
+          _ # t := assert_total $ sc n n 1 t
+       in go ns t
 
 ||| Extracts the biconnected components of a graph (Hopcroft/Tarjan algorithm).
 |||
@@ -131,52 +159,9 @@ extractComp n t =
 export
 biconnectedComponents : {k : _} -> IGraph k e n -> List (Subgraph k e n)
 biconnectedComponents g =
-  alloc k 0 $ \t =>
-    let st # t2 := ref1At ST (the (List $ Fin k) []) t
-        co # t3 := ref1At CO (the (List (List $ Fin k)) []) t2
-     in go (allFinsFast k) t3
-  where
-    covering sc :
-         Fin k
-      -> Fin k
-      -> Nat
-      -> {auto _ : Stack s k}
-      -> {auto _ : Comps s k}
-      -> {auto _ : MArray () s k Nat}
-      -> F1 s Nat
-
-    covering scs :
-         List (Fin k)
-      -> Fin k
-      -> Nat
-      -> {auto _ : Stack s k}
-      -> {auto _ : Comps s k}
-      -> {auto _ : MArray () s k Nat}
-      -> F1 s Nat
-    scs []      p dpt t = dpt # t
-    scs (x::xs) p dpt t =
-      let r2 # t2 := sc x p dpt t
-          r3 # t3 := scs xs p dpt t2
-       in min r2 r3 # t3
-
-    sc n p dpt t =
-      let Z  # t2 := get n t | res => res
-          t3      := set n dpt t2
-          t4      := mod1At ST (n::) t3
-          dc # t5 := scs (filter (/= p) $ neighbours g n) n (S dpt) t4
-       in case compare dc dpt of
-            LT => dc # t5
-            EQ => dc # extractComp n t5
-            GT => dpt # pop t5
-
-    go :
-         List (Fin k)
-      -> {auto _ : Stack s k}
-      -> {auto _ : Comps s k}
-      -> {auto _ : MArray () s k Nat}
-      -> F1 s (List $ Subgraph k e n)
-    go []      t = mapR1 (map (subgraphL g)) (read1At CO t)
-    go (n::ns) t =
-      let Z # t2 := get n t | _ # t2 => go ns t2
-          _ # t3 := assert_total $ sc n n 1 t2
-       in go ns t3
+  run1 $ \t =>
+    let A c t := ref1 (the (List (List $ Fin k)) []) t
+        A s t := ref1 (the (List $ Fin k) []) t
+        A d t := newMArray k Z t
+        r # t := go g d s c (allFinsFast k) t
+     in r # release c (release s (release d t))
