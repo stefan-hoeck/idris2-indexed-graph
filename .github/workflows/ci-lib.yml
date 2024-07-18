@@ -29,7 +29,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Install dependencies
+        run: |
+          apt-get update
+          apt-get install --yes nodejs
       - name: Build indexed-graph
         run: pack install indexed-graph
       - name: Test indexed-graph
-        run: pack test indexed-graph
+        run: pack test indexed-graph -n 1000
+      - name: Test indexed-graph on node
+        run: pack --cg node test indexed-graph -n 1000
