@@ -30,7 +30,7 @@ Vis k s = Visited k -> (s, Visited k)
 ||| Internal alias for stateful functions when visiting large graphs
 public export
 0 MVis : Nat -> Type -> Type
-MVis k a = {0 t : _} -> MVisited t k => F1 t a
+MVis = WithMBuffer
 
 export %inline
 fromLeftMVis : R1 s (Either a Void) -@ R1 s a

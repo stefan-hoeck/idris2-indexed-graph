@@ -11,42 +11,36 @@ import public Data.Buffer.Mutable
 --          MVisited
 --------------------------------------------------------------------------------
 
-public export
-data Vis : Type where
+parameters {0 rs : Resources}
+           (r    : MBuffer n)
+           {auto 0 p : Res r rs}
 
-public export
-0 MVisited : Type -> Nat -> Type
-MVisited s n = MBuffer Vis s n
+  ||| Set the current node to "visited".
+  export %inline
+  mvisit : Fin n -> F1' rs
+  mvisit i = set r i 1
 
-||| Set the current node to "visited".
-export %inline
-mvisit : MVisited s k => Fin k -> F1' s
-mvisit i = setAt Vis i 1
+  ||| Set all given nodes to "visited"
+  export %inline
+  mvisitAll : List (Fin n) -> F1' rs
+  mvisitAll = traverse1_ mvisit
 
-||| Set all given nodes to "visited"
-export %inline
-mvisitAll : List (Fin k) -> MVisited s k => F1' s
-mvisitAll xs = traverse1_ mvisit xs
-
-||| Test, if the current node has been visited.
-export %inline
-mvisited : Fin k -> MVisited s k => F1 s Bool
-mvisited x t =
-  case Core.getAt Vis x t of
-    1 # t => True  # t
-    _ # t => False # t
+  ||| Test, if the current node has been visited.
+  export %inline
+  mvisited : Fin n -> F1 rs Bool
+  mvisited x t =
+    case get r x t of
+      1 # t => True  # t
+      _ # t => False # t
 
 ||| Allocate a linear byte array and use it to run the given
 ||| computation, discarding it at the end.
 |||
 ||| This is a convenience alias for `visiting` for those cases, where
 ||| we already have a function returning a linear pair of values.
-export
-visiting : (k : Nat) -> ({0 s : _} -> MVisited s k => F1 s a) -> a
-visiting k f =
-  run1 $ \t =>
-    let buf # t2 := newMBufferAt Vis k t
-     in f t2
+export %inline
+visiting : (k : Nat) -> WithMBuffer k a -> a
+visiting = alloc
 
 --------------------------------------------------------------------------------
 --          Visited

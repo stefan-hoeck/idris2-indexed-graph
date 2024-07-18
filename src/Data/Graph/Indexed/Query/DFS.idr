@@ -20,12 +20,11 @@ parameters {k : Nat}
 
   -- flat DFS implementation for large graphs
   dfsL : List (Fin k) -> (s -> Fin k -> Either s a) -> s -> MVis k (Either s a)
-  dfsL []      f st v = Left st # v
-  dfsL (x::xs) f st v =
-    let False # v2 := mvisited x v
-          | True # v2 => dfsL xs f st (assert_smaller v v2)
-        Left st2   := f st x | Right v => Right v # v2
-     in dfsL (neighbours g x ++ xs) f st2 (assert_smaller v $ mvisit x v2)
+  dfsL []      f st r t = Left st # t
+  dfsL (x::xs) f st r t =
+    let False # t := mvisited r x t | True # t => dfsL xs f st (assert_smaller r r) t
+        Left st2  := f st x | Right v => Right v # t
+     in dfsL (neighbours g x ++ xs) f st2 (assert_smaller r r) (mvisit r x t)
 
   -- flat DFS implementation for small graphs
   dfsS : List (Fin k) -> (s -> Fin k -> Either s a) -> s -> Vis k (Either s a)
@@ -37,7 +36,7 @@ parameters {k : Nat}
        in dfsS (neighbours g x ++ xs) f st2 (assert_smaller v $ visit x v)
 
   %inline dfsL' : List (Fin k) -> (s -> Fin k -> s) -> s -> MVis k s
-  dfsL' xs acc i v = fromLeftMVis $ dfsL xs (fleft2 acc) i v
+  dfsL' xs acc i r t = fromLeftMVis $ dfsL xs (fleft2 acc) i r t
 
   -- flat DFS implementation for small graphs
   %inline dfsS' : List (Fin k) -> (s -> Fin k -> s) -> s -> Vis k s
@@ -64,7 +63,7 @@ parameters {k : Nat}
   limitedDfsWith taboo acc init x =
     if k < 64
        then fst $ dfsS [x] acc init (visitAll taboo ini)
-       else visiting k (dfsL [x] acc init . mvisitAll taboo)
+       else visiting k $ (\r => dfsL [x] acc init r . mvisitAll r taboo)
 
   ||| Traverses the graph in depth-first order from the given
   ||| start node and accumulates the nodes encountered with the
@@ -113,11 +112,11 @@ parameters {k : Nat}
 
   -- flat component-wise DFS implementation for large graphs
   cdfsL : (s -> Fin k -> s) -> s -> SnocList s -> List (Fin k) -> MVis k (List s)
-  cdfsL f i ss []      v = (ss <>> []) # v
-  cdfsL f i ss (x::xs) v =
-    let False # v2 := mvisited x v | True # v2 => cdfsL f i ss xs v2
-        y # v3     := dfsL' [x] f i v2
-     in cdfsL f i (ss:<y) xs v3
+  cdfsL f i ss []      r t = (ss <>> []) # t
+  cdfsL f i ss (x::xs) r t =
+    let False # t := mvisited r x t | True # t => cdfsL f i ss xs r t
+        y # t     := dfsL' [x] f i r t
+     in cdfsL f i (ss:<y) xs r t
 
   -- flat component-wise DFS implementation for small graphs
   cdfsS : (s -> Fin k -> s) -> s -> SnocList s -> List (Fin k) -> Vis k (List s)
@@ -163,13 +162,13 @@ parameters {k : Nat}
 
   -- tree-based DFS implementation for large graphs
   dffL : (Fin k -> s) -> List (Fin k) -> MVis k (Forest s)
-  dffL f []      v = [] # v
-  dffL f (x::xs) v =
-      let False # v2 := mvisited x v
-            | True # v2 => dffL f xs (assert_smaller v v2)
-          ts # v3 := dffL f (neighbours g x) (assert_smaller v $ mvisit x v2)
-          fs # v4 := dffL f xs (assert_smaller v v3)
-       in (T (f x) ts :: fs) # v4
+  dffL f []      r t = [] # t
+  dffL f (x::xs) r t =
+      let False # t := mvisited r x t
+            | True # t => dffL f xs (assert_smaller r r) t
+          ts # t := dffL f (neighbours g x) (assert_smaller r r) (mvisit r x t)
+          fs # t := dffL f xs (assert_smaller r r) t
+       in (T (f x) ts :: fs) # t
 
   -- tree-based DFS implementation for small graphs
   dffS : (Fin k -> t) -> List (Fin k) -> Visited k -> (Forest t, Visited k)

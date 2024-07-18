@@ -30,29 +30,33 @@ allFinsFast (S n) = go [] last
 --          Internal utilities
 --------------------------------------------------------------------------------
 
-||| Insert a single edge into a mutable array-representation of a graph.
-export
-linsEdge : MArray () s k (Adj k e n) => Edge k e -> F1' s
-linsEdge (E n1 n2 el) t1 =
-  let t2 := modify n1 {neighbours $= insert n2 el} t1
-   in modify n2 {neighbours $= insert n1 el} t2
+parameters {0 rs : Resources}
+           (r : MArray k (Adj k e n))
+           {auto 0 p : Res r rs}
 
-||| Delete a single edge from a mutable array-representation of a graph.
-export
-ldelEdge : (n1, n2 : Fin k) -> MArray () s k (Adj k e n) => F1' s
-ldelEdge n1 n2 t1 =
-  let t2 := modify n1 {neighbours $= delete n2} t1
-   in modify n2 {neighbours $= delete n1} t2
+  ||| Insert a single edge into a mutable array-representation of a graph.
+  export
+  linsEdge : Edge k e ->F1' rs
+  linsEdge (E n1 n2 el) t =
+    let t := modify r n1 {neighbours $= insert n2 el} t
+     in modify r n2 {neighbours $= insert n1 el} t
 
-||| Insert a bunch of edges into a mutable array-representation of a graph.
-export %inline
-linsEdges : List (Edge k e) -> MArray () s k (Adj k e n) => F1' s
-linsEdges xs = traverse1_ linsEdge xs
+  ||| Delete a single edge from a mutable array-representation of a graph.
+  export
+  ldelEdge : (n1, n2 : Fin k) -> F1' rs
+  ldelEdge n1 n2 t =
+    let t := modify r n1 {neighbours $= delete n2} t
+     in modify r n2 {neighbours $= delete n1} t
 
-||| Insert a bunch of edges into a mutable array-representation of a graph.
-export %inline
-ldelEdges : List (Fin k, Fin k) -> MArray () s k (Adj k e n) => F1' s
-ldelEdges xs t = traverse1_ (\(x,y) => ldelEdge x y) xs t
+  ||| Insert a bunch of edges into a mutable array-representation of a graph.
+  export %inline
+  linsEdges : List (Edge k e) -> F1' rs
+  linsEdges = traverse1_ linsEdge
+
+  ||| Insert a bunch of edges into a mutable array-representation of a graph.
+  export %inline
+  ldelEdges : List (Fin k, Fin k) -> F1' rs
+  ldelEdges = traverse1_ (\(x,y) => ldelEdge x y)
 
 -- we return only edges to nodes greater than the node in the
 -- context to avoid returning every edge twice in `labEdges`.
@@ -193,13 +197,13 @@ mapLen f (x :: xs) = cong S $ mapLen f xs
 export
 mkGraphL : (ns : List n) -> List (Edge (length ns) e) -> IGraph (length ns) e n
 mkGraphL ns es =
-  IG $ allocListWith ns (`A` empty) $ \t => freeze (linsEdges es t)
+  IG $ allocListWith ns (`A` empty) $ \r,t => freeze r (linsEdges r es t)
 
 ||| Create a `Graph` from a vect of labeled nodes and edges.
 export
 mkGraph : {k : _} -> (ns : Vect k n) -> List (Edge k e) -> IGraph k e n
 mkGraph ns es =
-  IG $ allocVect (map (`A` empty) ns) $ \t => freeze (linsEdges es t)
+  IG $ allocVect (map (`A` empty) ns) $ \r,t => freeze r (linsEdges r es t)
 
 ||| Create a `Graph` from a vect of labeled nodes and edges.
 |||
@@ -209,7 +213,7 @@ mkGraph ns es =
 export
 mkGraphRev : {k : _} -> (ns : Vect k n) -> List (Edge k e) -> IGraph k e n
 mkGraphRev ns es =
- IG $ allocVectRev (map (`A` empty) ns) $ \t => freeze (linsEdges es t)
+ IG $ allocVectRev (map (`A` empty) ns) $ \r,t => freeze r (linsEdges r es t)
 
 export %inline
 generate : (k : Nat) -> (Fin k -> Adj k e n) -> IGraph k e n
@@ -317,7 +321,7 @@ updateEdge x y f = updateEdges x y f id
 ||| Insert (or replace) a single edge in a graph.
 export
 insEdges : {k : _} -> List (Edge k e) -> IGraph k e n -> IGraph k e n
-insEdges es g = IG $ allocGen k (adj g) (\t => freeze (linsEdges es t))
+insEdges es g = IG $ allocGen k (adj g) (\r,t => freeze r (linsEdges r es t))
 
 ||| Insert an `Edge` into the 'IGraph'.
 export %inline
@@ -327,7 +331,7 @@ insEdge = insEdges . pure
 ||| Remove multiple 'Edge's from the 'Graph'.
 export
 delEdges : {k : _} -> List (Fin k, Fin k) -> IGraph k e n -> IGraph k e n
-delEdges ps g = IG $ allocGen k (adj g) (\t => freeze (ldelEdges ps t))
+delEdges ps g = IG $ allocGen k (adj g) (\r,t => freeze r (ldelEdges r ps t))
 
 ||| Remove an 'Edge' from the 'Graph'.
 export %inline
