@@ -38,16 +38,6 @@ parameters {k : Nat}
            Left q3 := enqueueE q2 f vs (neighbours g x) | Right v => Just v # t
         in bfsL q3 f (assert_smaller r r) (mvisit r x t)
 
-  -- flat BFS implementation for small graphs
-  bfsS : Queue (s,Fin k) -> (s -> Fin k -> Either s a) -> Vis k (Maybe a)
-  bfsS q f v =
-    case dequeue q of
-      Nothing     => (Nothing,v)
-      Just ((vs,x),q2) =>
-       let False   := visited x v | True => bfsS q2 f (assert_smaller v v)
-           Left q3 := enqueueE q2 f vs (neighbours g x) | Right x => (Just x, v)
-        in bfsS q3 f (assert_smaller v $ visit x v)
-
   ||| Traverses the graph in breadth-first order for the given
   ||| start nodes and accumulates the nodes encountered with the
   ||| given function.
@@ -66,9 +56,7 @@ parameters {k : Nat}
     -> Fin k
     -> Maybe a
   limitedBfsWith taboo acc init x =
-    if k < 64
-       then fst $ bfsS (fromList [(init,x)]) acc (visitAll taboo ini)
-       else visiting k $ \r => bfsL (fromList [(init,x)]) acc r . mvisitAll r taboo
+    visiting k $ \r => bfsL (fromList [(init,x)]) acc r . mvisitAll r taboo
 
   ||| Traverses the graph in breadth-first order for the given
   ||| start nodes and accumulates the nodes encountered with the
@@ -113,25 +101,13 @@ parameters {k : Nat}
            q3 := enqueueAll q2 (map (\y => (f vs y, y)) $ neighbours g x)
         in bfsAllL (ss :< vs) q3 f (assert_smaller r r) (mvisit r x t)
 
-  -- flat BFS implementation for small graphs
-  bfsAllS : SnocList s -> Queue (s,Fin k) -> (s -> Fin k -> s) -> Vis k (List s)
-  bfsAllS ss q f v =
-    case dequeue q of
-      Nothing     => (ss <>> [],v)
-      Just ((vs,x),q2) =>
-       let False   := visited x v | True => bfsAllS ss q2 f (assert_smaller v v)
-           q3 := enqueueAll q2 (map (\y => (f vs y, y)) $ neighbours g x)
-        in bfsAllS (ss :< vs) q3 f (assert_smaller v $ visit x v)
-
   ||| Traverses the graph in breadth-first order for the given
   ||| start nodes and accumulates the nodes encountered with the
   ||| given function.
   export
   bfsAllWith : (s -> Fin k -> s) -> (init : s) -> Fin k -> List s
   bfsAllWith acc init x =
-    if k < 64
-       then fst $ bfsAllS [<] (fromList [(init,x)]) acc ini
-       else visiting k (bfsAllL [<] (fromList [(init,x)]) acc)
+    visiting k (bfsAllL [<] (fromList [(init,x)]) acc)
 
   export
   distancesToNode : Fin k -> List (Nat, Fin k)
@@ -155,21 +131,6 @@ parameters {k : Nat}
          in shortestL (sp :< sx) (enqueueAll q2 ns) r (mvisit r x t)
       Just (_,q2) => shortestL sp q2 r t
 
-  covering
-  shortestS :
-       SnocList (SnocList $ Fin k)
-    -> Queue (SnocList $ Fin k)
-    -> Vis k (List (SnocList $ Fin k))
-  shortestS sp q v =
-    case dequeue q of
-      Nothing => (sp <>> [],v)
-      Just (sx@(_:<x),q2) => case x `visited` v of
-        True  => shortestS sp q2 v
-        False =>
-          let ns := map (sx :<) (neighbours g x)
-           in shortestS (sp :< sx) (enqueueAll q2 ns) (x `visit` v)
-      Just (_,q2) => shortestS sp q2 v
-
   ||| Computes the shortest paths to all nodes reachable from
   ||| the given starting node. This is a simplified version of
   ||| Dijkstra's algorithm for unweighted edges.
@@ -179,6 +140,5 @@ parameters {k : Nat}
   shortestPaths : Fin k -> List (SnocList $ Fin k)
   shortestPaths x =
     let q := fromList $ map ([<x] :<) (neighbours g x)
-     in assert_total $ if k < 64
-          then fst $ shortestS [<] q (x `visit` ini)
-          else visiting k $ \r => shortestL [<] q r . mvisit r x
+     in assert_total $
+          visiting k $ \r => shortestL [<] q r . mvisit r x

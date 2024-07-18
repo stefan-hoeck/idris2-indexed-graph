@@ -26,21 +26,8 @@ parameters {k : Nat}
         Left st2  := f st x | Right v => Right v # t
      in dfsL (neighbours g x ++ xs) f st2 (assert_smaller r r) (mvisit r x t)
 
-  -- flat DFS implementation for small graphs
-  dfsS : List (Fin k) -> (s -> Fin k -> Either s a) -> s -> Vis k (Either s a)
-  dfsS []      f st v = (Left st, v)
-  dfsS (x::xs) f st v =
-    if visited x v then dfsS xs f st v
-    else
-      let Left st2 := f st x | Right x => (Right x, v)
-       in dfsS (neighbours g x ++ xs) f st2 (assert_smaller v $ visit x v)
-
   %inline dfsL' : List (Fin k) -> (s -> Fin k -> s) -> s -> MVis k s
   dfsL' xs acc i r t = fromLeftMVis $ dfsL xs (fleft2 acc) i r t
-
-  -- flat DFS implementation for small graphs
-  %inline dfsS' : List (Fin k) -> (s -> Fin k -> s) -> s -> Vis k s
-  dfsS' xs acc i v = fromLeftVis $ dfsS xs (fleft2 acc) i v
 
   ||| Traverses the graph in depth-first order from the given
   ||| start node and accumulates the nodes encountered with the
@@ -61,9 +48,7 @@ parameters {k : Nat}
     -> Fin k
     -> Either s a
   limitedDfsWith taboo acc init x =
-    if k < 64
-       then fst $ dfsS [x] acc init (visitAll taboo ini)
-       else visiting k $ \r => dfsL [x] acc init r . mvisitAll r taboo
+    visiting k $ \r => dfsL [x] acc init r . mvisitAll r taboo
 
   ||| Traverses the graph in depth-first order from the given
   ||| start node and accumulates the nodes encountered with the
@@ -118,13 +103,6 @@ parameters {k : Nat}
         y # t     := dfsL' [x] f i r t
      in cdfsL f i (ss:<y) xs r t
 
-  -- flat component-wise DFS implementation for small graphs
-  cdfsS : (s -> Fin k -> s) -> s -> SnocList s -> List (Fin k) -> Vis k (List s)
-  cdfsS f i ss []      v = (ss <>> [], v)
-  cdfsS f i ss (x::xs) v =
-    if visited x v then cdfsS f i ss xs v
-    else let (y,v2) := dfsS' [x] f i v in cdfsS f i (ss:<y) xs v2
-
   ||| Traverses the graph in depth-first order for the given
   ||| start nodes and accumulates the nodes encountered with the
   ||| given function.
@@ -133,10 +111,7 @@ parameters {k : Nat}
   ||| using initial state `init` for every component we encounter.
   export
   cdfsWith : (acc : s -> Fin k -> s) -> (init : s) -> List (Fin k) -> List s
-  cdfsWith acc init xs =
-    if k < 64
-       then fst $ cdfsS acc init [<] xs ini
-       else visiting k (cdfsL acc init [<] xs)
+  cdfsWith acc init xs = visiting k (cdfsL acc init [<] xs)
 
   ||| Traverses the whole graph in depth-first order
   ||| accumulates the nodes encountered with the given function.
@@ -170,16 +145,6 @@ parameters {k : Nat}
           fs # t := dffL f xs (assert_smaller r r) t
        in (T (f x) ts :: fs) # t
 
-  -- tree-based DFS implementation for small graphs
-  dffS : (Fin k -> t) -> List (Fin k) -> Visited k -> (Forest t, Visited k)
-  dffS f []      v = ([], v)
-  dffS f (x::xs) v =
-    if visited x v then dffS f xs v
-    else
-      let (ts,v2) := dffS f (neighbours g x) (assert_smaller v $ visit x v)
-          (fs,v3) := dffS f xs (assert_smaller v v2)
-       in (T (f x) ts :: fs, v3)
-
   ||| Traverses the graph in depth-first order for the given
   ||| start nodes and converts the nodes encountered with the
   ||| given function.
@@ -188,10 +153,7 @@ parameters {k : Nat}
   ||| of the connected components encountered.
   export
   dffWith : (Fin k -> t) -> List (Fin k) -> Forest t
-  dffWith f xs =
-    if k < 64
-       then fst $ dffS f xs ini
-       else visiting k (dffL f xs)
+  dffWith f xs = visiting k (dffL f xs)
 
   ||| Traverses the whole graph in depth-first order
   ||| converts the nodes encountered with the given function.
