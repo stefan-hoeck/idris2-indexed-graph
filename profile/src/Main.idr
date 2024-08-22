@@ -93,7 +93,8 @@ testMVisited xs = visiting k (go xs)
     go []        r t = True # t
     go (x :: xs) r t =
       let False # t := mvisited r x t | True # t => go xs r t
-       in go xs r (mvisit r x t)
+          _ # t     := mvisit r x t
+       in go xs r t
 
 testVisited : {k : _} -> List (Fin k) -> Bool
 testVisited xs = go xs ini
