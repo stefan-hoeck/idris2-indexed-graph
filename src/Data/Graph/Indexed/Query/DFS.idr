@@ -24,7 +24,8 @@ parameters {k : Nat}
   dfsL (x::xs) f st r t =
     let False # t := mvisited r x t | True # t => dfsL xs f st (assert_smaller r r) t
         Left st2  := f st x | Right v => Right v # t
-     in dfsL (neighbours g x ++ xs) f st2 (assert_smaller r r) (mvisit r x t)
+        _ # t     := mvisit r x t
+     in dfsL (neighbours g x ++ xs) f st2 (assert_smaller r r) t
 
   %inline dfsL' : List (Fin k) -> (s -> Fin k -> s) -> s -> MVis k s
   dfsL' xs acc i r t = fromLeftMVis $ dfsL xs (fleft2 acc) i r t
@@ -48,7 +49,9 @@ parameters {k : Nat}
     -> Fin k
     -> Either s a
   limitedDfsWith taboo acc init x =
-    visiting k $ \r => dfsL [x] acc init r . mvisitAll r taboo
+    visiting k $ \r,t =>
+      let _ # t := mvisitAll r taboo t
+       in dfsL [x] acc init r t
 
   ||| Traverses the graph in depth-first order from the given
   ||| start node and accumulates the nodes encountered with the
@@ -141,7 +144,8 @@ parameters {k : Nat}
   dffL f (x::xs) r t =
       let False # t := mvisited r x t
             | True # t => dffL f xs (assert_smaller r r) t
-          ts # t := dffL f (neighbours g x) (assert_smaller r r) (mvisit r x t)
+          _  # t := mvisit r x t
+          ts # t := dffL f (neighbours g x) (assert_smaller r r) t
           fs # t := dffL f xs (assert_smaller r r) t
        in (T (f x) ts :: fs) # t
 

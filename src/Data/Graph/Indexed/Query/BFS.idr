@@ -36,7 +36,8 @@ parameters {k : Nat}
        let False # t := mvisited r x t
              | True # t => bfsL q2 f (assert_smaller r r) t
            Left q3 := enqueueE q2 f vs (neighbours g x) | Right v => Just v # t
-        in bfsL q3 f (assert_smaller r r) (mvisit r x t)
+           _ # t := mvisit r x t
+        in bfsL q3 f (assert_smaller r r) t
 
   ||| Traverses the graph in breadth-first order for the given
   ||| start nodes and accumulates the nodes encountered with the
@@ -56,7 +57,9 @@ parameters {k : Nat}
     -> Fin k
     -> Maybe a
   limitedBfsWith taboo acc init x =
-    visiting k $ \r => bfsL (fromList [(init,x)]) acc r . mvisitAll r taboo
+    visiting k $ \r,t =>
+      let _ # t := mvisitAll r taboo t
+       in bfsL (fromList [(init,x)]) acc r t
 
   ||| Traverses the graph in breadth-first order for the given
   ||| start nodes and accumulates the nodes encountered with the
@@ -99,7 +102,8 @@ parameters {k : Nat}
        let False # t := mvisited r x t
              | True # t => bfsAllL ss q2 f (assert_smaller r r) t
            q3 := enqueueAll q2 (map (\y => (f vs y, y)) $ neighbours g x)
-        in bfsAllL (ss :< vs) q3 f (assert_smaller r r) (mvisit r x t)
+           _ # t := mvisit r x t
+        in bfsAllL (ss :< vs) q3 f (assert_smaller r r) t
 
   ||| Traverses the graph in breadth-first order for the given
   ||| start nodes and accumulates the nodes encountered with the
@@ -128,7 +132,8 @@ parameters {k : Nat}
       Just (sx@(_:<x),q2) =>
         let False # t := mvisited r x t | True # t => shortestL sp q2 r t
             ns := map (sx :<) (neighbours g x)
-         in shortestL (sp :< sx) (enqueueAll q2 ns) r (mvisit r x t)
+            _ # t := mvisit r x t
+         in shortestL (sp :< sx) (enqueueAll q2 ns) r t
       Just (_,q2) => shortestL sp q2 r t
 
   ||| Computes the shortest paths to all nodes reachable from
@@ -141,4 +146,4 @@ parameters {k : Nat}
   shortestPaths x =
     let q := fromList $ map ([<x] :<) (neighbours g x)
      in assert_total $
-          visiting k $ \r => shortestL [<] q r . mvisit r x
+          visiting k $ \r,t => let _ # t := mvisit r x t in shortestL [<] q r t

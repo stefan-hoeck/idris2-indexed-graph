@@ -109,7 +109,8 @@ extractComp : Fin k -> (s : Stack k) -> (c : Comps k) -> F1' [d,s,c]
 extractComp n s c t =
   let st # t := read1 s t
       (cmp,rem) := go [<] st
-   in write1 s rem (mod1 c (cmp::) t)
+      _ # t     := mod1 c (cmp::) t
+   in write1 s rem t
 
   where
     go : SnocList (Fin k) -> List (Fin k) -> (List $ Fin k, List $ Fin k)
@@ -131,13 +132,13 @@ parameters (g : IGraph k e n)
 
     sc n p dpt t =
       let Z  # t := get d n t | res => res
-          t      := set d n dpt t
-          t      := mod1 s (n::) t
+          _ # t  := set d n dpt t
+          _ # t  := mod1 s (n::) t
           dc # t := scs (filter (/= p) $ neighbours g n) n (S dpt) t
        in case compare dc dpt of
             LT => dc # t
-            EQ => dc # extractComp n s c t
-            GT => dpt # pop s t
+            EQ => let _ # t := extractComp n s c t in dc # t
+            GT => let _ # t := pop s t in dpt # t
 
     go : List (Fin k) -> F1 [d,s,c] (List $ Subgraph k e n)
     go []      t = mapR1 (map (subgraphL g)) (read1 c t)
@@ -164,4 +165,7 @@ biconnectedComponents g =
         A s t := ref1 (the (List $ Fin k) []) t
         A d t := newMArray k Z t
         r # t := go g d s c (allFinsFast k) t
-     in r # release c (release s (release d t))
+        _ # t := Core.release d t
+        _ # t := Ref1.release s t
+        _ # t := Ref1.release c t
+     in r # t
