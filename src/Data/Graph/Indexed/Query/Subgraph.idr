@@ -21,12 +21,16 @@ parameters (mq : MArray q (Maybe $ Fin t))
 
   -- Link a query node to a target node.
   assign : Fin q -> Fin t -> F1' [mq,mt]
-  assign x y t = set mq x (Just y) (set mt y (Just x) t)
+  assign x y t =
+    let _ # t := set mt y (Just x) t
+     in set mq x (Just y) t
 
   -- Undo an assignment. We use this when backtracking
   -- from an assignment that didn't work.
   unassign : Fin q -> Fin t -> F1' [mq,mt]
-  unassign x y t = set mq x Nothing (set mt y Nothing t)
+  unassign x y t =
+    let _ # t := set mt y Nothing t
+     in set mq x Nothing t
 
 --------------------------------------------------------------------------------
 -- Linear Utilities
@@ -117,7 +121,7 @@ parameters {0 eq,et,nq,nt : Type}
   try x []      cs t = False # t
 
   try x (v::vs) cs t =
-    let t := assign mq mt x v t -- map query node `x` to target node `v`
+    let _ # t := assign mq mt x v t -- map query node `x` to target node `v`
 
         -- Align the neighbours of x and v and update the candidate matrix.
         cs2 # t   := align x v cs t --
@@ -127,7 +131,8 @@ parameters {0 eq,et,nq,nt : Type}
         -- undo the the mapping from `x` to `v` and try another
         -- one from `vs`.
         False # t := tryAll cs2 t | res => res
-     in try x vs cs (unassign mq mt x v t)
+        _ # t := unassign mq mt x v t
+     in try x vs cs t
 
   -- This extracts the query node with the lowest number of
   -- candidate nodes from the target. If there is no node left,
@@ -165,4 +170,6 @@ query me mn que tgt =
     let A mt tk  := newMArray t Nothing tk
         A mq tk  := newMArray q Nothing tk
         res # tk := run mq mt me mn que tgt tk
-     in res # release mq (release mt tk)
+        _   # tk := release mt tk
+        _   # tk := release mq tk
+     in res # tk

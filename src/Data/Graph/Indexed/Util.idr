@@ -38,14 +38,14 @@ parameters {0 rs : Resources}
   export
   linsEdge : Edge k e ->F1' rs
   linsEdge (E n1 n2 el) t =
-    let t := modify r n1 {neighbours $= insert n2 el} t
+    let _ # t := modify r n1 {neighbours $= insert n2 el} t
      in modify r n2 {neighbours $= insert n1 el} t
 
   ||| Delete a single edge from a mutable array-representation of a graph.
   export
   ldelEdge : (n1, n2 : Fin k) -> F1' rs
   ldelEdge n1 n2 t =
-    let t := modify r n1 {neighbours $= delete n2} t
+    let _ # t := modify r n1 {neighbours $= delete n2} t
      in modify r n2 {neighbours $= delete n1} t
 
   ||| Insert a bunch of edges into a mutable array-representation of a graph.
@@ -197,13 +197,17 @@ mapLen f (x :: xs) = cong S $ mapLen f xs
 export
 mkGraphL : (ns : List n) -> List (Edge (length ns) e) -> IGraph (length ns) e n
 mkGraphL ns es =
-  IG $ allocListWith ns (`A` empty) $ \r,t => freeze r (linsEdges r es t)
+  IG $ allocListWith ns (`A` empty) $ \r,t =>
+    let _ # t := linsEdges r es t
+     in freeze r t
 
 ||| Create a `Graph` from a vect of labeled nodes and edges.
 export
 mkGraph : {k : _} -> (ns : Vect k n) -> List (Edge k e) -> IGraph k e n
 mkGraph ns es =
-  IG $ allocVect (map (`A` empty) ns) $ \r,t => freeze r (linsEdges r es t)
+  IG $ allocVect (map (`A` empty) ns) $ \r,t =>
+    let _ # t := linsEdges r es t
+     in freeze r t
 
 ||| Create a `Graph` from a vect of labeled nodes and edges.
 |||
@@ -213,7 +217,9 @@ mkGraph ns es =
 export
 mkGraphRev : {k : _} -> (ns : Vect k n) -> List (Edge k e) -> IGraph k e n
 mkGraphRev ns es =
- IG $ allocVectRev (map (`A` empty) ns) $ \r,t => freeze r (linsEdges r es t)
+ IG $ allocVectRev (map (`A` empty) ns) $ \r,t =>
+   let _ # t := linsEdges r es t
+    in freeze r t
 
 export %inline
 generate : (k : Nat) -> (Fin k -> Adj k e n) -> IGraph k e n
@@ -321,7 +327,10 @@ updateEdge x y f = updateEdges x y f id
 ||| Insert (or replace) a single edge in a graph.
 export
 insEdges : {k : _} -> List (Edge k e) -> IGraph k e n -> IGraph k e n
-insEdges es g = IG $ allocGen k (adj g) (\r,t => freeze r (linsEdges r es t))
+insEdges es g =
+  IG $ allocGen k (adj g) $ \r,t =>
+    let _ # t := linsEdges r es t
+     in freeze r t
 
 ||| Insert an `Edge` into the 'IGraph'.
 export %inline
@@ -331,7 +340,9 @@ insEdge = insEdges . pure
 ||| Remove multiple 'Edge's from the 'Graph'.
 export
 delEdges : {k : _} -> List (Fin k, Fin k) -> IGraph k e n -> IGraph k e n
-delEdges ps g = IG $ allocGen k (adj g) (\r,t => freeze r (ldelEdges r ps t))
+delEdges ps g = IG $ allocGen k (adj g) $ \r,t =>
+  let _ # t := ldelEdges r ps t
+   in freeze r t
 
 ||| Remove an 'Edge' from the 'Graph'.
 export %inline
