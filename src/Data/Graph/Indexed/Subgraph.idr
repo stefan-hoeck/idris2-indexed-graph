@@ -138,7 +138,7 @@ parameters (g : IGraph k e n)
        in case compare dc dpt of
             LT => dc # t
             EQ => let _ # t := extractComp n s c t in dc # t
-            GT => let _ # t := pop s t in dpt # t
+            GT => let _ # t := Subgraph.pop s t in dpt # t
 
     go : List (Fin k) -> F1 [d,s,c] (List $ Subgraph k e n)
     go []      t = mapR1 (map (subgraphL g)) (read1 c t)
