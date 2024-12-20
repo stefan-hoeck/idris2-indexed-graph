@@ -60,7 +60,7 @@ subgraph (IG g) arr = let m := nodeMap arr in IG $ map (adj m) arr
 
   where
     adj : NodeMap m k -> Fin m -> Adj k e (Fin m, n)
-    adj m fm = let (A l ns) := at g fm in A (fm,l) (adjAssocList m ns)
+    adj m fm = let A l ns := at g fm in A (fm,l) (adjAssocList m ns)
 
 ||| Computes a subgraph of a graph containing the given nodes.
 ||| Runs in O(k * log (k)) for sparse graphs.
@@ -161,9 +161,9 @@ export
 biconnectedComponents : {k : _} -> IGraph k e n -> List (Subgraph k e n)
 biconnectedComponents g =
   run1 $ \t =>
-    let A c t := ref1 (the (List (List $ Fin k)) []) t
-        A s t := ref1 (the (List $ Fin k) []) t
-        A d t := newMArray k Z t
+    let c # t := ref1 (the (List (List $ Fin k)) []) t
+        s # t := ref1 (the (List $ Fin k) []) t
+        d # t := newMArray k Z t
         r # t := go g d s c (allFinsFast k) t
         _ # t := Core.release d t
         _ # t := Ref1.release s t
