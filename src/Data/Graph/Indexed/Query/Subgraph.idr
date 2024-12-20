@@ -167,8 +167,8 @@ query :
   -> Maybe (Vect q (Fin t))
 query me mn que tgt =
   run1 $ \tk =>
-    let A mt tk  := newMArray t Nothing tk
-        A mq tk  := newMArray q Nothing tk
+    let mt  # tk := newMArray t Nothing tk
+        mq  # tk := newMArray q Nothing tk
         res # tk := run mq mt me mn que tgt tk
         _   # tk := release mt tk
         _   # tk := release mq tk
