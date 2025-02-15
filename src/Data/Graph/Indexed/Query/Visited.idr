@@ -11,23 +11,21 @@ import public Data.Buffer.Mutable
 --          MVisited
 --------------------------------------------------------------------------------
 
-parameters {0 rs : Resources}
-           (r    : MBuffer n)
-           {auto 0 p : Res r rs}
+parameters (r : MBuffer s n)
 
   ||| Set the current node to "visited".
   export %inline
-  mvisit : Fin n -> F1' rs
+  mvisit : Fin n -> F1' s
   mvisit i = set r i 1
 
   ||| Set all given nodes to "visited"
   export %inline
-  mvisitAll : List (Fin n) -> F1' rs
+  mvisitAll : List (Fin n) -> F1' s
   mvisitAll = traverse1_ mvisit
 
   ||| Test, if the current node has been visited.
   export %inline
-  mvisited : Fin n -> F1 rs Bool
+  mvisited : Fin n -> F1 s Bool
   mvisited x t =
     case get r x t of
       1 # t => True  # t

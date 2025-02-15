@@ -16,18 +16,18 @@ import Data.Vect
 
 data Tag = Q | T
 
-parameters (mq : MArray q (Maybe $ Fin t))
-           (mt : MArray t (Maybe $ Fin q))
+parameters (mq : MArray s q (Maybe $ Fin t))
+           (mt : MArray s t (Maybe $ Fin q))
 
   -- Link a query node to a target node.
-  assign : Fin q -> Fin t -> F1' [mq,mt]
+  assign : Fin q -> Fin t -> F1' s
   assign x y t =
     let _ # t := set mt y (Just x) t
      in set mq x (Just y) t
 
   -- Undo an assignment. We use this when backtracking
   -- from an assignment that didn't work.
-  unassign : Fin q -> Fin t -> F1' [mq,mt]
+  unassign : Fin q -> Fin t -> F1' s
   unassign x y t =
     let _ # t := set mt y Nothing t
      in set mq x Nothing t
@@ -37,16 +37,15 @@ parameters (mq : MArray q (Maybe $ Fin t))
 --------------------------------------------------------------------------------
 
 parameters {k : _}
-           (r : MArray k (Maybe a))
-           {auto 0 p : Res r rs}
+           (r : MArray s k (Maybe a))
 
   -- Test if the value at the given position in a mutable array is still unset.
-  %inline unset : Fin k -> F1 rs Bool
+  %inline unset : Fin k -> F1 s Bool
   unset x t = let m # t := get r x t in isNothing m # t
 
   -- Either extracts the target nodes from a successful query, or finds the
   -- first unassigned query node.
-  findUnassigned : F1 rs (Either (Fin k) (Vect k a))
+  findUnassigned : F1 s (Either (Fin k) (Vect k a))
   findUnassigned t =
     let vs # t = toVectWith r (\x => maybe (Left x) Right) t
      in sequence vs # t
@@ -81,8 +80,8 @@ intersect _ _ = []
 
 parameters {0 eq,et,nq,nt : Type}
            {q,t : Nat}
-           (mq      : MArray q (Maybe $ Fin t))
-           (mt      : MArray t (Maybe $ Fin q))
+           (mq      : MArray s q (Maybe $ Fin t))
+           (mt      : MArray s t (Maybe $ Fin q))
            (me      : eq -> et -> Bool) -- edge label matcher
            (mn      : nq -> nt -> Bool) -- node label matcher
            (query   : IGraph q eq nq)   -- query node
@@ -104,17 +103,17 @@ parameters {0 eq,et,nq,nt : Type}
       cand : Fin q -> eq -> List (Fin t)
       cand x lq = mapMaybe (match lq $ lab query x) (pairs qs)
 
-  align : Fin q -> Fin t -> Matrix q t -> F1 [mq,mt] (Matrix q t)
+  align : Fin q -> Fin t -> Matrix q t -> F1 s (Matrix q t)
   align x y m t =
     let nsX # t := filterLin (unset mq) (neighbours $ adj query x) t
         nsY # t := filterLin (unset mt) (neighbours $ adj target y) t
      in unionWith intersect (remove y m) (candidates nsX nsY) # t
 
   covering
-  tryAll : Matrix q t -> F1 [mq,mt] Bool
+  tryAll : Matrix q t -> F1 s Bool
 
   covering
-  try : Fin q -> List (Fin t) -> Matrix q t -> F1 [mq,mt] Bool
+  try : Fin q -> List (Fin t) -> Matrix q t -> F1 s Bool
 
   -- There are no valid mappings left for query node `x`, so we abort
   -- with `False`.
@@ -145,7 +144,7 @@ parameters {0 eq,et,nq,nt : Type}
   -- Tries to align all connected components of the query graph
   -- with nodes of the target graph.
   covering
-  run : F1 [mq,mt] (Maybe $ Vect q (Fin t))
+  run : F1 s (Maybe $ Vect q (Fin t))
   run t = -- (S m1 a1) =
     let Left x # t := findUnassigned mq t | Right arr # t => Just arr # t
         ns     # t := filter1 (unset mt) (nodes target) t
@@ -167,9 +166,6 @@ query :
   -> Maybe (Vect q (Fin t))
 query me mn que tgt =
   run1 $ \tk =>
-    let mt  # tk := newMArray t Nothing tk
-        mq  # tk := newMArray q Nothing tk
-        res # tk := run mq mt me mn que tgt tk
-        _   # tk := release mt tk
-        _   # tk := release mq tk
-     in res # tk
+    let mt # tk := newMArray t Nothing tk
+        mq # tk := newMArray q Nothing tk
+     in run mq mt me mn que tgt tk
