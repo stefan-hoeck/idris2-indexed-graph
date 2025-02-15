@@ -89,7 +89,7 @@ graphN = graph . pairs
 testMVisited : {k : _} -> List (Fin k) -> Bool
 testMVisited xs = visiting k (go xs)
   where
-    go : List (Fin k) -> MVis k Bool
+    go : List (Fin k) -> MVis t k Bool
     go []        r t = True # t
     go (x :: xs) r t =
       let False # t := mvisited r x t | True # t => go xs r t

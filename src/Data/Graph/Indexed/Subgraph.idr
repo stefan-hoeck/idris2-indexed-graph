@@ -96,16 +96,16 @@ originEdge s (E x y l) = mkEdge (origin s x) (origin s y) l
 -- Biconnected Components
 --------------------------------------------------------------------------------
 
-0 Stack : Nat -> Type
-Stack n = Ref1 (List $ Fin n)
+0 Stack : Type -> Nat -> Type
+Stack s n = Ref s (List $ Fin n)
 
-0 Comps : Nat -> Type
-Comps n = Ref1 (List (List $ Fin n))
+0 Comps : Type -> Nat -> Type
+Comps s n = Ref s (List (List $ Fin n))
 
-pop : (s : Stack k) -> F1' [d,s,c]
+pop : Stack s k -> F1' s
 pop s = mod1 s $ \case h::t => t; [] => []
 
-extractComp : Fin k -> (s : Stack k) -> (c : Comps k) -> F1' [d,s,c]
+extractComp : Fin k -> Stack s k -> Comps s k -> F1' s
 extractComp n s c t =
   let st # t := read1 s t
       (cmp,rem) := go [<] st
@@ -118,12 +118,12 @@ extractComp n s c t =
     go sx []        = (sx <>> [], []) -- this should not happen
 
 parameters (g : IGraph k e n)
-           (d : MArray k Nat)
-           (s : Stack k)
-           (c : Comps k)
-    covering sc : Fin k -> Fin k -> Nat -> F1 [d,s,c] Nat
+           (d : MArray t k Nat)
+           (s : Stack t k)
+           (c : Comps t k)
+    covering sc : Fin k -> Fin k -> Nat -> F1 t Nat
 
-    covering scs : List (Fin k) -> Fin k -> Nat -> F1 [d,s,c] Nat
+    covering scs : List (Fin k) -> Fin k -> Nat -> F1 t Nat
     scs []      p dpt t = dpt # t
     scs (x::xs) p dpt t =
       let r2 # t2 := sc x p dpt t
@@ -140,7 +140,7 @@ parameters (g : IGraph k e n)
             EQ => let _ # t := extractComp n s c t in dc # t
             GT => let _ # t := Subgraph.pop s t in dpt # t
 
-    go : List (Fin k) -> F1 [d,s,c] (List $ Subgraph k e n)
+    go : List (Fin k) -> F1 t (List $ Subgraph k e n)
     go []      t = mapR1 (map (subgraphL g)) (read1 c t)
     go (n::ns) t =
       let Z # t := get d n t | _ # t => go ns t
@@ -161,11 +161,7 @@ export
 biconnectedComponents : {k : _} -> IGraph k e n -> List (Subgraph k e n)
 biconnectedComponents g =
   run1 $ \t =>
-    let c # t := ref1 (the (List (List $ Fin k)) []) t
-        s # t := ref1 (the (List $ Fin k) []) t
+    let c # t := ref (the (List (List $ Fin k)) []) t
+        s # t := ref (the (List $ Fin k) []) t
         d # t := newMArray k Z t
-        r # t := go g d s c (allFinsFast k) t
-        _ # t := Core.release d t
-        _ # t := Ref1.release s t
-        _ # t := Ref1.release c t
-     in r # t
+     in go g d s c (allFinsFast k) t

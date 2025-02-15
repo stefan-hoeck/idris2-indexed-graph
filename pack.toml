@@ -33,6 +33,6 @@ ipkg   = "array.ipkg"
 
 [custom.all.containers]
 type   = "git"
-url    = "https://github.com/stefan-hoeck/idris2-containers"
+url    = "https://github.com/idris-community/idris2-containers"
 commit = "latest:main"
 ipkg   = "containers.ipkg"

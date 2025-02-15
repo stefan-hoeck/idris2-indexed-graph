@@ -28,7 +28,7 @@ parameters {k : Nat}
 --------------------------------------------------------------------------------
 
   -- flat BFS implementation for large graphs
-  bfsL : Queue (s,Fin k) -> (s -> Fin k -> Either s a) -> MVis k (Maybe a)
+  bfsL : Queue (s,Fin k) -> (s -> Fin k -> Either s a) -> MVis t k (Maybe a)
   bfsL q f r t =
     case dequeue q of
       Nothing => Nothing # t
@@ -94,7 +94,7 @@ parameters {k : Nat}
 ----------------------------------------------------------------------------------
 
   -- BFS implementation covering a whole connected component for large graphs
-  bfsAllL : SnocList s -> Queue (s,Fin k) -> (s -> Fin k -> s) -> MVis k (List s)
+  bfsAllL : SnocList s -> Queue (s,Fin k) -> (s -> Fin k -> s) -> MVis t k (List s)
   bfsAllL ss q f r t =
     case dequeue q of
       Nothing => (ss <>> []) # t
@@ -125,7 +125,7 @@ parameters {k : Nat}
   shortestL :
        SnocList (SnocList $ Fin k)
     -> Queue (SnocList $ Fin k)
-    -> MVis k (List (SnocList $ Fin k))
+    -> MVis t k (List (SnocList $ Fin k))
   shortestL sp q r t =
     case dequeue q of
       Nothing => (sp <>> []) # t

@@ -19,7 +19,7 @@ parameters {k : Nat}
 --------------------------------------------------------------------------------
 
   -- flat DFS implementation for large graphs
-  dfsL : List (Fin k) -> (s -> Fin k -> Either s a) -> s -> MVis k (Either s a)
+  dfsL : List (Fin k) -> (s -> Fin k -> Either s a) -> s -> MVis t k (Either s a)
   dfsL []      f st r t = Left st # t
   dfsL (x::xs) f st r t =
     let False # t := mvisited r x t | True # t => dfsL xs f st (assert_smaller r r) t
@@ -27,7 +27,7 @@ parameters {k : Nat}
         _ # t     := mvisit r x t
      in dfsL (neighbours g x ++ xs) f st2 (assert_smaller r r) t
 
-  %inline dfsL' : List (Fin k) -> (s -> Fin k -> s) -> s -> MVis k s
+  %inline dfsL' : List (Fin k) -> (s -> Fin k -> s) -> s -> MVis t k s
   dfsL' xs acc i r t = fromLeftMVis $ dfsL xs (fleft2 acc) i r t
 
   ||| Traverses the graph in depth-first order from the given
@@ -99,7 +99,7 @@ parameters {k : Nat}
 --------------------------------------------------------------------------------
 
   -- flat component-wise DFS implementation for large graphs
-  cdfsL : (s -> Fin k -> s) -> s -> SnocList s -> List (Fin k) -> MVis k (List s)
+  cdfsL : (s -> Fin k -> s) -> s -> SnocList s -> List (Fin k) -> MVis t k (List s)
   cdfsL f i ss []      r t = (ss <>> []) # t
   cdfsL f i ss (x::xs) r t =
     let False # t := mvisited r x t | True # t => cdfsL f i ss xs r t
@@ -139,7 +139,7 @@ parameters {k : Nat}
 --------------------------------------------------------------------------------
 
   -- tree-based DFS implementation for large graphs
-  dffL : (Fin k -> s) -> List (Fin k) -> MVis k (Forest s)
+  dffL : (Fin k -> s) -> List (Fin k) -> MVis t k (Forest s)
   dffL f []      r t = [] # t
   dffL f (x::xs) r t =
       let False # t := mvisited r x t
