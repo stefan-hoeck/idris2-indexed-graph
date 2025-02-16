@@ -161,7 +161,7 @@ export
 biconnectedComponents : {k : _} -> IGraph k e n -> List (Subgraph k e n)
 biconnectedComponents g =
   run1 $ \t =>
-    let c # t := ref (the (List (List $ Fin k)) []) t
-        s # t := ref (the (List $ Fin k) []) t
-        d # t := newMArray k Z t
+    let c # t := ref1 (the (List (List $ Fin k)) []) t
+        s # t := ref1 (the (List $ Fin k) []) t
+        d # t := marray1 k Z t
      in go g d s c (allFinsFast k) t

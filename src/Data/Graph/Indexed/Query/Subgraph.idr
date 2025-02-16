@@ -166,6 +166,6 @@ query :
   -> Maybe (Vect q (Fin t))
 query me mn que tgt =
   run1 $ \tk =>
-    let mt # tk := newMArray t Nothing tk
-        mq # tk := newMArray q Nothing tk
+    let mt # tk := marray1 t Nothing tk
+        mq # tk := marray1 q Nothing tk
      in run mq mt me mn que tgt tk
