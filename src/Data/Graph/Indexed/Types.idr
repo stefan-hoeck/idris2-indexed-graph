@@ -171,6 +171,13 @@ mkEdge k j l with (compareNat (finToNat k) (finToNat j)) proof prf
   _ | EQ = Nothing
   _ | GT = Just (E j k l @{compareGT k j prf})
 
+export
+tryFromNat : {k : _} -> (x,y : Nat) -> (l : e) -> Maybe (Edge k e)
+tryFromNat x y l =
+  let Just fx := tryNatToFin x | Nothing => Nothing
+      Just fy := tryNatToFin y | Nothing => Nothing
+   in mkEdge fx fy l
+
 public export
 edge : {k : _} -> Fin k -> e -> Edge (S k) e
 edge x l = E (weaken x) last l @{edgeLemma k x}
