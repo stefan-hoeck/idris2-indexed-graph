@@ -164,6 +164,9 @@ compareGT (FS x) (FS y) prf = compareGT x y prf
 compareGT FZ     FZ prf     impossible
 compareGT FZ     (FS x) prf impossible
 
+||| Tries to create an edge from two nodes plus a label.
+|||
+||| Returns `Nothing` in case the two nodes are identical.
 public export
 mkEdge : Fin k -> Fin k -> e -> Maybe (Edge k e)
 mkEdge k j l with (compareNat (finToNat k) (finToNat j)) proof prf
@@ -171,6 +174,10 @@ mkEdge k j l with (compareNat (finToNat k) (finToNat j)) proof prf
   _ | EQ = Nothing
   _ | GT = Just (E j k l @{compareGT k j prf})
 
+||| Tries to create an edge from two natural numbers plus a label.
+|||
+||| Returns `Nothing` in case the two numbers are not in the correct
+||| range or are identical.
 export
 tryFromNat : {k : _} -> (x,y : Nat) -> (l : e) -> Maybe (Edge k e)
 tryFromNat x y l =
