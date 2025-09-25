@@ -32,6 +32,16 @@ allFinsFast (S n) = go [] last
 
 parameters (r : MArray s k (Adj k e n))
 
+  ||| Updates the node label at the given position in a mutable graph.
+  export %inline
+  lupdNode : (n1 : Fin k) -> (n -> n) -> F1' s
+  lupdNode n1 f = modify r n1 {label $= f}
+
+  ||| Sets the node label at the given position in a mutable graph.
+  export %inline
+  lsetNode : (n1 : Fin k) -> n -> F1' s
+  lsetNode n1 v = modify r n1 {label := v}
+
   ||| Insert a single edge into a mutable array-representation of a graph.
   export
   linsEdge : Edge k e ->F1' s
