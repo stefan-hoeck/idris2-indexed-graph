@@ -30,6 +30,11 @@ allFinsFast (S n) = go [] last
 --          Internal utilities
 --------------------------------------------------------------------------------
 
+||| Updates all node labels in a mutable graph.
+export %inline
+lupdNodes : {k : _} -> MArray s k (Adj k e n) -> (n -> n) -> F1' s
+lupdNodes r f = mupdate {label $= f} r
+
 parameters (r : MArray s k (Adj k e n))
 
   ||| Updates the node label at the given position in a mutable graph.
