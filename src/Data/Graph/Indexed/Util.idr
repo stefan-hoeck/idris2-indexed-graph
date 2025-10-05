@@ -392,6 +392,11 @@ adjEdges m (A l ns) =
   let ps := mapMaybe (\(n,v) => (,v) <$> lookup n m) $ pairs ns
    in A l $ fromList ps
 
+zipTR : SnocList (a,b) -> List a -> List b -> List (a,b)
+zipTR sx []        _         = sx <>> []
+zipTR sx _         []        = sx <>> []
+zipTR sx (x :: xs) (y :: ys) = zipTR (sx:<(x,y)) xs ys
+
 export
 delNodes : {k : _} -> List (Fin k) -> IGraph k e n -> Graph e n
 delNodes {k = 0} _ _ = G _ empty
@@ -401,7 +406,7 @@ delNodes {k = S x} ks (IG g) =
         filterWithKey (\x,_ => not (contains x set)) g | A 0 _ => G _ empty
       finX      := filter (\x => not (contains x set)) $ allFinsFast (S x)
       finY      := allFinsFast (S y)
-      proMap    := SortedMap.fromList $ zip finX finY
+      proMap    := SortedMap.fromList $ zipTR [<] finX finY
    in G (S y) (IG $ map (adjEdges proMap) h)
 
 ||| Remove a 'Node' from the 'Graph'.
