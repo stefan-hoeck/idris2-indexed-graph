@@ -389,7 +389,7 @@ adjEdges m (A l ns) =
 
 zipTR : SnocList (a,b) -> List a -> List b -> List (a,b)
 zipTR sx []        _         = sx <>> []
-zipTR sx _         []        = ?zipTR_rhs_2
+zipTR sx _         []        = sx <>> []
 zipTR sx (x :: xs) (y :: ys) = zipTR (sx:<(x,y)) xs ys
 
 export
