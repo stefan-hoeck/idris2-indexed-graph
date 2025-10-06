@@ -45,8 +45,20 @@ parameters {o    : Nat}
            (g    : ISubgraph o k e Nat)
            (root : Fin o)
            (rdeg : Nat)
-           (q    : Ref1 (Queue $ Fin o))
-           (r    : MArray o (Path o))
+           (q    : Ref s (Queue $ Fin o))
+           (r    : MArray s o (Path o))
+
+  %inline
+  deq : F1 s (Maybe $ Fin o)
+  deq t =
+   let qu # t := read1 q t
+    in case dequeue qu of
+         Nothing     => Nothing # t
+         Just (v,q2) => let _ # t := write1 q q2 t in Just v # t
+
+  %inline
+  enq : Fin o -> F1' s
+  enq v t = let qu # t := read1 q t in write1 q (enqueue qu v) t
 
   -- `True` if node `n` is smaller than `root`. This is
   -- the ordering "pi" used in the paper.
@@ -71,40 +83,34 @@ parameters {o    : Nat}
         True := q.keep                 | False => append p n
      in {combos $= (+ p.combos)} q
 
-  adjNeighbours : Path o -> List (Fin o) -> F1' [r,q]
-  adjNeighbours p []      t = t
+  adjNeighbours : Path o -> List (Fin o) -> F1' s
+  adjNeighbours p []      t = () # t
   adjNeighbours p (x::xs) t =
     let p2 # t := Core.get r x t
-        Z      := p2.length | _ => adjNeighbours p xs (set r x (merge p x p2) t)
-        t      := set r x (append p x) t
-     in adjNeighbours p xs (mod1 q (`enqueue` x) t)
+        Z      := p2.length
+          | _ => let _ # t := set r x (merge p x p2) t in adjNeighbours p xs t
+        _ # t  := set r x (append p x) t
+        _ # t  := mod1 q (`enqueue` x) t
+     in adjNeighbours p xs t
 
-  -- The `Queue` holds potential shortest paths in increasing
-  -- length that still need to be processed.
   covering
-  impl : SnocList (Path o) -> F1 [r,q] (List $ Path o)
+  impl : SnocList (Path o) -> F1 s (List $ Path o)
   impl sp t =
-    -- try and extract the current head from the queue
-    case mapR1 dequeue (read1 q t) of
-      -- no more paths left. We are done
+    case deq t of
       Nothing # t => (sp <>> []) # t
-      -- We got a node to process and the tail of the queue
-      Just (n,q2) # t =>
-        let p # t   := Core.get r n t
-            False   := p.length * 2 > o | True => (sp <>> []) # t
-            t       := adjNeighbours p (neighbours g n) t
-         in impl (if p.keep then sp :< p else sp) t
-
-  setRoot : F1' [r,q]
-  setRoot = set r root (P 1 [<root] False root root 1)
-
---   dummy : Path o
---   dummy = P 0 [<] False root root 0
+      Just n  # t =>
+       let p # t   := Core.get r n t
+           False   := p.length * 2 > o | True => (sp <>> []) # t
+           _ # t   := adjNeighbours p (neighbours g n) t
+        in impl (if p.keep then sp :< p else sp) t
 
 ||| Computes the shortest paths to all nodes reachable from
 ||| the given starting node.
 export
 shortestPaths : {o : _} -> ISubgraph o k e Nat -> Fin o -> List (Path o)
--- shortestPaths g root =
---   let q := Queue.fromList [root]
---    in assert_total $ alloc o dummy (impl [<] q . setRoot)
+shortestPaths g root =
+  assert_total $ run1 $ \t =>
+    let r # t := marray1 o (P 0 [<] False root root 0) t
+        q # t := ref1 (Queue.fromList [root]) t
+        _ # t := set r root (P 1 [<root] False root root 1) t
+     in impl g root (deg g root) q r [<] t
