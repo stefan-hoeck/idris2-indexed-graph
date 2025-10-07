@@ -47,6 +47,16 @@ record Path (k : Nat) where
 
 %runElab deriveIndexed "Path" [Show,Eq]
 
+||| `True` if node `n` is "smaller" than `root`. This is
+||| the ordering "pi" used in the paper.
+export %inline
+smaller : Fin o -> (rdeg : Nat) -> ISubgraph o k e Nat -> Fin o -> Bool
+smaller root rdeg g n =
+  case compare (snd $ lab g n) rdeg of
+    LT => True
+    EQ => root < n
+    GT => False
+
 parameters {o    : Nat}
            (g    : ISubgraph o k e Nat)
            (root : Fin o)
@@ -68,15 +78,6 @@ parameters {o    : Nat}
   enq : Fin o -> F1' s
   enq v t = let qu # t := read1 q t in write1 q (enqueue qu v) t
 
-  -- `True` if node `n` is "smaller" than `root`. This is
-  -- the ordering "pi" used in the paper.
-  %inline smaller : Fin o -> Bool
-  smaller n =
-    case compare (snd $ lab g n) rdeg of
-      LT => True
-      EQ => root < n
-      GT => False
-
   -- Appends a node to a path. This also updates the `length` and `last` node.
   append : Path o -> Fin o -> Path o
   append (P l p k fs ls c) n =
@@ -85,8 +86,8 @@ parameters {o    : Nat}
     -- Note: Paths are only to be kept, if all their nodes are
     -- `smaller` than the root node.
     if fs == root
-       then P (S l) (p :< n) (smaller n)      n  n c
-       else P (S l) (p :< n) (k && smaller n) fs n c
+       then P (S l) (p :< n) (smaller root rdeg g n)      n  n c
+       else P (S l) (p :< n) (k && smaller root rdeg g n) fs n c
 
   -- two paths from `root` to `n` are to be combined, if
   -- they are of the same length and both are to be kept.
