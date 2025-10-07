@@ -1,3 +1,8 @@
+||| This module provides utilities used to compute families of relevant cycles
+||| as described by Vismara et al in "Union of all the minimum cycle bases of a graph"
+||| (The Electronic Journal of Combinatorics 4 (1997)).
+|||
+||| In particular, it computes candidates of relevant cycle familes.
 module Data.Graph.Indexed.Ring.Relevant.Candidates
 
 import Data.Graph.Indexed.Ring.Relevant.ShortestPath
@@ -17,37 +22,39 @@ notLast : Fin k -> SnocList (Fin k) -> Bool
 notLast x (_ :< y :< _) = x /= y
 notLast x _             = True
 
+revOnto : SnocList a -> SnocList a -> List a
+revOnto sx [<] = sx <>> []
+revOnto sx (sy:<y) = revOnto (sx :< y) sy
+
 parameters {o    : Nat}
            (g    : ISubgraph o k e Nat)
            (root : Fin o)
            (rdeg : Nat)
-
-  revOnto : SnocList (Fin o) -> SnocList (Fin o) -> List (Fin o)
-  revOnto sx [<] = sx <>> []
-  revOnto sx (sy:<y) = revOnto (sx :< y) sy
 
   connector : SnocList (Fin o) -> SnocList (Fin o) -> Fin o -> Bool
   connector sx sy x = smaller root rdeg g x && notLast x sx && notLast x sy
 
   -- Takes a list of reverse paths starting all from the same node and
   -- sorted by length (this is by construction: the `shortestPaths` algorithm
-  -- will produce shorter paths earlier than longer paths). It will pair every
+  -- will produce shorter paths earlier than longer paths), pairs every
   -- path with all successors of equal length (resulting in odd cycles) and
-  -- one node longer (resulting in even cycles) and connect the pair if it
-  -- builds a proper, disjoint cycle.
+  -- one node longer (resulting in even cycles), and connect the two parts if
+  -- they form a proper elementary cycle.
   cycleSystem : List (NCycle o)
-  cycleSystem =
-    let ps := shortestPaths g root
-     in go [<] ps
+  cycleSystem = go [<] (shortestPaths g root)
     where
-      %inline odd : (p1,p2 : Path o) -> NCycle o
+      -- computes an odd cycle by concatenating two paths ending
+      --
+      %inline
+      odd : (p1,p2 : Path o) -> NCycle o
       odd p1 p2 =
         NC
           (revOnto p1.path p2.path)
           (p1.length + p2.length + 1)
           (p1.combos * p2.combos)
 
-      %inline even : (p1,p2 : Path o) -> Fin o -> Maybe (NCycle o)
+      %inline
+      even : (p1,p2 : Path o) -> Fin o -> Maybe (NCycle o)
       even p1 p2 x =
         if connector p1.path p2.path x
            then
@@ -73,13 +80,6 @@ parameters {o    : Nat}
       go sxs []        = sxs <>> []
       go sxs (p :: ps) = go (addCs sxs p ps) ps
 
-findSP : (g : Subgraph k e Nat) -> Nat
-findSP (G 0 g) = 0
-findSP sg@(G (S k) g) =
-  case filter ((2 <) . deg g) (nodes g) of
-    [] => 0
-    ns => length $ ns >>= \n => shortestPaths g n
-
 findCandidates : Subgraph k e Nat -> Candidates k e
 findCandidates (G 0 g) = Empty
 findCandidates sg@(G (S k) g) =
@@ -87,12 +87,9 @@ findCandidates sg@(G (S k) g) =
     [] => Isolate sg $ isolate g
     ns => System (S k) g (ns >>= \n => cycleSystem g n (deg g n))
 
--- cuts a graph into strongly connected components and computes
--- the potential relevant cycles for each component in isolation.
+||| Cuts a graph into strongly connected components and computes
+||| the potential relevant cycle families for each component in
+||| isolation.
 export
-computeCI' : {k : _} -> IGraph k e n -> List (Candidates k e)
-computeCI' g = map (findCandidates . toDegs) $ biconnectedComponents g
-
-export
-computeSPs : {k : _} -> IGraph k e n -> Nat
-computeSPs g = sum . map (findSP . toDegs) $ biconnectedComponents g
+candidates : {k : _} -> IGraph k e n -> List (Candidates k e)
+candidates g = map (findCandidates . toDegs) $ biconnectedComponents g

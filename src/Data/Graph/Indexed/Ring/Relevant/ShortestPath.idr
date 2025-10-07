@@ -1,6 +1,13 @@
-||| This module is provides utilities used to compute families of relevant cycles
+||| This module provides utilities used to compute families of relevant cycles
 ||| as described by Vismara et al in "Union of all the minimum cycle bases of a graph"
 ||| (The Electronic Journal of Combinatorics 4 (1997)).
+|||
+||| In particular, it computes the number of shortest paths between a root
+||| node and all other nodes in a graph.
+|||
+||| Please note that this is internal stuff. The algorithm is not suitable
+||| as a general shortest path algorithm, as it computes only paths up
+||| to half the graph order in length.
 module Data.Graph.Indexed.Ring.Relevant.ShortestPath
 
 import Data.Array.Mutable

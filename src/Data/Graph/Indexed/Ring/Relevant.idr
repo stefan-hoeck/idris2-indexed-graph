@@ -135,5 +135,5 @@ fromCandidates (System o g xss) =
 export
 computeCrAndMCB : {k : _} -> IGraph k e n -> CycleSets k
 computeCrAndMCB g =
-  let css := map fromCandidates (computeCI' g)
+  let css := map fromCandidates (candidates g)
    in CS (css >>= cr) (css >>= mcb)

@@ -55,7 +55,7 @@ record NCycle (k : Nat) where
   ||| Number of members in the family.
   combos : Nat
 
-%runElab deriveIndexed "NCycle" [Show]
+%runElab deriveIndexed "NCycle" [Show,Eq]
 
 public export
 0 Edg : Nat -> Type
@@ -72,11 +72,15 @@ record Cycle (k: Nat) where
   ecycle : ECycle k
   bitp   : Integer
 
+%runElab deriveIndexed "Cycle" [Show,Eq]
+
 public export
 record CycleSets (k : Nat) where
   constructor CS
   cr  : List (Cycle k)
   mcb : List (Cycle k)
+
+%runElab deriveIndexed "CycleSets" [Show,Eq]
 
 public export
 data Candidates : (k : Nat) -> (e : Type) -> Type where
