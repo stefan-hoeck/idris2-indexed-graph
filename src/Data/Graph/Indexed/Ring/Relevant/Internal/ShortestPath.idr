@@ -1,7 +1,7 @@
 ||| This module is provides utilities used to compute families of relevant cycles
 ||| as described by Vismara et al in "Union of all the minimum cycle bases of a graph"
 ||| (The Electronic Journal of Combinatorics 4 (1997)).
-module Data.Graph.Indexed.Query.ShortestPath
+module Data.Graph.Indexed.Ring.Relevant.Internal.ShortestPath
 
 import Data.Array.Mutable
 import Data.Linear.Ref1

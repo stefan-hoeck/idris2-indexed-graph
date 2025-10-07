@@ -1,6 +1,6 @@
 module ShortestPath
 
-import Data.Graph.Indexed.Query.ShortestPath
+import Data.Graph.Indexed.Ring.Relevant.Internal.ShortestPath
 import Data.Graph.Indexed.Subgraph
 import Data.List
 import Derive.Prelude
