@@ -1,20 +1,10 @@
-module Data.Graph.Indexed.Ring.Relevant.Internal.Candidates
+module Data.Graph.Indexed.Ring.Relevant.Candidates
 
-import public Data.Graph.Indexed.Ring.Relevant.Internal.ShortestPath
+import Data.Graph.Indexed.Ring.Relevant.ShortestPath
+import Data.Graph.Indexed.Ring.Relevant.Types
 import Data.SnocList
-import Derive.Prelude
 
 %default total
-%language ElabReflection
-
-public export
-record NCycle (k : Nat) where
-  constructor NC
-  path   : List (Fin k)
-  length : Nat
-  combos : Nat
-
-%runElab deriveIndexed "NCycle" [Show]
 
 export
 origin : ISubgraph o k e n -> NCycle o -> NCycle k
@@ -82,16 +72,6 @@ parameters {o    : Nat}
       go : SnocList (NCycle o) -> List (Path o) -> List (NCycle o)
       go sxs []        = sxs <>> []
       go sxs (p :: ps) = go (addCs sxs p ps) ps
-
-public export
-data Candidates : (k : Nat) -> (e : Type) -> Type where
-  Empty   : Candidates k e
-  Isolate : Subgraph k e Nat -> NCycle k -> Candidates k e
-  System  :
-       (o : Nat)
-    -> ISubgraph o k e Nat
-    -> List (NCycle o)
-    -> Candidates k e
 
 findSP : (g : Subgraph k e Nat) -> Nat
 findSP (G 0 g) = 0

@@ -1,7 +1,7 @@
 module ShortestPath
 
-import Data.Graph.Indexed.Ring.Relevant.Internal.ShortestPath
-import Data.Graph.Indexed.Subgraph
+import Data.Graph.Indexed.Ring.Relevant.Types
+import Data.Graph.Indexed.Ring.Relevant.ShortestPath
 import Data.List
 import Derive.Prelude
 import Hedgehog

@@ -1,51 +1,17 @@
 ||| This module is provides utilities used to compute families of relevant cycles
 ||| as described by Vismara et al in "Union of all the minimum cycle bases of a graph"
 ||| (The Electronic Journal of Combinatorics 4 (1997)).
-module Data.Graph.Indexed.Ring.Relevant.Internal.ShortestPath
+module Data.Graph.Indexed.Ring.Relevant.ShortestPath
 
 import Data.Array.Mutable
+import Data.Graph.Indexed.Ring.Relevant.Types
 import Data.Linear.Ref1
 import Data.List
 import Data.Queue
-import Derive.Prelude
 import public Data.Graph.Indexed
 import public Data.Graph.Indexed.Subgraph
 
 %default total
-%language ElabReflection
-
-||| A shortest path of length `length` from a starting node to node `last`.
-||| `combos` is the number of shortest paths of the same length leading
-||| from `first` to `last`.
-||| Node `first` is the first node after the root node, and is used to
-||| check if two paths are disjoint.
-public export
-record Path (k : Nat) where
-  constructor P
-  ||| Number of nodes in the path (including the root node).
-  length : Nat
-
-  ||| The accumulated path viewed from the right
-  path   : SnocList (Fin k)
-
-  ||| True, if all nodes in the path are smaller than the root
-  |||
-  ||| This flag is used for efficiency, as it allows us to avoid
-  ||| computing the same cycle more than once.
-  keep   : Bool
-
-  ||| The first non-root node in the path
-  first  : Fin k
-
-  ||| The last node in the path
-  last   : Fin k
-
-  ||| Number of paths of the same length from `root` to
-  ||| `last`. This is later used to compute the size of
-  ||| a family of relevant cycles
-  combos : Nat
-
-%runElab deriveIndexed "Path" [Show,Eq]
 
 ||| `True` if node `n` is "smaller" than `root`. This is
 ||| the ordering "pi" used in the paper.

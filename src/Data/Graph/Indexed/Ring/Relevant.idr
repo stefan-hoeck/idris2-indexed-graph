@@ -1,39 +1,17 @@
 module Data.Graph.Indexed.Ring.Relevant
 
 import Data.Bits
-import Data.Graph.Indexed
-import Data.Graph.Indexed.Query.Util
-import Data.Graph.Indexed.Ring.Relevant.Internal.Candidates
-import Data.Graph.Indexed.Subgraph
+import Data.Graph.Indexed.Ring.Relevant.Candidates
 import Data.List
 import Data.SortedMap
+
+import public Data.Graph.Indexed.Ring.Relevant.Types
 
 %default total
 
 --------------------------------------------------------------------------------
 --          Relevant Cycles and MCB
 --------------------------------------------------------------------------------
-
-public export
-0 Edg : Nat -> Type
-Edg k = Edge k ()
-
-public export
-0 ECycle : Nat -> Type
-ECycle k = List (Edg k)
-
-public export
-record Cycle (k: Nat) where
-  constructor C
-  ncycle : NCycle k
-  ecycle : ECycle k
-  bitp   : Integer
-
-public export
-record CycleSets (k : Nat) where
-  constructor CS
-  cr  : List (Cycle k)
-  mcb : List (Cycle k)
 
 export
 computeCyclomaticN : {k : _} -> IGraph k e n -> Nat
@@ -139,7 +117,7 @@ convert g (CS m b) = CS (map convertC m) (map convertC b)
 fromCandidates : Candidates k e -> CycleSets k
 fromCandidates Empty = CS [] []
 fromCandidates (Isolate x xs) =
-  let c := C xs (convertC xs.path) 0
+  let c := Relevant.Types.C xs (convertC xs.path) 0
    in CS [c] [c]
 fromCandidates (System o g xss) =
   let ebits := getBitsEdges g
