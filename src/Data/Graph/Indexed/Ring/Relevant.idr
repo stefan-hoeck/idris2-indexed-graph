@@ -15,7 +15,7 @@ import public Data.Graph.Indexed.Ring.Relevant.Types
 
 export
 computeCyclomaticN : {k : _} -> IGraph k e n -> Nat
-computeCyclomaticN g = (size g `minus` k) + 1
+computeCyclomaticN g = S (size g) `minus` k
 
 0 EdgMap : Nat -> Type
 EdgMap k = SortedMap (Edg k) Integer
@@ -131,7 +131,7 @@ fromCandidates (System o g xss) =
            let ec := convertC nc.path
             in C nc ec $ getBitsRing ebits 0 ec
 
--- computes the relevant cycles and minimum cycle basis for a graph
+||| computes the relevant cycles and minimum cycle basis for a graph
 export
 computeCrAndMCB : {k : _} -> IGraph k e n -> CycleSets k
 computeCrAndMCB g =

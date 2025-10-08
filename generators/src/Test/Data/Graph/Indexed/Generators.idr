@@ -119,3 +119,80 @@ graph nrn el nl = do
   ns <- list nrn nl
   es <- distEdges el
   pure $ (G _ $ mkGraphL ns es)
+
+--------------------------------------------------------------------------------
+-- Special Graphs
+--------------------------------------------------------------------------------
+
+export
+tryEdge : {k : _} -> (x,y : Nat) -> e -> List (Edge k e)
+tryEdge x y = toList . tryFromNat x y
+
+export
+chainEdges : {k : _} -> e -> List (Edge k e)
+chainEdges e = [0..k] >>= \n => tryEdge n (S n) e
+
+export
+ringEdges : {k : _} -> e -> List (Edge k e)
+ringEdges e = tryEdge 0 (pred k) e ++ chainEdges e
+
+export
+chains : Gen e -> Gen n -> Gen (Graph e n)
+chains el nl = do
+  n  <- nat (linear 1 20)
+  e  <- el
+  ns <- vect n nl
+  pure (G n $ mkGraph ns $ chainEdges e)
+
+export %inline
+chains' : Gen (Graph () ())
+chains' = chains (pure ()) (pure ())
+
+export
+trees : Gen e -> Gen n -> Gen (Graph e n)
+trees el nl = do
+  n  <- nat (linear 1 20)
+  ns <- vect n nl
+  es <- go [<] n
+  pure (G n $ mkGraph ns es)
+
+  where
+    go : {k : _} -> SnocList (Edge k e) -> Nat -> Gen (List $ Edge k e)
+    go sx 0     = pure (sx <>> [])
+    go sx (S j) = do
+      e <- el
+      n <- nat (linear 0 $ pred j)
+      go (sx <>< tryEdge n j e) j
+
+export %inline
+trees' : Gen (Graph () ())
+trees' = trees (pure ()) (pure ())
+
+export
+rings : Gen e -> Gen n -> Gen (Graph e n)
+rings el nl = do
+  n  <- nat (linear 3 20)
+  e  <- el
+  ns <- vect n nl
+  pure (G n $ mkGraph ns $ ringEdges e)
+
+export %inline
+rings' : Gen (Graph () ())
+rings' = rings (pure ()) (pure ())
+
+export
+diamond : (chainLength, numChains : Nat) -> Graph () ()
+diamond cl@(S _) nc@(S _) =
+ let sz := cl * nc + 2
+     us := Vect.replicate sz ()
+  in G sz $ mkGraph us $ [0..pred nc] >>= edges sz
+
+  where
+    edges : (n : Nat) -> Nat -> List (Edge n ())
+    edges n i =
+     let begin := i * cl + 1
+         end   := begin + pred cl
+      in    tryEdge 0 begin ()
+         ++ tryEdge end (pred n) ()
+         ++ ([begin..end] >>= \x => tryEdge x (min end (x+1)) ())
+diamond _ _ = G 0 empty

@@ -29,7 +29,7 @@ paths (G _ g) =
   in nodes s >>= \n => toSimplePath n <$> shortestPaths s n
 
 spaths : String -> List SimplePath
-spaths = maybe [] paths . readSmiles
+spaths = paths . readSmilesOrEmpty
 
 prop_ring4 : Property
 prop_ring4 = property1 $

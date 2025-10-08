@@ -4,6 +4,7 @@ import AssocList
 import BFS
 import DFS
 import Hedgehog
+import RelevantCycles
 import Ring.Bonds
 import Ring.Util as RU
 import ShortestPath
@@ -27,4 +28,5 @@ main =
     , U.props
     , Visited.props
     , ShortestPath.props
+    , RelevantCycles.props
     ]
