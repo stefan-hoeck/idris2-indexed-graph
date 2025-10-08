@@ -1,201 +1,123 @@
 module Text.Smiles.Simple
 
+import Data.Either
+import Data.Finite
 import Data.Graph.Indexed
+import Data.Maybe
+import Data.Refined.Bits8
+import Data.SnocVect
+import Derive.Finite
 import Derive.Prelude
-import Text.Parse.Manual
+import Derive.Refined
+import Syntax.T1
+import Text.ILex
+import Text.ILex.Derive
 
 %default total
 %language ElabReflection
 
+--------------------------------------------------------------------------------
+-- Types
+--------------------------------------------------------------------------------
+
+public export
+record RingNr where
+  constructor MkRingNr
+  value : Bits8
+  0 prf : value <= 99
+
+export %inline
+Interpolation RingNr where
+  interpolate n = if n.value >= 10 then "%\{show n.value}" else show n.value
+
+namespace RingNr
+  %runElab derive "RingNr" [Show,Eq,Ord,RefinedInteger]
+
+export
+Finite RingNr where
+  values = mapMaybe refineRingNr [0..99]
+
 public export
 data Bond = Sngl | Dbl | Trpl
 
-%runElab derive "Bond" [Show,Eq,Ord]
+%runElab derive "Bond" [Show,Eq,Ord,Finite]
 
-export
+export %inline
 Interpolation Bond where
   interpolate Sngl = "-"
   interpolate Dbl  = "="
   interpolate Trpl = "#"
 
 public export
-data Elem = B | C | N | O | F | P | S
+record Ring where
+  constructor R
+  ring   : RingNr
+  bond   : Maybe Bond
 
-%runElab derive "Elem" [Show,Eq,Ord]
+%runElab derive "Ring" [Show,Eq,Finite]
+
+export
+Interpolation Ring where
+  interpolate (R r (Just b)) = "\{b}\{r}"
+  interpolate (R r Nothing)  = "\{r}"
+
+public export
+data Elem = B | C | N | O | F | P
+
+%runElab derive "Elem" [Show,Eq,Ord,Finite]
 
 export
 Interpolation Elem where interpolate = show
 
 public export
-record Ring where
-  constructor R
-  ring   : Nat
-  bond   : Maybe Bond
-
-%runElab derive "Ring" [Show,Eq]
+data SmilesErr : Type where
+  RingBondMismatch   : SmilesErr
+  UnclosedRing       : SmilesErr
+  ManyEntries        : SmilesErr
 
 export
-Interpolation Ring where
-  interpolate (R r (Just b)) = "\{b}\{show r}"
-  interpolate (R r Nothing)  = "\{show r}"
+Interpolation SmilesErr where
+  interpolate RingBondMismatch = "Ring bonds do not match"
+  interpolate UnclosedRing     = "Unclosed ring"
+  interpolate ManyEntries      = "More than one molecule"
+
+%runElab derive "SmilesErr" [Eq,Show]
 
 public export
-data SmilesToken : Type where
-  PO  : SmilesToken -- '('
-  PC  : SmilesToken -- ')'
-  Dot : SmilesToken
-  TB  : Bond -> SmilesToken
-  TA  : Elem -> SnocList Ring -> SmilesToken
+0 SmilesParseErr : Type
+SmilesParseErr = ParseError SmilesErr
 
-%runElab derive "SmilesToken" [Show,Eq]
+data DOB : Type where
+  No  : DOB
+  Dot : DOB
+  Bnd : Bond -> DOB
 
-export
-Interpolation SmilesToken where
-  interpolate PO        = "("
-  interpolate PC        = ")"
-  interpolate Dot       = "."
-  interpolate (TB x)    = "\{x}"
-  interpolate (TA x rs) = "\{x}\{fastConcat $ map interpolate (rs <>> [])}"
-
---------------------------------------------------------------------------------
---          Lexer
---------------------------------------------------------------------------------
-
-rng :
-     SnocList (SmilesToken,Nat)
-  -> (column : Nat)
-  -> (ringNr : Nat)
-  -> (cs : List Char)
-  -> (0 acc : SuffixAcc cs)
-  -> Maybe (List (SmilesToken,Nat))
-
-tok :
-     SnocList (SmilesToken,Nat)
-  -> (column : Nat)
-  -> (cs : List Char)
-  -> (0 acc : SuffixAcc cs)
-  -> Maybe (List (SmilesToken,Nat))
-tok st c ('C'::t) (SA r) = tok (st :< (TA C [<],c)) (c+1) t r
-tok st c ('N'::t) (SA r) = tok (st :< (TA N [<],c)) (c+1) t r
-tok st c ('O'::t) (SA r) = tok (st :< (TA O [<],c)) (c+1) t r
-tok st c ('F'::t) (SA r) = tok (st :< (TA F [<],c)) (c+1) t r
-tok st c ('S'::t) (SA r) = tok (st :< (TA S [<],c)) (c+1) t r
-tok st c ('P'::t) (SA r) = tok (st :< (TA P [<],c)) (c+1) t r
-tok st c ('B'::t) (SA r) = tok (st :< (TA B [<],c)) (c+1) t r
-tok st c ('('::t) (SA r) = tok (st :< (PO,c)) (c+1) t r
-tok st c (')'::t) (SA r) = tok (st :< (PC,c)) (c+1) t r
-tok st c ('='::t) (SA r) = tok (st :< (TB Dbl,c)) (c+1) t r
-tok st c ('#'::t) (SA r) = tok (st :< (TB Trpl,c)) (c+1) t r
-tok st c ('-'::t) (SA r) = tok (st :< (TB Sngl,c)) (c+1) t r
-tok st c ('.'::t) (SA r) = tok (st :< (Dot,c)) (c+1) t r
-tok st c ('0'::t) (SA r) = rng st (c+1) 0 t r
-tok st c ('1'::t) (SA r) = rng st (c+1) 1 t r
-tok st c ('2'::t) (SA r) = rng st (c+1) 2 t r
-tok st c ('3'::t) (SA r) = rng st (c+1) 3 t r
-tok st c ('4'::t) (SA r) = rng st (c+1) 4 t r
-tok st c ('5'::t) (SA r) = rng st (c+1) 5 t r
-tok st c ('6'::t) (SA r) = rng st (c+1) 6 t r
-tok st c ('7'::t) (SA r) = rng st (c+1) 7 t r
-tok st c ('8'::t) (SA r) = rng st (c+1) 8 t r
-tok st c ('9'::t) (SA r) = rng st (c+1) 9 t r
-tok st c (x  ::t) (SA r) = Nothing
-tok st c []       _      = Just (st <>> [])
-
-rng (st :< (TA a rs,x)) c rn cs acc =
-  tok (st :< (TA a (rs :< R rn Nothing),x)) c cs acc
-rng (st :< (TA a rs,x):< (TB b, y)) c rn cs acc =
-  tok (st :< (TA a (rs :< R rn (Just b)),x)) c cs acc
-rng st c rn cs acc = Nothing
-
-export
-lexSmiles : String -> Maybe (List (SmilesToken,Nat))
-lexSmiles s = tok [<] 0 (unpack s) suffixAcc
-
---------------------------------------------------------------------------------
---          Parser
---------------------------------------------------------------------------------
-
-record RingInfo (k : Nat) where
+record RingInfo n where
   constructor RI
-  orig   : Fin k
-  atom   : Elem
-  bond   : Maybe Bond
-  column : Nat
+  start : Fin n
+  nr    : RingNr
+  atom  : Elem
+  bond  : Maybe Bond
+  pos   : Position
 
-record AtomInfo (k : Nat) where
+record AtomInfo n where
   constructor A
-  orig   : Fin k
-  atom   : Elem
-  column : Nat
-
-0 Atoms : Nat -> Type
-Atoms k = Vect k Elem
-
-0 Rings : Nat -> Type
-Rings k = List (Nat, RingInfo k)
-
-0 Bonds : Nat -> Type
-Bonds k = List (Edge k Bond)
-
-0 Stack : Nat -> Type
-Stack = List . AtomInfo
-
-lookupRing : Nat -> Rings k -> Maybe (RingInfo k)
-lookupRing r []        = Nothing
-lookupRing r (x :: xs) = case compare r (fst x) of
-  LT => Nothing
-  EQ => Just (snd x)
-  GT => lookupRing r xs
-
-insert : Nat -> RingInfo k -> Rings k -> Rings k
-insert r i []        = [(r,i)]
-insert r i (x :: xs) = case compare r (fst x) of
-  LT => (r,i) :: x :: xs
-  _  => x :: insert r i xs
-
-delete : Nat -> Rings k -> Rings k
-delete r []        = []
-delete r (x :: xs) = case compare r (fst x) of
-  LT => x :: delete r xs
-  EQ => xs
-  GT => x :: delete r xs
+  node  : Fin n
+  atom  : Elem
 
 --------------------------------------------------------------------------------
---          Weakenings
+-- Utilities
 --------------------------------------------------------------------------------
 
--- All weakening functions should be optimized away by the
--- Idris compiler. It is paramount to test this by parsing a
--- huge SMILES string, to make sure the SMILES parser runs in
--- linear time.
+%inline
+drop : List a -> List a
+drop (_::t) = t
+drop []     = []
 
-wring : RingInfo k -> RingInfo (S k)
-wring (RI o a b c) = RI (weaken o) a b c
-
-watom : AtomInfo k -> AtomInfo (S k)
-watom (A o a b) = A (weaken o) a b
-
-wrings : Rings k -> Rings (S k)
-wrings []     = []
-wrings ((n,h)::t) = (n, wring h) :: wrings t
-
-wbonds : Bonds k -> Bonds (S k)
-wbonds []         = []
-wbonds (h::t) = weakenEdge h :: wbonds t
-
-wstack : Stack k -> Stack (S k)
-wstack []     = []
-wstack (h::t) = watom h :: wstack t
-
---------------------------------------------------------------------------------
---          Parser
---------------------------------------------------------------------------------
-
-addBond : {k : _} -> Fin k -> Bond -> Bonds (S k) -> Bonds (S k)
-addBond n1 b es = edge n1 b :: es
-
-waddBond : {k : _} -> Fin k -> Bond -> Bonds k -> Bonds (S k)
-waddBond n1 b es = addBond n1 b (wbonds es)
+%inline
+doubleHead : List a -> List a
+doubleHead l@(h::_) = h::l
+doubleHead []       = []
 
 ringBond : (b,c : Maybe Bond) -> (x,y : Elem) -> Maybe Bond
 ringBond Nothing Nothing   x y = Just Sngl
@@ -203,79 +125,230 @@ ringBond Nothing (Just x)  _ _ = Just x
 ringBond (Just x) Nothing  _ _ = Just x
 ringBond (Just x) (Just y) _ _ = if x == y then Just x else Nothing
 
-rings :
-     {k : _}
-  -> (column : Nat)
-  -> Elem
-  -> SnocList Ring
-  -> Stack k
-  -> Rings k
-  -> Rings (S k)
-  -> Atoms k
-  -> Bonds (S k)
-  -> (ts   : List (SmilesToken,Nat))
-  -> Maybe (Graph Bond Elem)
+lookupRing : RingNr -> List (RingInfo n) -> Maybe (RingInfo n)
+lookupRing r []      = Nothing
+lookupRing r (x::xs) = case compare r (nr x) of
+  LT => Nothing
+  EQ => Just x
+  GT => lookupRing r xs
 
-finalize :
-     {k : _}
-  -> Stack k
-  -> Rings k
-  -> Atoms k
-  -> Bonds k
-  -> Maybe (Graph Bond Elem)
-finalize (A _ _ c :: xs) _        _  _ = Nothing
-finalize [] ((r,RI _ _ _ c) :: _) _  _ = Nothing
-finalize [] []                   as bs = Just $ G k (mkGraphRev as bs)
+insert : RingInfo n -> List (RingInfo n) -> List (RingInfo n)
+insert r []      = [r]
+insert r (x::xs) = if r.nr < x.nr then r::x::xs else x::insert r xs
 
--- We just got a fresh atom. Now come the optional ring bonds and branches.
--- branched_atom ::= atom ringbond* branch*
-chain :
-     {k    : Nat}
-  -> (orig : Fin k)         -- the node we bind to
-  -> (a    : Elem)    -- the atom we bind to
-  -> (s    : Stack k)       -- stack of open branches
-  -> (r    : Rings k)       -- list of opened ring bonds
-  -> (as   : Atoms k)       -- accumulated atoms
-  -> (bs   : Bonds k)       -- accumulated bonds
-  -> (ts   : List (SmilesToken,Nat))
-  -> Maybe (Graph Bond Elem)
-chain o a s r as bs [] = finalize s r as bs
-chain o a s r as bs ((x,c)::xs) = case x of
-  TA a2 rs => rings c a2 rs s r (wrings r) as (waddBond o Sngl bs) xs
+delete : RingNr -> List (RingInfo n) -> List (RingInfo n)
+delete r []      = []
+delete r (x::xs) = if r == x.nr then xs else x::delete r xs
 
-  PC => case s of
-    A o2 a2 _ :: t => chain o2 a2 t r as bs xs
-    []             => Nothing
+ringBondMismatch : Ring -> Position -> BoundedErr SmilesErr
+ringBondMismatch r p =
+ let bs := BS p $ addCol (length "\{r}") p
+  in B (Custom RingBondMismatch) bs
 
-  PO => case xs of
-    (TB b, _) :: (TA a2 rs,d) :: t =>
-      rings d a2 rs (A o a c :: s) r (wrings r) as (waddBond o b bs) t
-    (TA a2 rs,d) :: t =>
-      rings d a2 rs (A o a c :: s) r (wrings r) as (waddBond o Sngl bs) t
-    _ => Nothing
+record ST where
+  constructor S
+  cnt   : Nat
+  stck  : List (AtomInfo cnt)
+  atoms : SnocVect cnt Elem
+  bonds : List (Edge cnt Bond)
+  rings : List (RingInfo cnt)
 
-  TB b  => case xs of
-    (TA a2 rs,d) :: t => rings d a2 rs s r (wrings r) as (waddBond o b bs) t
-    _ => Nothing
+public export
+0 SmilesGraph : Type
+SmilesGraph = Graph Bond Elem
 
-  Dot => case xs of
-    (TA a2 rs,d) :: t => rings d a2 rs s r (wrings r) as (wbonds bs) t
-    _             => Nothing
+empty : ST
+empty = S 0 [] [<] [] []
 
-rings c a [<]             s wr r as bs ts = chain last a (wstack s) r (a::as) bs ts
-rings c a (xs :< R rn mb) s wr r as bs ts =
-  case lookupRing rn wr of
-    Nothing => rings c a xs s wr (insert rn (RI last a mb c) r) as bs ts
-    Just (RI n a2 mb2 c2) =>
-      let Just b := ringBond mb mb2 a a2 | Nothing => Nothing
-          r2     := delete rn r
-       in rings c a xs s wr r2 as (addBond n b bs) ts
+toGraph : ST -> Either (BoundedErr SmilesErr) SmilesGraph
+toGraph (S n _ a b [])                 = Right $ G n (mkGraph (cast a) b)
+toGraph (S _ _ _ _ (RI _ r _ b p ::_)) =
+ let bs := BS p $ addCol (length "\{R r b}") p
+  in Left $ B (Custom UnclosedRing) bs
 
-start : List (SmilesToken,Nat) -> Maybe (Graph Bond Elem)
-start ((TA a rs,c) :: xs) = rings c a rs [] [] [] [] [] xs
-start []                  = Just (G 0 empty)
-start ((t,c) :: _)        = Nothing
+weakenST : List (AtomInfo n) -> List (AtomInfo $ S n)
+weakenST x = believe_me x
+
+weakenBS : List (Edge n e) -> List (Edge (S n) e)
+weakenBS x = believe_me x
+
+weakenRS : List (RingInfo n) -> List (RingInfo (S n))
+weakenRS x = believe_me x
+
+plainAtom : Elem -> ST -> ST
+plainAtom a1 (S c (A n a::ss) sa bs rs) =
+  let bs2 := edge n Sngl :: weakenBS bs
+      st2 := A last a1 :: weakenST ss
+   in S (S c) st2 (sa:<a1) bs2 (weakenRS rs)
+plainAtom a1 st = st
+
+atomWithBond : Bond -> Elem -> ST -> ST
+atomWithBond b a1 (S c (A n _::ss) sa bs rs) =
+  let bs2 := edge n b :: weakenBS bs
+      st2 := A last a1 :: weakenST ss
+   in S (S c) st2 (sa:<a1) bs2 (weakenRS rs)
+atomWithBond b a1 st = st
+
+dottedAtom : Elem -> ST -> ST
+dottedAtom a1 (S c st sa bs rs) =
+  S (S c) (A last a1 :: weakenST st) (sa:<a1) (weakenBS bs) (weakenRS rs)
+
+addRing : Position -> Ring -> ST -> Either (BoundedErr SmilesErr) ST
+addRing p (R r mb1) st =
+  case st.stck of
+    A n1 a1::_ => case lookupRing r st.rings of
+      Just (RI n2 nr a2 mb2 p) => case ringBond mb1 mb2 a1 a2 of
+        Just b  => case mkEdge n1 n2 b of
+          Just e  => Right $ {bonds $= (e::), rings $= delete r} st
+          Nothing => Right st -- impossible
+        Nothing => Left (ringBondMismatch (R r mb1) p)
+      Nothing => Right $ {rings $= insert (RI n1 r a1 mb1 p)} st
+    [] => Right st -- impossible
+
+--------------------------------------------------------------------------------
+--          Parser
+--------------------------------------------------------------------------------
 
 export
-readSmiles : String -> Maybe (Graph Bond Elem)
-readSmiles s = lexSmiles s >>= start
+record SSTCK (q : Type) where
+  constructor SS
+  line_      : Ref q Nat
+  col_       : Ref q Nat
+  positions_ : Ref q (SnocList Position)
+  st         : Ref q ST
+  dob        : Ref q DOB
+  bytes_     : Ref q ByteString
+  error_     : Ref q (Maybe $ BoundedErr SmilesErr)
+  stack_     : Ref q (SnocList SmilesGraph)
+
+%runElab derive "SSTCK" [HasPosition, HasBytes, HasError, HasStack]
+
+init : F1 q (SSTCK q)
+init = T1.do
+  l   <- ref1 Z
+  c   <- ref1 Z
+  p   <- ref1 [<]
+  s   <- ref1 empty
+  db  <- ref1 Dot
+  b   <- ref1 ByteString.empty
+  er  <- ref1 Nothing
+  st  <- ref1 [<]
+  pure (SS l c p s db b er st)
+
+%runElab deriveParserState "SSz" "SST"
+  [ "Chain", "NewBranch", "SRing", "Closed", "Err", "Atom" ]
+
+endGraph : SSTCK q -> F1 q (Maybe (BoundedErr SmilesErr))
+endGraph sk = T1.do
+  st    <- replace1 sk.st empty
+  write1 sk.dob Dot
+  let Right g := toGraph st | Left err => pure (Just err)
+  [<] <- replace1 sk.positions_ [<]
+    | _:<p => pure $ Just (B (Unclosed "(") (BS p (incCol p)))
+  case g.order of
+    0 => pure Nothing
+    _ => push1 sk.stack_ g >> pure Nothing
+
+onAtom : Elem -> Step1 q SSz SSTCK
+onAtom a = \(sk # t) =>
+ let s # t := read1 sk.st t
+  in case read1 sk.dob t of
+       No    # t => writeAs sk.st (plainAtom a s) SRing t
+       Bnd b # t =>
+        let _ # t := write1 sk.dob No t
+         in writeAs sk.st (atomWithBond b a s) SRing t
+       Dot # t  =>
+        let _ # t := write1 sk.dob No t
+         in writeAs sk.st (dottedAtom a s) SRing t
+
+onRing : Ring -> Step1 q SSz SSTCK
+onRing r = \(sk # t) =>
+  let p # t := getPosition t
+      s # t := read1 sk.st t
+   in case addRing p r s of
+        Right s2 => writeAs sk.st s2 SRing t
+        Left  x  => failWith x Err t
+
+atom : List (RExp True, Step q SSz SSTCK)
+atom = vals interpolate onAtom values
+
+ring : List (RExp True, Step q SSz SSTCK)
+ring = vals interpolate onRing values
+
+bond : List (RExp True, Step q SSz SSTCK)
+bond = cexpr '.' dot :: vals interpolate wrt values
+  where
+    %inline wrt   : Bond -> Step1 q SSz SSTCK
+    wrt b = \(sk # t) => writeAs sk.dob (Bnd b) Atom t
+
+    dot : (k : SSTCK q) => F1 q SST
+    dot = writeAs k.dob Dot Atom
+
+openClose : List (RExp True, Step q SSz SSTCK)
+openClose = [copen '(' opn, cclose ')' cls]
+  where
+    opn,cls : (k : SSTCK q) => F1 q SST
+    opn = read1 k.st >>= \s => writeAs k.st ({stck $= doubleHead} s) NewBranch
+    cls = read1 k.st >>= \s => writeAs k.st ({stck $= drop} s) Closed
+
+space : List (RExp True, Step q SSz SSTCK)
+space = [conv (plus $ oneof [' ', '\t']) (const end), newline nl end]
+  where
+    nl : RExp True
+    nl = "\r\n" <|> '\n' <|> '\r'
+
+    end : (sk : SSTCK q) => F1 q SST
+    end = T1.do
+      Nothing <- endGraph sk | Just x => failWith x Err
+      pure Chain
+
+smilesTrans : Lex1 q SSz SSTCK
+smilesTrans =
+  lex1
+    [ E Chain     $ dfa (atom ++ space)
+    , E Atom      $ dfa atom
+    , E SRing     $ dfa (atom ++ ring ++ bond ++ openClose ++ space)
+    , E NewBranch $ dfa (atom ++ bond)
+    , E Closed    $ dfa (atom ++ bond ++ openClose ++ space)
+    ]
+
+smilesErr : Arr32 SSz (SSTCK q -> F1 q (BoundedErr SmilesErr))
+smilesErr = arr32 SSz (unexpected []) []
+
+smilesEOI :
+     SST
+  -> SSTCK q
+  -> F1 q (Either (BoundedErr SmilesErr) (List SmilesGraph))
+smilesEOI st sk =
+  case st == Chain || st == SRing || st == Closed of
+    False => arrFail SSTCK smilesErr st sk
+    True  => endGraph sk >>= \case
+      Just x  => pure (Left x)
+      Nothing => getList sk.stack_ >>= pure . Right
+
+export
+smiles : P1 q (BoundedErr SmilesErr) SSz SSTCK (List SmilesGraph)
+smiles = P Chain init smilesTrans snocChunk smilesErr smilesEOI
+
+||| Parses a list of smiles codes separated by whitespace
+export %inline
+parseSmiles : Origin -> String -> Either SmilesParseErr (List SmilesGraph)
+parseSmiles = parseString smiles
+
+export
+readSmilesFrom : Origin -> String -> Either SmilesParseErr SmilesGraph
+readSmilesFrom o s =
+  case parseSmiles o s of
+    Left  x   => Left x
+    Right []  => Right (G 0 empty)
+    Right [g] => Right g
+    Right _   =>
+      Left (toParseError o s (B (Custom ManyEntries) NoBounds))
+
+export %inline
+readSmiles : String -> Maybe SmilesGraph
+readSmiles = eitherToMaybe . readSmilesFrom Virtual
+
+export %inline
+readSmilesOrEmpty : String -> SmilesGraph
+readSmilesOrEmpty = fromMaybe (G 0 empty) . readSmiles

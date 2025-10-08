@@ -24,5 +24,10 @@ modules = Data.AssocList.Indexed
         , Data.Graph.Indexed.Query.Visited
         , Data.Graph.Indexed.Query.Util
 
+        , Data.Graph.Indexed.Ring.Relevant
+        , Data.Graph.Indexed.Ring.Relevant.Candidates
+        , Data.Graph.Indexed.Ring.Relevant.ShortestPath
+        , Data.Graph.Indexed.Ring.Relevant.Types
+
         , Data.Graph.Indexed.Ring.Bonds
         , Data.Graph.Indexed.Ring.Util

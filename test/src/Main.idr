@@ -4,8 +4,10 @@ import AssocList
 import BFS
 import DFS
 import Hedgehog
+import RelevantCycles
 import Ring.Bonds
 import Ring.Util as RU
+import ShortestPath
 import SubgraphIso
 import Subgraphs
 import Util as U
@@ -25,4 +27,6 @@ main =
     , Subgraphs.props
     , U.props
     , Visited.props
+    , ShortestPath.props
+    , RelevantCycles.props
     ]
