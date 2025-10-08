@@ -1,8 +1,10 @@
 module ShortestPath
 
-import Data.Graph.Indexed.Ring.Relevant.Types
 import Data.Graph.Indexed.Ring.Relevant.ShortestPath
+import Data.Graph.Indexed.Ring.Relevant.Types
 import Data.List
+import Data.List.Quantifiers
+import Data.SortedSet as SS
 import Derive.Prelude
 import Hedgehog
 import Test.Data.Graph.Indexed.Generators
@@ -19,6 +21,14 @@ record SimplePath  where
   combos : Nat
 
 %runElab derive "SimplePath" [Show,Eq]
+
+valid : Path k -> Path k -> Bool
+valid p q = p.first == q.first || disjoint (p.path <>> []) (q.path <>> [])
+  where
+    disjoint : List (Fin k) -> List (Fin k) -> Bool
+    disjoint (_::xs) (_::ys) =
+      intersection (SS.fromList xs) (SS.fromList ys) == SS.empty
+    disjoint _ _ = True
 
 toSimplePath : Fin k -> Path k -> SimplePath
 toSimplePath r p = SP (cast r) (cast p.last) p.length p.combos
@@ -76,6 +86,42 @@ prop_bridged2 = property1 $
     , SP 7 12 3 4
     ]
 
+testDisjoint : List (Path k) -> PropertyT ()
+testDisjoint []        = pure ()
+testDisjoint (x :: xs) = do
+  for_ xs $ \y => do
+    footnote (show x)
+    footnote (show y)
+    assert (valid x y)
+  testDisjoint xs
+
+prop_validDiamond : Property
+prop_validDiamond =
+  property $ do
+   [cl,nc] <- forAll $ hlist [nat (linear 1 5), nat (linear 1 10)]
+   let G _ g := diamond cl nc
+       G _ s := toDegs $ subgraphL g (nodes g)
+   footnote (pretty (const "()") (const "()") g)
+   for_ (nodes s) (\n => testDisjoint $ shortestPaths s n)
+
+prop_validDiamondChain : Property
+prop_validDiamondChain =
+  property $ do
+   [nd,cl,nc] <- forAll $ hlist [nat (linear 2 4), nat (linear 1 3), nat (linear 1 4)]
+   let G _ g := diamondChain nd cl nc
+       G _ s := toDegs $ subgraphL g (nodes g)
+   footnote (pretty (const "()") (const "()") g)
+   for_ (nodes s) (\n => testDisjoint $ shortestPaths s n)
+
+prop_validDiamondBracelet : Property
+prop_validDiamondBracelet =
+  property $ do
+   [nd,cl,nc] <- forAll $ hlist [nat (linear 2 4), nat (linear 1 3), nat (linear 1 4)]
+   let G _ g := diamondBracelet nd cl nc
+       G _ s := toDegs $ subgraphL g (nodes g)
+   footnote (pretty (const "()") (const "()") g)
+   for_ (nodes s) (\n => testDisjoint $ shortestPaths s n)
+
 export
 props : Group
 props =
@@ -83,6 +129,9 @@ props =
     [ ("prop_ring4", prop_ring4)
     , ("prop_bridged", prop_bridged)
     , ("prop_bridged2", prop_bridged2)
+    , ("prop_validDiamond", prop_validDiamond)
+    , ("prop_validDiamondChain", prop_validDiamondChain)
+    , ("prop_validDiamondBracelet", prop_validDiamondBracelet)
     ]
 
 -- for manual testing at the REPL
