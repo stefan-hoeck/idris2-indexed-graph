@@ -180,19 +180,63 @@ export %inline
 rings' : Gen (Graph () ())
 rings' = rings (pure ()) (pure ())
 
+diamondEdges :
+     {k : _}
+  -> (chainLength, numChains, first,last : Nat)
+  -> List (Edge k ())
+diamondEdges cl nc first last = [0..pred nc] >>= edges
+  where
+    edges : Nat -> List (Edge k ())
+    edges i =
+     let begin := first + i * cl + 1
+         end   := begin + pred cl
+      in    tryEdge first begin ()
+         ++ tryEdge end last ()
+         ++ ([begin..end] >>= \x => tryEdge x (min end (x+1)) ())
+
+diamondSize : (chainLength, numChains : Nat) -> Nat
+diamondSize cl nc = cl * nc + 2
+
+diamondChainEdges :
+     {k : _}
+  -> (ndiamonds, chainLength, numChains : Nat)
+  -> List (Edge k ())
+diamondChainEdges nd cl nc =
+ let ds := diamondSize cl nc
+  in [0..pred nd] >>= \n =>
+      let fst := n * ds
+          nxt := (n+1) * ds
+          lst := pred nxt
+       in tryEdge lst nxt () ++ diamondEdges cl nc fst lst
+
+||| A "diamond" of `n` chains consists of to nodes connected via
+||| `n` chains. This means, that such a diamond has a cyclomatic number
+||| or `n-1` but `sum n = n * (n-1) / 2` relevant cycles.
+||| A diamond of 4 chains of length n corresponds to
+||| the molecule "[n.n.n.n]paddelane".
 export
 diamond : (chainLength, numChains : Nat) -> Graph () ()
 diamond cl@(S _) nc@(S _) =
  let sz := cl * nc + 2
      us := Vect.replicate sz ()
-  in G sz $ mkGraph us $ [0..pred nc] >>= edges sz
-
-  where
-    edges : (n : Nat) -> Nat -> List (Edge n ())
-    edges n i =
-     let begin := i * cl + 1
-         end   := begin + pred cl
-      in    tryEdge 0 begin ()
-         ++ tryEdge end (pred n) ()
-         ++ ([begin..end] >>= \x => tryEdge x (min end (x+1)) ())
+  in G sz $ mkGraph us $ diamondEdges cl nc 0 (pred sz)
 diamond _ _ = G 0 empty
+
+||| A chain of `diamonds`
+export
+diamondChain : (ndiamonds, chainLength, numChains : Nat) -> Graph () ()
+diamondChain nd@(S _) cl@(S _) nc@(S _) =
+ let sz := nd * (cl * nc + 2)
+     us := Vect.replicate sz ()
+  in G sz $ mkGraph us $ diamondChainEdges nd cl nc
+diamondChain _ _ _ = G 0 empty
+
+||| A bracelet of `diamonds`: Like a chain of diamonds but the first
+||| and last node are neighbours too.
+export
+diamondBracelet : (ndiamonds, chainLength, numChains : Nat) -> Graph () ()
+diamondBracelet nd@(S _) cl@(S _) nc@(S _) =
+ let sz := nd * (cl * nc + 2)
+     us := Vect.replicate sz ()
+  in G sz $ mkGraph us $ tryEdge 0 (pred sz) () ++ diamondChainEdges nd cl nc
+diamondBracelet _ _ _ = G 0 empty

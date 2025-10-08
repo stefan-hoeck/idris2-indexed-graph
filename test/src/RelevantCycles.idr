@@ -94,11 +94,33 @@ diamondCrSize n =
 prop_cyclesDiamond : Property
 prop_cyclesDiamond =
   property $ do
-    [chainLength,nchains] <- forAll $ hlist [nat (linear 1 5), nat (linear 1 30)]
-    let G _ g := diamond chainLength nchains
+    [cl,nc] <- forAll $ hlist [nat (linear 1 5), nat (linear 1 30)]
+    let G _ g := diamond cl nc
     footnote (pretty (const "()") (const "()") g)
-    let ds := diamondCrSize nchains
-    crSize (G _ g) === SS ds ds (pred nchains)
+    let ds := diamondCrSize nc
+    crSize (G _ g) === SS ds ds (pred nc)
+
+brCombos : (res, nd, nc : Nat) -> Nat
+brCombos res 0     _  = res
+brCombos res (S k) nc = brCombos (res * nc) k nc
+
+prop_cyclesDiamondChain : Property
+prop_cyclesDiamondChain =
+  property $ do
+    [nd,cl,nc] <- forAll $ hlist [nat (linear 1 5), nat (linear 1 5), nat (linear 1 30)]
+    let G _ g := diamondChain nd cl nc
+    footnote (pretty (const "()") (const "()") g)
+    let ds := diamondCrSize nc
+    crSize (G _ g) === SS (nd * ds) (nd * ds) (nd * pred nc)
+
+prop_cyclesDiamondBracelet : Property
+prop_cyclesDiamondBracelet =
+  property $ do
+    [nd,cl,nc] <- forAll $ hlist [nat (linear 2 10), nat (linear 1 10), nat (linear 1 30)]
+    let G _ g := diamondBracelet nd cl nc
+    footnote (pretty (const "()") (const "()") g)
+    let ds := diamondCrSize nc
+    crSize (G _ g) === SS (nc + nd * ds) (brCombos 1 nd nc + nd * ds) (1 + nd * pred nc)
 
 prop_cycle : Property
 prop_cycle = property1 $ crSizeSmiles "C1CC2CCC1C3CCCCC23" === SS 4 4 3
@@ -114,11 +136,6 @@ prop_c70 =
   property1 $
         crSizeSmiles "C12=C3C4=C5C6=C7C8=C9C%10=C%11C%12=C%13C%10=C%10C8=C5C1=C%10C1=C%13C5=C8C1=C2C1=C3C2=C3C%10=C%13C%14=C3C1=C8C1=C3C5=C%12C5=C8C%11=C%11C9=C7C7=C9C6=C4C2=C2C%10=C4C(=C29)C2=C6C(=C8C8=C9C6=C4C%13=C9C(=C%141)C3=C85)C%11=C27"
     === SS 37 37 36
-
---------------------------------------------------------------------------------
---          Ring Sets Testfunctionalities
---------------------------------------------------------------------------------
-
 
 -- -- an `S m x S n` square grid
 -- grid : (m,n : Nat) -> IGraph (S m * S n) () ()
@@ -150,6 +167,8 @@ props =
     , ("prop_cyclesTree", prop_cyclesTree)
     , ("prop_cyclesRing", prop_cyclesRing)
     , ("prop_cyclesDiamond", prop_cyclesDiamond)
+    , ("prop_cyclesDiamondChain", prop_cyclesDiamondChain)
+    , ("prop_cyclesDiamondBracelet", prop_cyclesDiamondBracelet)
     , ("prop_c60", prop_c60)
     , ("prop_c70", prop_c70)
     , ("prop_cycle", prop_cycle)
