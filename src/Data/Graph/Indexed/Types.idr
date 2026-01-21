@@ -38,7 +38,7 @@ weakenLN m (FS x) (FS y) = weakenLN m x y
 0 finLT : (k : Nat) -> (x : Fin k) -> LT (finToNat x) k
 finLT (S k) FZ     = LTESucc LTEZero
 finLT (S k) (FS x) = LTESucc $ finLT k x
-finLT 0 x impossible
+finLT Z x impossible
 
 0 weakenToNatL : (x : Fin k) -> finToNat x === finToNat (weaken x)
 weakenToNatL FZ     = Refl
@@ -51,12 +51,12 @@ lastLemma (S k) = cong S (lastLemma k)
 0 ltLemma : (m,n : Nat) -> LT m n -> compareNat m n === LT
 ltLemma 0     (S j) x           = Refl
 ltLemma (S k) (S j) (LTESucc x) = ltLemma k j x
-ltLemma (S k) 0 x impossible
-ltLemma 0 0 x impossible
+ltLemma (S k) Z x impossible
+ltLemma Z Z x impossible
 
 0 ltLemma2 : (m,n : Nat) -> compareNat m n === LT -> LT m n
-ltLemma2 0     0     prf impossible
-ltLemma2 (S x) 0     prf impossible
+ltLemma2 Z     Z     prf impossible
+ltLemma2 (S x) Z     prf impossible
 ltLemma2 0     (S y) prf = LTESucc LTEZero
 ltLemma2 (S x) (S y) prf = LTESucc $ ltLemma2 x y prf
 
