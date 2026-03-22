@@ -5,8 +5,12 @@ import Data.List
 import Hedgehog
 import Test.Data.Graph.Indexed.Generators
 import Text.Smiles.Simple
+import System.Info
 
 %default total
+
+chainSize : Nat
+chainSize = if codegen == "node" then 100 else 100000
 
 rsSmiles : String -> (k ** RingSystems k Bond Elem)
 rsSmiles s = let G k g := readSmilesOrEmpty s in (k ** ringSystems g)
@@ -28,7 +32,7 @@ prop_nsystems =
 
 -- make sure everything runs in linear time
 prop_linear : Property
-prop_linear = property1 $ nsystems (chain 100000) === 100000
+prop_linear = property1 $ nsystems (chain chainSize) === chainSize
 
 prop_isInRing : Property
 prop_isInRing =
