@@ -6,6 +6,7 @@ import DFS
 import Hedgehog
 import RelevantCycles
 import Ring.Bonds
+import Ring.Systems as RS
 import Ring.Util as RU
 import ShortestPath
 import SubgraphIso
@@ -23,6 +24,7 @@ main =
     , DFS.props
     , Ring.Bonds.props
     , RU.props
+    , RS.props
     , SubgraphIso.props
     , Subgraphs.props
     , U.props

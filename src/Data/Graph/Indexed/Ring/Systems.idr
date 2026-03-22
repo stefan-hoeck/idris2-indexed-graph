@@ -19,10 +19,10 @@ import Data.Linear.Traverse1
 public export
 record RingSystems (k : Nat) (e,n : Type) where
   constructor RS
-  graph     : IGraph k e n
-  nrOfRings : Nat
-  rings     : IArray nrOfRings (Subgraph k e n)
-  ringMap   : IArray k (Fin (S nrOfRings))
+  graph   : IGraph k e n
+  systems : Nat
+  rings   : IArray systems (Subgraph k e n)
+  ringMap : IArray k (Fin (S systems))
 
 ||| True, if the given node is part of a ring systems.
 export
@@ -58,5 +58,5 @@ ringSystems g =
   where
     pairs : {y : _} -> (Nat,Graph e (Fin k, n)) -> List (Nat, Fin y)
     pairs (n,G _ g) =
-     let Just x := tryNatToFin n | Nothing => []
+     let Just x := tryNatToFin (S n) | Nothing => []
       in (\l => (finToNat $ fst l, x)) <$> labels g
