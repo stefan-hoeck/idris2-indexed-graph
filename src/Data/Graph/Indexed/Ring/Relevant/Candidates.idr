@@ -16,7 +16,7 @@ origin : ISubgraph o k e n -> NCycle o -> NCycle k
 origin g = {path $= map (Subgraph.origin g)}
 
 isolate : {o : _} -> ISubgraph (S o) k e n -> NCycle k
-isolate g = NC (map (origin g) $ nodes g ++ [FZ]) o 1
+isolate g = NC (map (origin g) $ nodes g ++ [FZ]) (S o) 1
 
 notLast : Fin k -> SnocList (Fin k) -> Bool
 notLast x (_ :< y :< _) = x /= y
