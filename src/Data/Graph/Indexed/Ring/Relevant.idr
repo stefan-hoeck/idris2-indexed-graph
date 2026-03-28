@@ -131,6 +131,12 @@ fromCandidates (System o g xss) =
            let ec := convertC nc.path
             in C nc ec $ getBitsRing ebits 0 ec
 
+||| computes the relevant cycles and minimum cycle basis
+||| for a biconnected component in a graph.
+export %inline
+componentCycles : Subgraph k e n -> CycleSets k
+componentCycles = fromCandidates . componentCandidates
+
 ||| computes the relevant cycles and minimum cycle basis for a graph
 export
 computeCrAndMCB : {k : _} -> IGraph k e n -> CycleSets k

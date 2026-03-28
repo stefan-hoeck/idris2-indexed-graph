@@ -87,9 +87,15 @@ findCandidates sg@(G (S k) g) =
     [] => Isolate sg $ isolate g
     ns => System (S k) g (ns >>= \n => cycleSystem g n (deg g n))
 
+||| Computes the potential relevant cycle familes for a biconnected
+||| component of a graph.
+export %inline
+componentCandidates : Subgraph k e n -> Candidates k e
+componentCandidates = findCandidates . toDegs
+
 ||| Cuts a graph into strongly connected components and computes
 ||| the potential relevant cycle families for each component in
 ||| isolation.
 export
 candidates : {k : _} -> IGraph k e n -> List (Candidates k e)
-candidates g = map (findCandidates . toDegs) $ biconnectedComponents g
+candidates = map componentCandidates . biconnectedComponents
