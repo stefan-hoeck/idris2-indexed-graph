@@ -137,24 +137,6 @@ prop_c70 =
         crSizeSmiles "C12=C3C4=C5C6=C7C8=C9C%10=C%11C%12=C%13C%10=C%10C8=C5C1=C%10C1=C%13C5=C8C1=C2C1=C3C2=C3C%10=C%13C%14=C3C1=C8C1=C3C5=C%12C5=C8C%11=C%11C9=C7C7=C9C6=C4C2=C2C%10=C4C(=C29)C2=C6C(=C8C8=C9C6=C4C%13=C9C(=C%141)C3=C85)C%11=C27"
     === SS 37 37 36
 
--- -- an `S m x S n` square grid
--- grid : (m,n : Nat) -> IGraph (S m * S n) () ()
--- grid m n =
---   mkGraph (replicate _ ()) (ho ++ ve)
---   where
---     ho, ve : List (Edge (S m * S n) ())
---     ho = do
---       x <- [0..m]
---       y <- [0..S n]
---       let p := x + S m * y
---       toList $ natEdge p (S p)
---
---     ve = do
---       x <- [0..S m]
---       y <- [0..n]
---       let p := x + S m * y
---       toList $ natEdge p (p + S m)
-
 export
 props : Group
 props =
