@@ -16,7 +16,7 @@ origin : ISubgraph o k e n -> NCycle o -> NCycle k
 origin g = {path $= map (Subgraph.origin g)}
 
 isolate : {o : _} -> ISubgraph (S o) k e n -> NCycle k
-isolate g = NC (map (origin g) $ nodes g ++ [FZ]) (o + 2) 1
+isolate g = NC (map (origin g) $ nodes g ++ [FZ]) o 1
 
 notLast : Fin k -> SnocList (Fin k) -> Bool
 notLast x (_ :< y :< _) = x /= y
@@ -50,7 +50,7 @@ parameters {o    : Nat}
       odd p1 p2 =
         NC
           (revOnto p1.path p2.path)
-          (p1.length + p2.length + 1)
+          (pred $ p1.length + p2.length)
           (p1.combos * p2.combos)
 
       %inline
@@ -60,7 +60,7 @@ parameters {o    : Nat}
            then
              Just $ NC
                (revOnto (p1.path :< x) p2.path)
-               (p1.length + p2.length + 2)
+               (p1.length + p2.length)
                (p1.combos * p2.combos)
             else Nothing
 
