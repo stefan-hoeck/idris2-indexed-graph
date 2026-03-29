@@ -29,25 +29,15 @@ getBitsEdges g = setBits (map ignore $ edges g) 1 empty
     setBits []        bitp sm = sm
     setBits (y :: xs) bitp sm = setBits xs (shiftL bitp 1) (insert y bitp sm)
 
--- Convert cycle representation List (Fin k) corresponding to cyclic nodes to the cycle
--- representation List (Fin k, Fin k) corresponding to the cyclic edges.
-convertC : List (Fin k) -> ECycle k
-convertC [] = []
-convertC [y] = []
-convertC (x :: y :: xs) =
-  case mkEdge x y () of
-    Just e  => e :: convertC (y :: xs)
-    Nothing => convertC (y::xs)
-
 -- Computes the bit pattern corresponding to the edges included in the given cycle.
 -- The cycle is represented as node pairs corresponding to the cyclic edges.
 -- The sortedMap is a maping from each edge of the graph (node pairs) to the bit
 -- pattern corresponding to this edge.
-getBitsRing : EdgMap k -> Integer -> ECycle k -> Integer
-getBitsRing sm i [] = i
-getBitsRing sm i (x :: xs) = case lookup x sm of
+getBitsRing : EdgMap k -> Integer -> List (Fin k) -> Integer
+getBitsRing sm i (x::xs@(y::_)) = case mkEdge x y () >>= lookup' sm of
   Nothing => getBitsRing sm i xs -- impossible case
   Just z  => getBitsRing sm (i .|. z) xs
+getBitsRing sm i _ = i
 
 -- Tests if two integers have the same significant bit.
 -- LT -> same significant bit, else distinct significant bit.
@@ -57,10 +47,11 @@ testSigBit i j = compare (xor i j) (i .&. j)
 -- Tests if a ring, represented as a bit pattern of edges, is linearly independet
 -- from the given set of rings. Returns the modified set if the ring is linearly
 -- independet and a boolan to indicate wheter the ring is linearly independent.
-isInSet : (ring : Integer)
-          -> (processedRs : SnocList (Integer))
-          -> (unprocessedRs : List (Integer))
-          -> (List Integer, Bool)
+isInSet :
+     (ring : Integer)
+  -> (processedRs : SnocList (Integer))
+  -> (unprocessedRs : List (Integer))
+  -> (List Integer, Bool)
 isInSet ring sy  []        = (sy <>> [ring], True)
 isInSet ring sy  (x :: xs) =
   case testSigBit ring x of
@@ -74,20 +65,31 @@ isInSet ring sy  (x :: xs) =
         GT => (sy :< ring <>> x :: xs, True)
         _  => isInSet ring (sy :< x) xs
 
+record BCycle (k : Nat) where
+  constructor BC
+  ncycle : NCycle k
+  bitp   : Integer
+
+0 BCycles : Nat -> Type
+BCycles = List . BCycle
+
 -- Recursive function to compute the set of relevant rings and minimum cycle basis.
-getCrAndMCB' : (v, size: Nat)
-               -> (sm, eq : List Integer)
-               -> (xs, cr, mcb : List (Cycle k))
-               -> CycleSets k
-getCrAndMCB' v size sm eq []        cr mcb = CS cr mcb
+getCrAndMCB' :
+     (v, size: Nat)
+  -> (sm, eq : List Integer)
+  -> (xs, cr, mcb : BCycles k)
+  -> (BCycles k, BCycles k)
+getCrAndMCB' v size sm eq []        cr mcb = (cr,mcb)
 getCrAndMCB' v size sm eq (c :: cs) cr mcb =
-  if c.ncycle.length > size -- now: sm == eq
-    then if (cast (length mcb)) == v then CS cr mcb else case isInSet c.bitp [<] eq of
-      (_,     False) => -- neither in Cr nor MCB, continue
-        getCrAndMCB' v size eq eq cs cr mcb
-      (neweq, True)  => -- in Cr and MCB
-        getCrAndMCB' v c.ncycle.length eq neweq cs (c :: cr) (c :: mcb)
-    else case isInSet c.bitp [<] sm of
+  case c.ncycle.length > size of
+    True => case length mcb == v of
+      True  => (cr,mcb)
+      False => case isInSet c.bitp [<] eq of
+        (_,     False) => -- neither in Cr nor MCB, continue
+          getCrAndMCB' v size eq eq cs cr mcb
+        (neweq, True)  => -- in Cr and MCB
+          getCrAndMCB' v c.ncycle.length eq neweq cs (c :: cr) (c :: mcb)
+    False => case isInSet c.bitp [<] sm of
       (_, False) => -- neither in Cr nor MCB, continue
         getCrAndMCB' v size sm eq cs cr mcb
       (_, True)  =>
@@ -101,24 +103,18 @@ getCrAndMCB' v size sm eq (c :: cs) cr mcb =
 -- from the cyclomatic number and the set of potentially relevant cycles (CI', given
 -- as a list of pairs with cycle size and the cycle represented as a bit pattern of edges).
 -- The potentially relevant cycles are ordered by size.
-getCrAndMCB : Nat -> List (Cycle k) -> CycleSets k
+getCrAndMCB : Nat -> BCycles k -> (BCycles k, BCycles k)
 getCrAndMCB v xs = getCrAndMCB' v 0 [] [] xs [] []
 
-convert : ISubgraph o k e n -> CycleSets o -> CycleSets k
-convert g (CS m b) = CS (map convertC m) (map convertC b)
+convert : ISubgraph o k e n -> (BCycles o, BCycles o) -> CycleSets k
+convert g (m,b) = CS (map conv m) (map conv b)
   where
-    convertE : Edg o -> Maybe (Edg k)
-    convertE (E x y ()) = mkEdge (origin g x) (origin g y) ()
-
-    convertC : Cycle o -> Cycle k
-    convertC (C nc ec bitp) =
-      C ({path $= map (origin g)} nc) (mapMaybe convertE ec) bitp
+    conv : BCycle o -> Cycle k
+    conv (BC c _) = cast {from = NCycle k} $ {path $= map (origin g)} c
 
 fromCandidates : Candidates k e -> CycleSets k
 fromCandidates Empty = CS [] []
-fromCandidates (Isolate x xs) =
-  let c := Relevant.Types.C xs (convertC xs.path) 0
-   in CS [c] [c]
+fromCandidates (Isolate x nc) = let c := cast {to = Cycle k} nc in CS [c] [c]
 fromCandidates (System o g xss) =
   let ebits := getBitsEdges g
       ci'   := sortBy (compare `on` length) xss
@@ -126,10 +122,8 @@ fromCandidates (System o g xss) =
       v     := computeCyclomaticN g
    in convert g $ getCrAndMCB v cs
 
-   where getCycle : EdgMap o -> NCycle o ->  Cycle o
-         getCycle ebits nc =
-           let ec := convertC nc.path
-            in C nc ec $ getBitsRing ebits 0 ec
+   where getCycle : EdgMap o -> NCycle o ->  BCycle o
+         getCycle ebits nc = BC nc $ getBitsRing ebits 0 nc.path
 
 ||| computes the relevant cycles and minimum cycle basis
 ||| for a biconnected component in a graph.
