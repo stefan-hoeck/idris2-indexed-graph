@@ -74,6 +74,10 @@ record Cycle (k: Nat) where
   nodeset : SortedSet (Fin k)
   edgeset : SortedSet (Edg k)
 
+export
+(.nodes) : Cycle k -> List (Fin k)
+(.nodes) c = drop 1 c.ncycle.path
+
 %runElab deriveIndexed "Cycle" [Show,Eq]
 
 export
@@ -95,16 +99,16 @@ export
 sharedNodes : (cx,cy : Cycle k) -> List (Fin k)
 sharedNodes cx cy =
   case cx.ncycle.length <= cy.ncycle.length of
-    True  => filter (`contains` cy.nodeset) (drop 1 cx.ncycle.path)
-    False => filter (`contains` cx.nodeset) (drop 1 cy.ncycle.path)
+    True  => filter (`contains` cy.nodeset) cx.nodes
+    False => filter (`contains` cx.nodeset) cy.nodes
 
 ||| Returns the number of nodes shared by two cycles.
 export
 numSharedNodes : (cx,cy : Cycle k) -> Nat
 numSharedNodes cx cy =
   case cx.ncycle.length <= cy.ncycle.length of
-    True  => count (`contains` cy.nodeset) (drop 1 cx.ncycle.path)
-    False => count (`contains` cx.nodeset) (drop 1 cy.ncycle.path)
+    True  => count (`contains` cy.nodeset) cx.nodes
+    False => count (`contains` cx.nodeset) cy.nodes
 
 ||| Returns the list of edges two cycles have in common.
 export
