@@ -51,10 +51,13 @@ record NCycle (k : Nat) where
   path   : List (Fin k)
 
   ||| Length of the cycle.
-  length : Nat
+  size   : Nat
 
   ||| Number of members in the family.
   combos : Nat
+
+  ||| A cycle consists of at least three nodes
+  {auto 0 prf : LTE 3 size}
 
 %runElab deriveIndexed "NCycle" [Show,Eq]
 
@@ -98,7 +101,7 @@ Cast (NCycle k) (Cycle k) where
 export
 sharedNodes : (cx,cy : Cycle k) -> List (Fin k)
 sharedNodes cx cy =
-  case cx.ncycle.length <= cy.ncycle.length of
+  case cx.ncycle.size <= cy.ncycle.size of
     True  => filter (`contains` cy.nodeset) cx.nodes
     False => filter (`contains` cx.nodeset) cy.nodes
 
@@ -106,7 +109,7 @@ sharedNodes cx cy =
 export
 numSharedNodes : (cx,cy : Cycle k) -> Nat
 numSharedNodes cx cy =
-  case cx.ncycle.length <= cy.ncycle.length of
+  case cx.ncycle.size <= cy.ncycle.size of
     True  => count (`contains` cy.nodeset) cx.nodes
     False => count (`contains` cx.nodeset) cy.nodes
 
@@ -114,7 +117,7 @@ numSharedNodes cx cy =
 export
 sharedEdges : (cx,cy : Cycle k) -> List (Edg k)
 sharedEdges cx cy =
-  case cx.ncycle.length <= cy.ncycle.length of
+  case cx.ncycle.size <= cy.ncycle.size of
     True  => filter (`contains` cy.edgeset) cx.ecycle
     False => filter (`contains` cx.edgeset) cy.ecycle
 
@@ -122,7 +125,7 @@ sharedEdges cx cy =
 export
 numSharedEdges : (cx,cy : Cycle k) -> Nat
 numSharedEdges cx cy =
-  case cx.ncycle.length <= cy.ncycle.length of
+  case cx.ncycle.size <= cy.ncycle.size of
     True  => count (`contains` cy.edgeset) cx.ecycle
     False => count (`contains` cx.edgeset) cy.ecycle
 

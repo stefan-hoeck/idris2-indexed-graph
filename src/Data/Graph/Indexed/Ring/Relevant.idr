@@ -81,23 +81,23 @@ getCrAndMCB' :
   -> (BCycles k, BCycles k)
 getCrAndMCB' v size sm eq []        cr mcb = (cr,mcb)
 getCrAndMCB' v size sm eq (c :: cs) cr mcb =
-  case c.ncycle.length > size of
+  case c.ncycle.size > size of
     True => case length mcb == v of
       True  => (cr,mcb)
       False => case isInSet c.bitp [<] eq of
         (_,     False) => -- neither in Cr nor MCB, continue
           getCrAndMCB' v size eq eq cs cr mcb
         (neweq, True)  => -- in Cr and MCB
-          getCrAndMCB' v c.ncycle.length eq neweq cs (c :: cr) (c :: mcb)
+          getCrAndMCB' v c.ncycle.size eq neweq cs (c :: cr) (c :: mcb)
     False => case isInSet c.bitp [<] sm of
       (_, False) => -- neither in Cr nor MCB, continue
         getCrAndMCB' v size sm eq cs cr mcb
       (_, True)  =>
         case isInSet c.bitp [<] eq of
           (_,     False) => -- in Cr but not MCB
-            getCrAndMCB' v c.ncycle.length sm eq cs (c :: cr) mcb
+            getCrAndMCB' v c.ncycle.size sm eq cs (c :: cr) mcb
           (neweq, True)  => -- in Cr and MCB
-            getCrAndMCB' v c.ncycle.length sm neweq cs (c :: cr) (c :: mcb)
+            getCrAndMCB' v c.ncycle.size sm neweq cs (c :: cr) (c :: mcb)
 
 -- Initalizes the recursive function getCrAndMCB' to get the relevant cycles and MCB
 -- from the cyclomatic number and the set of potentially relevant cycles (CI', given
@@ -117,7 +117,7 @@ fromCandidates Empty = CS [] []
 fromCandidates (Isolate x nc) = let c := cast {to = Cycle k} nc in CS [c] [c]
 fromCandidates (System o g xss) =
   let ebits := getBitsEdges g
-      ci'   := sortBy (compare `on` length) xss
+      ci'   := sortBy (compare `on` size) xss
       cs    := map (getCycle ebits) ci'
       v     := computeCyclomaticN g
    in convert g $ getCrAndMCB v cs
