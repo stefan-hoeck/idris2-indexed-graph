@@ -15,8 +15,10 @@ export
 origin : ISubgraph o k e n -> NCycle o -> NCycle k
 origin g = {path $= map (Subgraph.origin g)}
 
-isolate : {o : _} -> ISubgraph (S o) k e n -> NCycle k
-isolate g = NC (map (origin g) $ nodes g ++ [FZ]) (S o) 1
+isolate : {o : _} -> ISubgraph (S o) k e n -> Maybe (NCycle k)
+isolate {o = n@(S (S _))} g =
+  Just $ NC (map (origin g) $ nodes g ++ [FZ]) (S n) 1
+isolate               g = Nothing
 
 notLast : Fin k -> SnocList (Fin k) -> Bool
 notLast x (_ :< y :< _) = x /= y
@@ -25,6 +27,15 @@ notLast x _             = True
 revOnto : SnocList a -> SnocList a -> List a
 revOnto sx [<] = sx <>> []
 revOnto sx (sy:<y) = revOnto (sx :< y) sy
+
+appMaybe : SnocList a -> Maybe a -> SnocList a
+appMaybe sc = maybe sc (sc:<)
+
+gte3 : Nat -> Maybe (Subset Nat (LTE 3))
+gte3 n =
+  case tryLTE {n} 3 of
+    Just0 prf => Just (Element n prf)
+    Nothing0  => Nothing
 
 parameters {o    : Nat}
            (g    : ISubgraph o k e Nat)
@@ -46,30 +57,26 @@ parameters {o    : Nat}
       -- computes an odd cycle by concatenating two paths ending
       --
       %inline
-      odd : (p1,p2 : Path o) -> NCycle o
+      odd : (p1,p2 : Path o) -> Maybe (NCycle o)
       odd p1 p2 =
-        NC
-          (revOnto p1.path p2.path)
-          (pred $ p1.length + p2.length)
-          (p1.combos * p2.combos)
+        flip map (gte3 (pred $ p1.length + p2.length)) $ \(Element s _) =>
+          NC (revOnto p1.path p2.path) s (p1.combos * p2.combos)
 
       %inline
       even : (p1,p2 : Path o) -> Fin o -> Maybe (NCycle o)
       even p1 p2 x =
         if connector p1.path p2.path x
-           then
-             Just $ NC
-               (revOnto (p1.path :< x) p2.path)
-               (p1.length + p2.length)
-               (p1.combos * p2.combos)
-            else Nothing
+          then
+            flip map (gte3 (p1.length + p2.length)) $ \(Element s _) =>
+              NC (revOnto (p1.path :< x) p2.path) s (p1.combos * p2.combos)
+          else Nothing
 
       addCs : SnocList (NCycle o) -> Path o -> List (Path o) -> SnocList (NCycle o)
       addCs sc p [] = sc
       addCs sc p@(P len1 p1 _ f1 l1 _) (q@(P len2 p2 _ f2 l2 _)::qs) =
         let True  := len1 == len2     | False => sc
             False := f1 == f2         | True  => addCs sc p qs
-            False := adjacent g l1 l2 | True  => addCs (sc :< odd p q) p qs
+            False := adjacent g l1 l2 | True  => addCs (appMaybe sc $ odd p q) p qs
             ns    := keys $ intersect (neighboursAsAL g l1) (neighboursAsAL g l2)
          in addCs (sc <>< mapMaybe (even p q) ns) p qs
 
@@ -84,7 +91,7 @@ findCandidates : Subgraph k e Nat -> Candidates k e
 findCandidates (G 0 g) = Empty
 findCandidates sg@(G (S k) g) =
   case filter ((2 <) . deg g) (nodes g) of
-    [] => Isolate sg $ isolate g
+    [] => maybe Empty (Isolate sg) (isolate g)
     ns => System (S k) g (ns >>= \n => cycleSystem g n (deg g n))
 
 ||| Computes the potential relevant cycle familes for a biconnected
