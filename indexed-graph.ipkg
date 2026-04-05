@@ -33,4 +33,5 @@ modules = Data.AssocList.Indexed
         , Data.Graph.Indexed.Ring.Systems
         , Data.Graph.Indexed.Ring.Util
 
+        , Data.Graph.Indexed.Util.Bipartite
         , Data.Graph.Indexed.Util.DisjointSet
