@@ -168,6 +168,11 @@ export
 elab : IGraph k e n -> Fin k -> Fin k -> Maybe e
 elab (IG g) x y = lookup y . neighbours $ at g x
 
+||| Find the label for an `Edge`.
+export
+edge : IGraph k e n -> Fin k -> Fin k -> Maybe (Edge k e)
+edge g x y = elab g x y >>= mkEdge x y
+
 ||| Tests if the given nodes are adjecent (connected via an edge).
 export
 adjacent : IGraph k e n -> Fin k -> Fin k -> Bool
