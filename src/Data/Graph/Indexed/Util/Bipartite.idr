@@ -1,6 +1,7 @@
 module Data.Graph.Indexed.Util.Bipartite
 
 import Data.Graph.Indexed
+import Data.Graph.Indexed.Subgraph
 import Data.Linear.List
 import Data.Linear.Token
 import Data.Linear.Traverse1
@@ -74,6 +75,25 @@ match : {k : _} -> IGraph k e n -> Maybe (IArray k (Maybe $ Fin k))
 export
 perfectMatch : {k : _} -> IGraph k e n -> Maybe (IArray k (Fin k))
 perfectMatch g = match g >>= sequence
+
+||| Finds the edges of a maximal matching in a graph.
+export
+matchEdges : {k : _} -> IGraph k e n -> List (Edge k e)
+matchEdges g = maybe [] (\a => mapMaybe (edg a) (nodes g)) (match g)
+  where
+    edg : IArray k (Maybe $ Fin k) -> Fin k -> Maybe (Edge k e)
+    edg a x = at a x >>= \y => if x < y then edge g x y else Nothing
+
+||| Finds the edges of a maximal matching in a subgraph.
+export
+matchEdgesWhere :
+     {k : _}
+  -> IGraph k e n
+  -> (pred : Fin k -> Bool)
+  -> List (Edge k e)
+matchEdgesWhere g pred =
+ let G _ sg := subgraphL g (filter pred $ nodes g)
+  in mapMaybe (originEdge sg) (matchEdges sg)
 
 --------------------------------------------------------------------------------
 -- Hopcroft-Karp: Implementation
