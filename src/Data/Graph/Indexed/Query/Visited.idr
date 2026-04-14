@@ -23,13 +23,21 @@ parameters (r : MBuffer s n)
   mvisitAll : List (Fin n) -> F1' s
   mvisitAll = traverse1_ mvisit
 
-  ||| Test, if the current node has been visited.
+  ||| True, if the current node has been visited.
   export %inline
   mvisited : Fin n -> F1 s Bool
   mvisited x t =
     case get r x t of
       1 # t => True  # t
       _ # t => False # t
+
+  ||| True, if the current node has not yet been visited.
+  export %inline
+  munvisited : Fin n -> F1 s Bool
+  munvisited x t =
+    case get r x t of
+      1 # t => False # t
+      _ # t => True  # t
 
 ||| Allocate a linear byte array and use it to run the given
 ||| computation, discarding it at the end.
@@ -69,7 +77,12 @@ export %inline
 visitAll : List (Fin k) -> Visited k -> Visited k
 visitAll vs v = foldl (flip visit) v vs
 
-||| Test, if the current node has been visited.
-export
+||| True, if the current node has been visited.
+export %inline
 visited : Fin k -> Visited k -> Bool
 visited i (V b) = testBit b (finToNat i)
+
+||| True, if the current node has not yet been visited.
+export %inline
+unvisited : Fin k -> Visited k -> Bool
+unvisited i = not . visited i
