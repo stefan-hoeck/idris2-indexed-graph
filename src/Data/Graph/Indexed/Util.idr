@@ -1,30 +1,18 @@
 module Data.Graph.Indexed.Util
 
 import Data.Array
+import Data.Array.Index
 import Data.Array.Mutable
 import Data.AssocList.Indexed
-import Data.Linear.Traverse1
 import Data.Graph.Indexed.Types
+import Data.Linear.Traverse1
+import Data.List
 import Data.SortedMap
 import Data.SortedSet
-import Data.List
 import Data.String
 import Data.Vect
 
 %default total
-
-||| Generates the list of all `Fin n` in linear type.
-|||
-||| This is a lot faster than `Data.Fin.allFins`, which runs in quadratic
-||| time.
-export
-allFinsFast : (n : Nat) -> List (Fin n)
-allFinsFast 0 = []
-allFinsFast (S n) = go [] last
-  where
-    go : List (Fin $ S n) -> Fin (S n) -> List (Fin $ S n)
-    go xs FZ     = FZ :: xs
-    go xs (FS x) = go (FS x :: xs) (assert_smaller (FS x) $ weaken x)
 
 --------------------------------------------------------------------------------
 --          Internal utilities
