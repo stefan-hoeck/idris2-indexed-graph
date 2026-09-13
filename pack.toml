@@ -19,20 +19,8 @@ type   = "local"
 path   = "profile"
 ipkg   = "indexed-graph-profile.ipkg"
 
-[custom.all.ref1]
-type   = "git"
-url    = "https://github.com/stefan-hoeck/idris2-ref1"
-commit = "latest:main"
-ipkg   = "ref1.ipkg"
-
-[custom.all.array]
-type   = "git"
-url    = "https://github.com/stefan-hoeck/idris2-array"
-commit = "latest:main"
-ipkg   = "array.ipkg"
-
-[custom.all.containers]
-type   = "git"
-url    = "https://github.com/idris-community/idris2-containers"
-commit = "latest:main"
-ipkg   = "containers.ipkg"
+[custom.all]
+ref1.commit      = "latest:main"
+array.commit     = "latest:main"
+ilex.commit      = "latest:main"
+ilex-core.commit = "latest:main"
