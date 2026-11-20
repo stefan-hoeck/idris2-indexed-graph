@@ -306,194 +306,107 @@ export
 Bitraversable (Adj k) where
   bitraverse f g (A l es) = [| A (g l) (traverse f es) |]
 
-public export
-record Context (k : Nat) (e,n : Type) where
-  constructor C
-  node       : Fin k
-  label      : n
-  neighbours : AssocList k e
-
-export %inline
-Eq e => Eq n => Eq (Context k e n) where
-  C n1 l1 ns1 == C n2 l2 ns2 =
-    n1 == n2 && l1 == l2 && ns1 == ns2
-
-export
-Show e => Show n => Show (Context k e n) where
-  showPrec p (C n l s) =
-    showCon p "C" $ showArg (finToNat n) ++ showArg l ++ showArg s
-
-export
-Functor (Context k e) where
-  map f = { label $= f }
-
-export
-Foldable (Context k e) where
-  foldl f a n  = f a n.label
-  foldr f a n  = f n.label a
-  foldMap  f n = f n.label
-  null _       = False
-  toList n     = [n.label]
-  foldlM f a n = f a n.label
-
-namespace ContextFunctor
-  export
-  [CtxtEdge] Functor (\e => Context k e n) where
-    map f = {neighbours $= map f}
-
-namespace ContextFoldable
-  export
-  [CtxtEdge] Foldable (\e => Context k e n) where
-    foldl f a  = foldl f a . neighbours
-    foldr f a  = foldr f a . neighbours
-    foldMap  f = foldMap f . neighbours
-    null       = null . neighbours
-    toList     = toList . neighbours
-    foldlM f a = foldlM f a . neighbours
-
-export %inline
-Traversable (Context k e) where
-  traverse f (C n l es) =
-    (\l2 => C n l2 es) <$> f l
-
-export
-Bifunctor (Context k) where
-  bimap  f g (C n l es) = C n (g l) (map f es)
-  mapFst f (C n l es)   = C n l (map f es)
-  mapSnd g (C n l es)   = C n (g l) es
-
-export
-Bifoldable (Context k) where
-  bifoldr f g acc (C _ l es) = foldr f (g l acc) es
-  bifoldl f g acc (C _ l es) = g (foldl f acc es) l
-  binull _                           = False
-
-export
-Bitraversable (Context k) where
-  bitraverse f g (C n l es) =
-    [| C (pure n) (g l) (traverse f es) |]
-
---------------------------------------------------------------------------------
---          IGraph
---------------------------------------------------------------------------------
-
-||| An order-indexed graph.
-public export
-record IGraph (k : Nat) (e,n : Type) where
-  constructor IG
-  graph : IArray k (Adj k e n)
-
-export
-{k : _} -> Eq e => Eq n => Eq (IGraph k e n) where
-  IG g1 == IG g2 = g1 == g2
-
-export
-{k : _} -> Functor (IGraph k e) where
-  map f = { graph $= map (map f) }
-
-export
-{k : _} -> Foldable (IGraph k e) where
-  foldl f a  = foldl (\a',adj => f a' adj.label) a . graph
-  foldr f a  = foldr (f . label) a . graph
-  foldMap  f = foldMap (f . label) . graph
-  toList     = map label . toList . graph
-  null _     = k == 0
-
-export
-{k : _} -> Traversable (IGraph k e) where
-  traverse f (IG g) = IG <$> traverse (traverse f) g
-
-namespace IGraphFunctor
-  export
-  [OnEdge] {k : _} -> Functor (\e => IGraph k e n) where
-    map f g = { graph $= map {neighbours $= map f} } g
-
-namespace IGraphFoldable
-  export
-  [OnEdge] {k : _} -> Foldable (\e => IGraph k e n) where
-    foldr f a = foldr (\v,x => foldr f x v.neighbours) a . graph
-    foldl f a = foldl (\x,v => foldl f x v.neighbours) a . graph
-    foldMap f = foldMap (\v => foldMap f v.neighbours) . graph
-    toList g  = toList g.graph >>= toList . neighbours
-    null   g  = all (null . neighbours) g.graph
-
-export
-{k : _} -> Bifunctor (IGraph k) where
-  bimap  f g (IG m) = IG $ bimap f g <$> m
-  mapFst f (IG m)   = IG $ mapFst f <$> m
-  mapSnd g (IG m)   = IG $ mapSnd g <$> m
-
-export
-{k : _} -> Bifoldable (IGraph k) where
-  bifoldr f g acc =
-    foldr (flip $ bifoldr f g) acc . graph
-  bifoldl f g acc =
-    foldl (bifoldl f g) acc . graph
-  binull = null
-
-export
-{k : _} -> Bitraversable (IGraph k) where
-  bitraverse f g (IG h) = IG <$> traverse (bitraverse f g) h
-
 --------------------------------------------------------------------------------
 --          Graph
 --------------------------------------------------------------------------------
 
-||| A graph together with its order
+||| An order-indexed graph.
 public export
 record Graph (e,n : Type) where
   constructor G
   order : Nat
-  graph : IGraph order e n
+  graph : IArray order (Adj order e n)
 
 export
 Eq e => Eq n => Eq (Graph e n) where
-  G s1 g1 == G s2 g2 with (s1 == s2) proof eq
-    _ | True  = (rewrite eqOpReflectsEquals s1 s2 eq in g2) == g1
+  G o1 g1 == G o2 g2 with (o1 == o2) proof eq
+    _ | True  = (rewrite eqOpReflectsEquals o1 o2 eq in g2) == g1
     _ | False = False
 
 export
 Functor (Graph e) where
-  map f (G o g) = G o $ map f g
+  map f (G o g) = G o $ map (map f) g
 
 export
 Foldable (Graph e) where
-  foldl f a  (G _ g) = foldl f a g
-  foldr f a  (G _ g) = foldr f a g
-  foldMap  f (G _ g) = foldMap f g
-  toList     (G _ g) = toList g
+  foldl f a  (G _ g) = foldl (\a',adj => f a' adj.label) a g
+  foldr f a  (G _ g) = foldr (f . label) a g
+  foldMap  f (G _ g) = foldMap (f . label) g
+  toList     (G _ g) = map label $ toList g
   null       (G o g) = o == 0
 
 export
 Traversable (Graph e) where
-  traverse f (G s g) = G s <$> traverse f g
+  traverse f (G o g) = G o <$> traverse (traverse f) g
 
 namespace GraphFunctor
   export
   [OnEdge] Functor (\e => Graph e n) where
-    map f (G o g) = G o $ map @{IGraphFunctor.OnEdge} f g
+    map f (G o g) = G o $ map {neighbours $= map f} g
 
 namespace GraphFoldable
   export
   [OnEdge] Foldable (\e => Graph e n) where
-    foldr f a (G o g) = foldr @{IGraphFoldable.OnEdge} f a g
-    foldl f a (G o g) = foldl @{IGraphFoldable.OnEdge} f a g
-    foldMap f (G o g) = foldMap @{IGraphFoldable.OnEdge} f g
-    toList    (G o g) = toList @{IGraphFoldable.OnEdge} g
-    null      (G o g) = null @{IGraphFoldable.OnEdge} g
+    foldr f a (G _ g) = foldr (\v,x => foldr f x v.neighbours) a g
+    foldl f a (G _ g) = foldl (\x,v => foldl f x v.neighbours) a g
+    foldMap f (G _ g) = foldMap (\v => foldMap f v.neighbours) g
+    toList    (G _ g) = toList g >>= toList . neighbours
+    null      (G _ g) = all (null . neighbours) g
 
 export
-Bifunctor (Graph) where
-  bimap  f g (G o m) = G o $ bimap f g m
-  mapFst f (G o m)   = G o $ mapFst f m
-  mapSnd g (G o m)   = G o $ mapSnd g m
+Bifunctor Graph where
+  bimap  f g (G o m) = G o $ bimap f g <$> m
+  mapFst f   (G o m) = G o $ mapFst f <$> m
+  mapSnd g   (G o m) = G o $ mapSnd g <$> m
 
 export
-Bifoldable (Graph) where
-  bifoldr f g acc (G o m) = bifoldr f g acc m
-  bifoldl f g acc (G o m) = bifoldl f g acc m
-  binull                  = null
+Bifoldable Graph where
+  bifoldr f g acc (G _ x) = foldr (flip $ bifoldr f g) acc x
+  bifoldl f g acc (G _ x) = foldl (bifoldl f g) acc x
+  binull          (G _ x) = null x
 
 export
 Bitraversable Graph where
-  bitraverse f g (G s h) = G s <$> bitraverse f g h
+  bitraverse f g (G o h) = G o <$> traverse (bitraverse f g) h
+
+--------------------------------------------------------------------------------
+-- Indexed Nodes
+--------------------------------------------------------------------------------
+
+public export
+record Node (g : Graph e n) where
+  constructor N
+  node : Fin g.order
+
+export %inline
+Eq (Node g) where N x == N y = x == y
+
+export %inline
+Ord (Node g) where compare (N x) (N y) = compare x y
+
+export %inline
+Show (Node g) where show = show . finToNat . node
+
+export
+fromFins : {0 g : Graph e n} -> List (Fin g.order) -> List (Node g)
+fromFins []        = []
+fromFins (x :: xs) = N x :: fromFins xs
+
+export
+toFins : List (Node g) -> List (Fin g.order)
+toFins []          = []
+toFins (N x :: xs) = x :: toFins xs
+
+export
+toFinPairs : List (Node g,Node g) -> List (Fin g.order, Fin g.order)
+toFinPairs []                = []
+toFinPairs ((N x,N y) :: xs) = (x,y) :: toFinPairs xs
+
+export
+fromPairs : {0 g : Graph e n} -> List (Fin g.order,a) -> List (Node g,a)
+fromPairs []            = []
+fromPairs ((x,l) :: xs) = (N x,l) :: fromPairs xs
+
+export
+fromAL : {0 g : Graph e n} -> AssocList g.order e -> List (Node g,e)
+fromAL al = fromPairs $ pairs al
