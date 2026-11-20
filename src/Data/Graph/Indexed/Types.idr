@@ -387,6 +387,15 @@ Ord (Node g) where compare (N x) (N y) = compare x y
 export %inline
 Show (Node g) where show = show . finToNat . node
 
+export %inline
+Cast (Node g) (Fin g.order) where cast = node
+
+export %inline
+Cast (Node g) Nat where cast = finToNat . node
+
+export %inline
+Cast (Node g) Integer where cast = cast . finToNat . node
+
 ||| A list of nodes in a graph
 public export
 0 Nodes : Graph e n -> Type
@@ -420,3 +429,7 @@ fromPairs ((x,l) :: xs) = (N x,l) :: fromPairs xs
 export
 fromAL : {0 g : Graph e n} -> AssocList g.order e -> List (Node g,e)
 fromAL al = fromPairs $ pairs al
+
+export %inline
+atN : IArray g.order a -> Node g -> a
+atN arr (N x) = at arr x

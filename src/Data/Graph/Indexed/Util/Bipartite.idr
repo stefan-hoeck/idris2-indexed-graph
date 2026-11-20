@@ -82,7 +82,7 @@ matchEdges : (g : Graph e n) -> List (Edge g.order e)
 matchEdges g = maybe [] (\a => mapMaybe (edg a) (nodes g)) (match g)
   where
     edg : IArray g.order (Maybe $ Node g) -> Node g -> Maybe (Edge g.order e)
-    edg a x = at a x.node >>= \y => if x < y then edge x y else Nothing
+    edg a x = atN a x >>= \y => if x < y then edge x y else Nothing
 
 ||| Finds the edges of a maximal matching in a subgraph.
 export
@@ -163,13 +163,13 @@ parameters {0 s,e,n : Type}
       go []      t = False # t
       go (v::vs) t =
        let Just w # t := link v t                        | _ # t => doLink u v t
-           True       := at dist w.node == S (at dist u.node) | False => go vs t
+           True       := atN dist w == S (atN dist u)    | False => go vs t
            True # t   := dfs dist (assert_smaller u w) t | _ # t => go vs t
         in doLink u v t
 
 match g =
   map
-    (\cs => alloc g.order Nothing $ \x => loop @{x} (filter (at cs . node) (nodes g)))
+    (\cs => alloc g.order Nothing $ \x => loop @{x} (filter (atN cs) (nodes g)))
     (bipartite g)
   where
     loop : Pair s g => Nodes g -> F1 s (IArray g.order (Maybe $ Node g))

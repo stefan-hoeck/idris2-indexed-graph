@@ -80,7 +80,7 @@ parameters {g : Graph e n}
   ||| of a node in a graph.
   export %inline
   adj : Node g -> Adj g.order e n
-  adj (N x) = at g.graph x
+  adj = atN g.graph
 
   ||| Returns the label of a node in graph.
   export %inline
