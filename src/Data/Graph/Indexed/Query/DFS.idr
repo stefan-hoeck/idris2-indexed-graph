@@ -18,7 +18,7 @@ parameters (g : Graph e n)
 --------------------------------------------------------------------------------
 
   -- flat DFS implementation for large graphs
-  dfsL : List (Node g) -> (s -> Node g -> Either s a) -> s -> MVis t g (Either s a)
+  dfsL : Nodes g -> (s -> Node g -> Either s a) -> s -> MVis t g (Either s a)
   dfsL []      f st r t = Left st # t
   dfsL (x::xs) f st r t =
     let False # t := mvisited r x t | True # t => dfsL xs f st (assert_smaller r r) t
@@ -26,7 +26,7 @@ parameters (g : Graph e n)
         _ # t     := mvisit r x t
      in dfsL (neighbours x ++ xs) f st2 (assert_smaller r r) t
 
-  %inline dfsL' : List (Node g) -> (s -> Node g -> s) -> s -> MVis t g s
+  %inline dfsL' : Nodes g -> (s -> Node g -> s) -> s -> MVis t g s
   dfsL' xs acc i r t = fromLeftMVis $ dfsL xs (fleft2 acc) i r t
 
   ||| Traverses the graph in depth-first order from the given
@@ -42,7 +42,7 @@ parameters (g : Graph e n)
   ||| pathways from our search.
   export
   limitedDfsWith :
-       (taboo : List (Node g))
+       (taboo : Nodes g)
     -> (s -> Node g -> Either s a)
     -> (init : s)
     -> Node g
@@ -67,7 +67,7 @@ parameters (g : Graph e n)
   ||| from the given starting node in depth-first order.
   export %inline
   limitedDfsWith' :
-       (taboo : List (Node g))
+       (taboo : Nodes g)
     -> (acc : s -> Node g -> s)
     -> (init : s)
     -> Node g
@@ -84,13 +84,13 @@ parameters (g : Graph e n)
   ||| Traverses the graph in depth-first order for the given start nodes
   ||| returning the encountered nodes in a `SnocList`.
   export %inline
-  limitedDfs : (taboo : List (Node g)) -> Node g -> SnocList (Node g)
+  limitedDfs : (taboo : Nodes g) -> Node g -> Sedon g
   limitedDfs taboo = limitedDfsWith' taboo (:<) [<]
 
   ||| Traverses the graph in depth-first order for the given start nodes
   ||| returning the encountered nodes in a `SnocList`.
   export %inline
-  dfs : Node g -> SnocList (Node g)
+  dfs : Node g -> Sedon g
   dfs = limitedDfs []
 
 --------------------------------------------------------------------------------
@@ -98,7 +98,7 @@ parameters (g : Graph e n)
 --------------------------------------------------------------------------------
 
   -- flat component-wise DFS implementation for large graphs
-  cdfsL : (s -> Node g -> s) -> s -> SnocList s -> List (Node g) -> MVis t g (List s)
+  cdfsL : (s -> Node g -> s) -> s -> SnocList s -> Nodes g -> MVis t g (List s)
   cdfsL f i ss []      r t = (ss <>> []) # t
   cdfsL f i ss (x::xs) r t =
     let False # t := mvisited r x t | True # t => cdfsL f i ss xs r t
@@ -112,7 +112,7 @@ parameters (g : Graph e n)
   ||| Unlike with `dfsWith`, results are accumulated component-wise,
   ||| using initial state `init` for every component we encounter.
   export
-  cdfsWith : (acc : s -> Node g -> s) -> (init : s) -> List (Node g) -> List s
+  cdfsWith : (acc : s -> Node g -> s) -> (init : s) -> Nodes g -> List s
   cdfsWith acc init xs = visiting g (cdfsL acc init [<] xs)
 
   ||| Traverses the whole graph in depth-first order
@@ -124,13 +124,13 @@ parameters (g : Graph e n)
   ||| Traverses the graph in depth-first order for the given start nodes
   ||| returning the encountered nodes in a `SnocList`.
   export %inline
-  cdfs : List (Node g) -> List (SnocList (Node g))
+  cdfs : Nodes g -> List (Sedon g)
   cdfs = cdfsWith (:<) [<]
 
   ||| Traverses the whole graph in depth-first order
   ||| returning the encountered nodes in a `SnocList`.
   export %inline
-  cdfs' : List (SnocList (Node g))
+  cdfs' : List (Sedon g)
   cdfs' = cdfsWith' (:<) [<]
 
 --------------------------------------------------------------------------------
@@ -138,7 +138,7 @@ parameters (g : Graph e n)
 --------------------------------------------------------------------------------
 
   -- tree-based DFS implementation for large graphs
-  dffL : (Node g -> s) -> List (Node g) -> MVis t g (Forest s)
+  dffL : (Node g -> s) -> Nodes g -> MVis t g (Forest s)
   dffL f []      r t = [] # t
   dffL f (x::xs) r t =
       let False # t := mvisited r x t
@@ -155,7 +155,7 @@ parameters (g : Graph e n)
   ||| Unlike `dfsWith`, this returns a forest of spanning trees
   ||| of the connected components encountered.
   export
-  dffWith : (Node g -> t) -> List (Node g) -> Forest t
+  dffWith : (Node g -> t) -> Nodes g -> Forest t
   dffWith f xs = visiting g (dffL f xs)
 
   ||| Traverses the whole graph in depth-first order
@@ -173,7 +173,7 @@ parameters (g : Graph e n)
   ||| Unlike `dfs`, this returns a forest of spanning trees
   ||| of the connected components encountered.
   export %inline
-  dff : List (Node g) -> Forest (Node g)
+  dff : Nodes g -> Forest (Node g)
   dff = dffWith id
 
   ||| Traverses the whole graph in depth-first order
@@ -191,7 +191,7 @@ parameters (g : Graph e n)
 
   ||| Collection of connected components
   export %inline
-  components : List (SnocList $ Node g)
+  components : List (Sedon g)
   components = cdfs'
 
   ||| Number of connected components

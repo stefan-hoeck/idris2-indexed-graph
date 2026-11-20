@@ -101,7 +101,7 @@ parameters {g : Graph e n}
 
   ||| Returns the list of neighbouring nodes of a node in a graph.
   export %inline
-  neighbours : Node g -> List (Node g)
+  neighbours : Node g -> Nodes g
   neighbours = fromFins . keys . neighboursAsAL
 
   ||| Returns the list of edges connecting a node.
@@ -160,7 +160,7 @@ parameters {g : Graph e n}
 
 ||| List all 'Node's in the 'Graph'.
 export %inline
-nodes : (g : Graph e n) -> List (Node g)
+nodes : (g : Graph e n) -> Nodes g
 nodes g = fromFins $ allFinsFast g.order
 
 ||| A list of all labeled nodes of a `Graph`
@@ -388,7 +388,7 @@ zipTR sx _         []        = sx <>> []
 zipTR sx (x :: xs) (y :: ys) = zipTR (sx:<(x,y)) xs ys
 
 export
-delNodes : {g : Graph e n} -> List (Node g) -> Graph e n
+delNodes : {g : Graph e n} -> Nodes g -> Graph e n
 delNodes {g = G 0 g}     _  = G 0 g
 delNodes {g = G (S x) g} ks =
   let set       := SortedSet.fromList ks

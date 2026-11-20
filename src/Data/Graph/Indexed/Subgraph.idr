@@ -17,70 +17,65 @@ import Data.SortedMap
 
 ||| A mapping from indices in one array (or graph) to indices in another.
 public export
-0 NodeMap : (k,m : Nat) -> Type
-NodeMap k m = SortedMap (Fin k) (Fin m)
+0 NodeMap : (g : Graph e n) -> (m : Nat) -> Type
+NodeMap g m = SortedMap (Node g) (Fin m)
 
 ||| Computes a node map from an array of indices.
 export %inline
-nodeMap : {k : _} -> IArray k (Fin m) -> NodeMap m k
+nodeMap : {k : _} -> IArray k (Node g) -> NodeMap g k
 nodeMap = foldrKV (flip insert) empty
 
 ||| Adjust an assoc list (a list of edges) according to a mapping from
 ||| old nodes to new nodes.
 export %inline
-adjAssocList : NodeMap k m -> AssocList k e -> AssocList m e
+adjAssocList : NodeMap g m -> AssocList g.order e -> AssocList m e
 adjAssocList nm = foldl ins empty . pairs
   where
-    ins : AssocList m e -> (Fin k,e) -> AssocList m e
-    ins l (x,ve) = maybe l (\y => insert y ve l) (lookup x nm)
+    ins : AssocList m e -> (Fin g.order,e) -> AssocList m e
+    ins l (x,ve) = maybe l (\y => insert y ve l) (lookup (N x) nm)
 
 --------------------------------------------------------------------------------
 -- Subgraphs
 --------------------------------------------------------------------------------
 
-||| An indexed graph that represents a subgraph on another one.
-|||
-||| Every node is linked to the node in the original graph.
-public export
-0 ISubgraph : (k,m : Nat) -> (e,n : Type) -> Type
-ISubgraph k m e n = IGraph k e (Fin m, n)
-
 ||| An graph that represents a subgraph on another one.
 |||
 ||| Every node is linked to the node in the original graph.
 public export
-0 Subgraph : (m : Nat) -> (e,n : Type) -> Type
-Subgraph m e n = Graph e (Fin m, n)
+0 Subgraph : (g : Graph e n) -> Type
+Subgraph g = Graph e (Node g)
 
 ||| Computes a subgraph of a graph containing the given nodes.
 ||| Runs in O(k * log (k)) for sparse graphs.
 export
-subgraph : {k : _} -> IGraph m e n -> IArray k (Fin m) -> ISubgraph k m e n
-subgraph (IG g) arr = let m := nodeMap arr in IG $ map (adj m) arr
+subgraph : {k : _} -> (g : Graph e n) -> IArray k (Node g) -> Subgraph g
+subgraph g arr =
+ let m := nodeMap arr
+  in G _ $ map (fun m) arr
 
   where
-    adj : NodeMap m k -> Fin m -> Adj k e (Fin m, n)
-    adj m fm = let A l ns := at g fm in A (fm,l) (adjAssocList m ns)
+    fun : NodeMap g k -> Node g -> Adj k e (Node g)
+    fun m fm = let A _ ns := adj fm in A fm (adjAssocList m ns)
 
 ||| Computes a subgraph of a graph containing the given nodes.
 ||| Runs in O(k * log (k)) for sparse graphs.
 export
-subgraphL : IGraph m e n -> List (Fin m) -> Subgraph m e n
-subgraphL g ns = G _ $ subgraph g (arrayL ns)
+subgraphL : (g : Graph e n) -> Nodes g -> Subgraph g
+subgraphL g ns = subgraph g (arrayL ns)
 
 ||| Extracts the connected components of a potentially disconnected
 ||| graph.
 |||
 ||| Runs in O(k * log(k)) for sparse graphs.
 export
-connectedComponents : {k : _} -> IGraph k e n -> List (Subgraph k e n)
+connectedComponents : (g : Graph e n) -> List (Subgraph g)
 connectedComponents g = subgraphL g . (<>> []) <$> components g
 
 ||| Converts the node of a subgraph to the corresponding node in the
 ||| original graph.
-export
-origin : ISubgraph k m e n -> Fin k -> Fin m
-origin s = fst . lab s
+export %inline
+origin : {h : Subgraph g} -> Node h -> Node g
+origin = lab
 
 ||| Converts the edge of a subgraph to the corresponding edge in the
 ||| original graph.
@@ -89,23 +84,28 @@ origin s = fst . lab s
 ||| the subgraph is injective, that is, distinct nodes in the subgraph
 ||| point at distinct nodes in the original graph.
 export
-originEdge : ISubgraph k m e n -> Edge k e -> Maybe (Edge m e)
-originEdge s (E x y l) = mkEdge (origin s x) (origin s y) l
+originEdge :
+     {g : _}
+  -> (h : Subgraph g)
+  -> Edge h.order e
+  -> Maybe (Edge g.order e)
+originEdge h (E x y l) =
+  mkEdge (node $ origin {h} $ N x) (node $ origin {h} $ N y) l
 
 --------------------------------------------------------------------------------
 -- Biconnected Components
 --------------------------------------------------------------------------------
 
-0 Stack : Type -> Nat -> Type
-Stack s n = Ref s (List $ Fin n)
+0 Stack : Type -> Graph e n -> Type
+Stack s g = Ref s (List $ Node g)
 
-0 Comps : Type -> Nat -> Type
-Comps s n = Ref s (List (List $ Fin n))
+0 Comps : Type -> Graph e n -> Type
+Comps s g = Ref s (List (List $ Node g))
 
-pop : Stack s k -> F1' s
+pop : Stack s g -> F1' s
 pop s = mod1 s $ \case h::t => t; [] => []
 
-extractComp : Fin k -> Stack s k -> Comps s k -> F1' s
+extractComp : Node g -> Stack s g -> Comps s g -> F1' s
 extractComp n s c t =
   let st # t := read1 s t
       (cmp,rem) := go [<] st
@@ -113,17 +113,17 @@ extractComp n s c t =
    in write1 s rem t
 
   where
-    go : SnocList (Fin k) -> List (Fin k) -> (List $ Fin k, List $ Fin k)
+    go : Sedon g -> Nodes g -> (Nodes g, Nodes g)
     go sx (x :: xs) = if n == x then (sx <>> [x], xs) else go (sx :< x) xs
     go sx []        = (sx <>> [], []) -- this should not happen
 
-parameters (g : IGraph k e n)
-           (d : MArray t k Nat)
-           (s : Stack t k)
-           (c : Comps t k)
-    covering sc : Fin k -> Fin k -> Nat -> F1 t Nat
+parameters (g : Graph e n)
+           (d : MArray t g.order Nat)
+           (s : Stack t g)
+           (c : Comps t g)
+    covering sc : Node g -> Node g -> Nat -> F1 t Nat
 
-    covering scs : List (Fin k) -> Fin k -> Nat -> F1 t Nat
+    covering scs : Nodes g -> Node g -> Nat -> F1 t Nat
     scs []      p dpt t = dpt # t
     scs (x::xs) p dpt t =
       let r2 # t2 := sc x p dpt t
@@ -131,19 +131,19 @@ parameters (g : IGraph k e n)
        in min r2 r3 # t3
 
     sc n p dpt t =
-      let Z  # t := get d n t | res => res
-          _ # t  := set d n dpt t
+      let Z  # t := get d n.node t | res => res
+          _ # t  := set d n.node dpt t
           _ # t  := mod1 s (n::) t
-          dc # t := scs (filter (/= p) $ neighbours g n) n (S dpt) t
+          dc # t := scs (filter (/= p) $ neighbours n) n (S dpt) t
        in case compare dc dpt of
             LT => dc # t
             EQ => let _ # t := extractComp n s c t in dc # t
             GT => let _ # t := Subgraph.pop s t in dpt # t
 
-    go : List (Fin k) -> F1 t (List $ Subgraph k e n)
+    go : Nodes g -> F1 t (List $ Subgraph g)
     go []      t = mapR1 (map (subgraphL g)) (read1 c t)
     go (n::ns) t =
-      let Z # t := get d n t | _ # t => go ns t
+      let Z # t := get d n.node t | _ # t => go ns t
           _ # t := assert_total $ sc n n 1 t
        in go ns t
 
@@ -158,10 +158,10 @@ parameters (g : IGraph k e n)
 ||| - and often much more efficient - to inspect the biconnected
 ||| components in isolation.
 export
-biconnectedComponents : {k : _} -> IGraph k e n -> List (Subgraph k e n)
+biconnectedComponents : (g : Graph e n) -> List (Subgraph g)
 biconnectedComponents g =
   run1 $ \t =>
-    let c # t := ref1 (the (List (List $ Fin k)) []) t
-        s # t := ref1 (the (List $ Fin k) []) t
-        d # t := marray1 k Z t
-     in go g d s c (allFinsFast k) t
+    let c # t := ref1 (the (List $ Nodes g) []) t
+        s # t := ref1 (the (Nodes g) []) t
+        d # t := marray1 g.order Z t
+     in go g d s c (nodes g) t

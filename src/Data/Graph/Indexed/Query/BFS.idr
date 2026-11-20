@@ -12,7 +12,7 @@ enqueueE :
      Queue (s, Node g)
   -> (s -> Node g -> Either s a)
   -> s
-  -> List (Node g)
+  -> Nodes g
   -> Either (Queue (s, Node g)) a
 enqueueE q f st []      = Left q
 enqueueE q f st (x::xs) =
@@ -50,7 +50,7 @@ parameters (g : Graph e n)
   ||| edge or sequence of edges.
   export
   limitedBfsWith :
-       (taboo : List (Node g))
+       (taboo : Nodes g)
     -> (s -> Node g -> Either s a)
     -> (init : s)
     -> Node g
@@ -69,11 +69,7 @@ parameters (g : Graph e n)
 
   ||| Tries to find a shortest path between the two nodes.
   export %inline
-  limitedBfs :
-       (taboo : List (Node g))
-     -> Node g
-     -> Node g
-     -> Maybe (SnocList (Node g))
+  limitedBfs : (taboo : Nodes g) -> Node g -> Node g -> Maybe (Sedon g)
   limitedBfs taboo start end =
     if start == end then Just [< start]
     else
@@ -85,7 +81,7 @@ parameters (g : Graph e n)
 
   ||| Tries to find a shortest path between the two nodes.
   export %inline
-  bfs : Node g -> Node g -> Maybe (SnocList (Node g))
+  bfs : Node g -> Node g -> Maybe (Sedon g)
   bfs = limitedBfs []
 
 ----------------------------------------------------------------------------------
@@ -121,10 +117,7 @@ parameters (g : Graph e n)
 ----------------------------------------------------------------------------------
 
   covering
-  shortestL :
-       SnocList (SnocList $ Node g)
-    -> Queue (SnocList $ Node g)
-    -> MVis t g (List (SnocList $ Node g))
+  shortestL : SnocList (Sedon g) -> Queue (Sedon g) -> MVis t g (List (Sedon g))
   shortestL sp q r t =
     case dequeue q of
       Nothing => (sp <>> []) # t
@@ -141,7 +134,7 @@ parameters (g : Graph e n)
   |||
   ||| Runs in O(n+m) time and O(n) memory.
   export
-  shortestPaths : Node g -> List (SnocList $ Node g)
+  shortestPaths : Node g -> List (Sedon g)
   shortestPaths x =
     let q := fromList $ map ([<x] :<) (neighbours x)
      in assert_total $

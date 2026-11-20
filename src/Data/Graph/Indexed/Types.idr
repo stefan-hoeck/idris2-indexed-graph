@@ -387,13 +387,23 @@ Ord (Node g) where compare (N x) (N y) = compare x y
 export %inline
 Show (Node g) where show = show . finToNat . node
 
+||| A list of nodes in a graph
+public export
+0 Nodes : Graph e n -> Type
+Nodes g = List (Node g)
+
+||| A snoclist of nodes in a graph
+public export
+0 Sedon : Graph e n -> Type
+Sedon g = SnocList (Node g)
+
 export
-fromFins : {0 g : Graph e n} -> List (Fin g.order) -> List (Node g)
+fromFins : {0 g : Graph e n} -> List (Fin g.order) -> Nodes g
 fromFins []        = []
 fromFins (x :: xs) = N x :: fromFins xs
 
 export
-toFins : List (Node g) -> List (Fin g.order)
+toFins : Nodes g -> List (Fin g.order)
 toFins []          = []
 toFins (N x :: xs) = x :: toFins xs
 
