@@ -282,7 +282,7 @@ traverseWithCtxt g fun = traverseCtxt g (\x,a => (`A` a.neighbours) <$> fun x a)
 |||
 ||| Once is used for the given node, the other for all other nodes.
 export
-updateNodes : {g : Graph e m} -> Node g -> (f,g : m -> n) -> Graph e n
+updateNodes : {g : Graph e m} -> Node g -> (f,h : m -> n) -> Graph e n
 updateNodes x f h =
   mapWithCtxt g (\y,a => if x.node == y then f a.label else h a.label)
 
