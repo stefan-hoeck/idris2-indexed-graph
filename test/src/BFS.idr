@@ -56,47 +56,44 @@ testPaths g p = all (all (p . (<>> [])) . shortestPaths g) (nodes g)
 --------------------------------------------------------------------------------
 
 -- an encoding of phenole starting with the oxygen
-phenole : Maybe (Graph Bond Elem)
-phenole = readSmiles "OC=1CC=CC=C1"
+phenole : Graph Bond Elem
+phenole = readSmilesOrEmpty "OC=1CC=CC=C1"
 
 -- dimethylamino pyridine
-dmap : Maybe (Graph Bond Elem)
-dmap = readSmiles "C1(N(C)C)C=CN=CC=1"
+dmap : Graph Bond Elem
+dmap = readSmilesOrEmpty "C1(N(C)C)C=CN=CC=1"
 
 -- octacontane
-octac : Maybe (Graph Bond Elem)
-octac = readSmiles $ replicate 80 'C'
+octac : Graph Bond Elem
+octac = readSmilesOrEmpty $ replicate 80 'C'
 
-tricycle : Maybe (Graph Bond Elem)
-tricycle = readSmiles "C12C3CCCC3C(CC2)CC1"
+tricycle : Graph Bond Elem
+tricycle = readSmilesOrEmpty "C12C3CCCC3C(CC2)CC1"
 
-testSPs : Maybe (Graph e n) -> Nat -> List (List Nat) -> Bool
-testSPs Nothing  n _   = False
-testSPs (Just g) n nss =
+testSPs : Graph e n -> Nat -> List (List Nat) -> Bool
+testSPs g n nss =
   let Just x := tryNode n | Nothing => False
    in map (map cast . (<>> [])) (shortestPaths g x) == nss
 
 -- shortest path from start to target node
 limitedTestSP :
      (taboo : List Nat)
-  -> Maybe (Graph e n)
+  -> Graph e n
   -> (start,target : Nat)
   -> List Nat
   -> Bool
-limitedTestSP _  Nothing        _ _ _  = False
-limitedTestSP ts (Just g) s t ns =
+limitedTestSP ts g s t ns =
   let Just x := tryNode s | Nothing => False
       Just y := tryNode t | Nothing => False
       tsn    := mapMaybe tryNode ts
    in map ((<>> []) . map cast) (limitedBfs g tsn x y) == Just ns
 
 -- shortest path from start to target node
-testSP : Maybe (Graph e n) -> (start,target : Nat) -> List Nat -> Bool
+testSP : Graph e n -> (start,target : Nat) -> List Nat -> Bool
 testSP = limitedTestSP []
 
-testDistances : Maybe (Graph e n) -> Nat -> List (Nat,Nat) -> PropertyT ()
-testDistances Nothing  _ _  = failWith Nothing "invalid SMILES"
-testDistances (Just g) s ns =
+testDistances : Graph e n -> Nat -> List (Nat,Nat) -> PropertyT ()
+testDistances g s ns =
   let Just x := tryNode s | Nothing => failWith Nothing "invalid node"
    in map (\(a,b) => (a, cast b)) (distancesToNode g x) === ns
 

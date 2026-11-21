@@ -2,7 +2,7 @@ module Main
 
 import AssocList
 import BFS
--- import DFS
+import DFS
 import Hedgehog
 -- import RelevantCycles
 -- import Ring.Bonds
