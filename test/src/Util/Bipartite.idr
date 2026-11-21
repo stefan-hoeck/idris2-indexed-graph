@@ -9,13 +9,13 @@ import Text.Smiles.Simple
 
 %default total
 
-testBipartite : {k : _} -> IGraph k e n -> IArray k Bool -> Bool
+testBipartite : (g : Graph e n) -> IArray g.order Bool -> Bool
 testBipartite g cs = all (\(E x y _) => at cs x /= at cs y) (edges g)
 
 prop_bipartite : Property
 prop_bipartite =
   property $ do
-    G _ g <- forAll $ sparseGraph (linear 0 20) (linear 0 30) unit unit
+    g <- forAll $ sparseGraph (linear 0 20) (linear 0 30) unit unit
     case bipartite g of
       Nothing => pure ()
       Just cs => assert (testBipartite g cs)
@@ -26,13 +26,13 @@ isEven n = prim__and_Integer 1 (cast n) == 0
 prop_bipartiteRing : Property
 prop_bipartiteRing =
   property $ do
-    G o g <- forAll rings'
-    isJust (bipartite g) === isEven o
+    g <- forAll rings'
+    isJust (bipartite g) === isEven g.order
 
 testMatch : String -> Maybe (Array $ Maybe Nat)
 testMatch s =
- let G k g := readSmilesOrEmpty s
-  in A k <$> (map . map . map) finToNat (match g)
+ let g := readSmilesOrEmpty s
+  in A g.order <$> (map . map . map) cast (match g)
 
 prop_match : Property
 prop_match =

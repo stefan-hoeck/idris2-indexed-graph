@@ -13,17 +13,17 @@ import Text.Smiles.Simple
 %default total
 
 disjointSet : Graph e n -> List (List Nat)
-disjointSet (G k g) =
+disjointSet g =
   run1 $ T1.do
-    d <- ds k
+    d <- ds g.order
     for1_ (edges g) $ \(E x y _) => union d x y
     ss <- sets d
     pure $ sort (map finToNat <$> ss)
 
 sortedComponents : Graph e n -> List (List Nat)
-sortedComponents (G k g) =
+sortedComponents g =
      connectedComponents g
-  |> map (\(G _ h) => sort . map (finToNat . fst) $ labels h)
+  |> map (\h => sort . map cast $ labels h)
   |> sort
 
 prop_disjointSet : Property

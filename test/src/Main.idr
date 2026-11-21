@@ -12,8 +12,8 @@ import ShortestPath
 import SubgraphIso
 import Subgraphs
 import Util as U
--- import Util.Bipartite
--- import Util.DisjointSet
+import Util.Bipartite
+import Util.DisjointSet
 import Visited
 
 %default total
@@ -33,6 +33,6 @@ main =
     , Visited.props
     , ShortestPath.props
     , RelevantCycles.props
---    , Bipartite.props
---    , DisjointSet.props
+    , Bipartite.props
+    , DisjointSet.props
     ]
