@@ -433,3 +433,7 @@ fromAL al = fromPairs $ pairs al
 export %inline
 atN : IArray g.order a -> Node g -> a
 atN arr (N x) = at arr x
+
+export
+tryNode : {g : _} -> Nat -> Maybe (Node g)
+tryNode n = map N $ tryNatToFin n

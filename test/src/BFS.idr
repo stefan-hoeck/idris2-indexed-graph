@@ -21,15 +21,15 @@ unlabeledGraphs = sparseGraph (linear 0 30) (linear 0 100) anyBits8 anyBits8
 --------------------------------------------------------------------------------
 
 -- test if a sequence of nodes is a walk
-isWalk : IGraph k e n -> List (Fin k) -> Bool
-isWalk g (x::y::t) = adjacent g x y && isWalk g (y::t)
-isWalk _ _         = True
+isWalk : {g : Graph e n} -> Nodes g -> Bool
+isWalk (x::y::t) = adjacent x y && isWalk (y::t)
+isWalk _         = True
 
 -- every node appears at most once in a shortest path
-uniqueNodes : List (Fin k) -> Bool
+uniqueNodes : Nodes g -> Bool
 uniqueNodes = go . sort
   where
-    go : List (Fin k) -> Bool
+    go : Nodes g -> Bool
     go (x::y::t) = x /= y && go (y::t)
     go _         = True
 
@@ -40,16 +40,16 @@ last _ (x::xs) = last x xs
 -- tests that a path is indeed a shortest path by running a
 -- breadth first search from its starting node and testing the
 -- paths end node and length against the BFS result
-smallestLength : {k : _} -> IGraph k e n -> List (Fin k) -> Bool
-smallestLength g []      = False
-smallestLength g (x::xs) =
+smallestLength : {g : Graph e n} -> Nodes g -> Bool
+smallestLength []      = False
+smallestLength (x::xs) =
   let y := last x xs
    in S (length xs) == maybe 0 length (bfs g x y)
 
 -- test the given predicate for all shortest paths for all pairs
 -- of connected nodes in a graph
-testPaths : {k : _} -> (List (Fin k) -> Bool) -> IGraph k e n -> Bool
-testPaths p g = all (all (p . (<>> [])) . shortestPaths g) (nodes g)
+testPaths : (g : Graph e n) -> (Nodes g -> Bool) -> Bool
+testPaths g p = all (all (p . (<>> [])) . shortestPaths g) (nodes g)
 
 --------------------------------------------------------------------------------
 -- Example Graphs
@@ -71,10 +71,10 @@ tricycle : Maybe (Graph Bond Elem)
 tricycle = readSmiles "C12C3CCCC3C(CC2)CC1"
 
 testSPs : Maybe (Graph e n) -> Nat -> List (List Nat) -> Bool
-testSPs Nothing        n _   = False
-testSPs (Just $ G o g) n nss =
-  let Just x := natToFin n o | Nothing => False
-   in map (map finToNat . (<>> [])) (shortestPaths g x) == nss
+testSPs Nothing  n _   = False
+testSPs (Just g) n nss =
+  let Just x := tryNode n | Nothing => False
+   in map (map cast . (<>> [])) (shortestPaths g x) == nss
 
 -- shortest path from start to target node
 limitedTestSP :
@@ -84,21 +84,21 @@ limitedTestSP :
   -> List Nat
   -> Bool
 limitedTestSP _  Nothing        _ _ _  = False
-limitedTestSP ts (Just $ G o g) s t ns =
-  let Just x := natToFin s o | Nothing => False
-      Just y := natToFin t o | Nothing => False
-      tsFin  := mapMaybe tryNatToFin ts
-   in map ((<>> []) . map finToNat) (limitedBfs g tsFin x y) == Just ns
+limitedTestSP ts (Just g) s t ns =
+  let Just x := tryNode s | Nothing => False
+      Just y := tryNode t | Nothing => False
+      tsn    := mapMaybe tryNode ts
+   in map ((<>> []) . map cast) (limitedBfs g tsn x y) == Just ns
 
 -- shortest path from start to target node
 testSP : Maybe (Graph e n) -> (start,target : Nat) -> List Nat -> Bool
 testSP = limitedTestSP []
 
 testDistances : Maybe (Graph e n) -> Nat -> List (Nat,Nat) -> PropertyT ()
-testDistances Nothing        _ _  = failWith Nothing "invalid SMILES"
-testDistances (Just $ G o g) s ns =
-  let Just x := natToFin s o | Nothing => failWith Nothing "invalid node"
-   in map (\(a,b) => (a, finToNat b)) (distancesToNode g x) === ns
+testDistances Nothing  _ _  = failWith Nothing "invalid SMILES"
+testDistances (Just g) s ns =
+  let Just x := tryNode s | Nothing => failWith Nothing "invalid node"
+   in map (\(a,b) => (a, cast b)) (distancesToNode g x) === ns
 
 prop_phenole : Property
 prop_phenole =
@@ -164,30 +164,30 @@ prop_tricycle25Short =
 prop_walk : Property
 prop_walk =
   property $ do
-    G o g <- forAll unlabeledGraphs
-    assert $ testPaths (isWalk g) g
+    g <- forAll unlabeledGraphs
+    assert $ testPaths g isWalk
 
 -- all shortest paths between nodes contain every node at most once
 prop_unique : Property
 prop_unique =
   property $ do
-    G o g <- forAll unlabeledGraphs
-    assert $ testPaths uniqueNodes g
+    g <- forAll unlabeledGraphs
+    assert $ testPaths g uniqueNodes
 
 -- all shortest paths have at least two nodes
 prop_properPath : Property
 prop_properPath =
   property $ do
-    G o g <- forAll unlabeledGraphs
-    assert $ testPaths ((> 1) . length) g
+    g <- forAll unlabeledGraphs
+    assert $ testPaths g ((> 1) . length)
 
 -- the lengths of unweighted shortest paths are in accordance with
 -- the result of a basic breadth-first search
 prop_shortestPath : Property
 prop_shortestPath =
   property $ do
-    G o g <- forAll unlabeledGraphs
-    assert $ testPaths (smallestLength g) g
+    g <- forAll unlabeledGraphs
+    assert $ testPaths g smallestLength
 
 export
 props : Group

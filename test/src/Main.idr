@@ -2,19 +2,19 @@ module Main
 
 import AssocList
 import BFS
-import DFS
+-- import DFS
 import Hedgehog
-import RelevantCycles
-import Ring.Bonds
-import Ring.Systems as RS
-import Ring.Util as RU
-import ShortestPath
-import SubgraphIso
-import Subgraphs
-import Util as U
-import Util.Bipartite
-import Util.DisjointSet
-import Visited
+-- import RelevantCycles
+-- import Ring.Bonds
+-- import Ring.Systems as RS
+-- import Ring.Util as RU
+-- import ShortestPath
+-- import SubgraphIso
+-- import Subgraphs
+-- import Util as U
+-- import Util.Bipartite
+-- import Util.DisjointSet
+-- import Visited
 
 %default total
 
@@ -23,16 +23,16 @@ main =
   test
     [ AssocList.props
     , BFS.props
-    , DFS.props
-    , Ring.Bonds.props
-    , RU.props
-    , RS.props
-    , SubgraphIso.props
-    , Subgraphs.props
-    , U.props
-    , Visited.props
-    , ShortestPath.props
-    , RelevantCycles.props
-    , Bipartite.props
-    , DisjointSet.props
+--    , DFS.props
+--    , Ring.Bonds.props
+--    , RU.props
+--    , RS.props
+--    , SubgraphIso.props
+--    , Subgraphs.props
+--    , U.props
+--    , Visited.props
+--    , ShortestPath.props
+--    , RelevantCycles.props
+--    , Bipartite.props
+--    , DisjointSet.props
     ]

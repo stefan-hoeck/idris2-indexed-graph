@@ -9,7 +9,7 @@ assocList10 : Gen (AssocList 10 Bits8)
 assocList10 = assocList anyBits8
 
 fin10 : Gen (Fin 10)
-fin10 = anyFin
+fin10 = anyFin 10
 
 prop_fromPairs : Property
 prop_fromPairs = property $ do
