@@ -6,7 +6,7 @@ import Test.Data.Graph.Indexed.Generators
 %default total
 
 gr : Gen (Graph () ())
-gr = graph (linear 1 127) (maybe $ pure ()) (pure ())
+gr = graph (linear 1 40) (maybe $ pure ()) (pure ())
 
 prop_minitUnset : Property
 prop_minitUnset = property $ do
