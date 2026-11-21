@@ -30,7 +30,7 @@ toNext : {n : Nat} -> (x : Nat) -> Maybe (Edge n ())
 toNext x = natEdge x (S x)
 
 crSize : Graph e n -> Sizes
-crSize (G _ g) =
+crSize g =
  let CS cr mcb := computeCrAndMCB g
   in SS (length cr) (sum $ (combos . ncycle) <$> cr) (length mcb)
 
@@ -40,7 +40,7 @@ crSizeSmiles = crSize . readSmilesOrEmpty
 prop_cyclomaticChain : Property
 prop_cyclomaticChain =
   property $ do
-    G _ g <- forAll chains'
+    g <- forAll chains'
     computeCyclomaticN g === 0
 
 prop_cyclesChain : Property
@@ -52,7 +52,7 @@ prop_cyclesChain =
 prop_cyclomaticTree : Property
 prop_cyclomaticTree =
   property $ do
-    G _ g <- forAll trees'
+    g <- forAll trees'
     computeCyclomaticN g === 0
 
 prop_cyclesTree : Property
@@ -64,7 +64,7 @@ prop_cyclesTree =
 prop_cyclomaticRing : Property
 prop_cyclomaticRing =
   property $ do
-    G _ g <- forAll rings'
+    g <- forAll rings'
     computeCyclomaticN g === 1
 
 prop_cyclesRing : Property
@@ -77,7 +77,7 @@ prop_cyclomaticDiamond : Property
 prop_cyclomaticDiamond =
   property $ do
     [chainLength,nchains] <- forAll $ hlist [nat (linear 1 10), nat (linear 1 10)]
-    let G _ g := diamond chainLength nchains
+    let g := diamond chainLength nchains
     footnote (pretty (const "()") (const "()") g)
     computeCyclomaticN g === pred nchains
 
@@ -95,10 +95,10 @@ prop_cyclesDiamond : Property
 prop_cyclesDiamond =
   property $ do
     [cl,nc] <- forAll $ hlist [nat (linear 1 5), nat (linear 1 30)]
-    let G _ g := diamond cl nc
+    let g := diamond cl nc
     footnote (pretty (const "()") (const "()") g)
     let ds := diamondCrSize nc
-    crSize (G _ g) === SS ds ds (pred nc)
+    crSize g === SS ds ds (pred nc)
 
 brCombos : (res, nd, nc : Nat) -> Nat
 brCombos res 0     _  = res
@@ -108,19 +108,19 @@ prop_cyclesDiamondChain : Property
 prop_cyclesDiamondChain =
   property $ do
     [nd,cl,nc] <- forAll $ hlist [nat (linear 1 5), nat (linear 1 5), nat (linear 1 30)]
-    let G _ g := diamondChain nd cl nc
+    let g := diamondChain nd cl nc
     footnote (pretty (const "()") (const "()") g)
     let ds := diamondCrSize nc
-    crSize (G _ g) === SS (nd * ds) (nd * ds) (nd * pred nc)
+    crSize g === SS (nd * ds) (nd * ds) (nd * pred nc)
 
 prop_cyclesDiamondBracelet : Property
 prop_cyclesDiamondBracelet =
   property $ do
     [nd,cl,nc] <- forAll $ hlist [nat (linear 2 10), nat (linear 1 10), nat (linear 1 30)]
-    let G _ g := diamondBracelet nd cl nc
+    let g := diamondBracelet nd cl nc
     footnote (pretty (const "()") (const "()") g)
     let ds := diamondCrSize nc
-    crSize (G _ g) === SS (nc + nd * ds) (brCombos 1 nd nc + nd * ds) (1 + nd * pred nc)
+    crSize g === SS (nc + nd * ds) (brCombos 1 nd nc + nd * ds) (1 + nd * pred nc)
 
 prop_cycle : Property
 prop_cycle = property1 $ crSizeSmiles "C1CC2CCC1C3CCCCC23" === SS 4 4 3

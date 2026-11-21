@@ -4,11 +4,11 @@ import AssocList
 import BFS
 import DFS
 import Hedgehog
--- import RelevantCycles
+import RelevantCycles
 -- import Ring.Bonds
 -- import Ring.Systems as RS
 -- import Ring.Util as RU
--- import ShortestPath
+import ShortestPath
 -- import SubgraphIso
 -- import Subgraphs
 -- import Util as U
@@ -23,7 +23,7 @@ main =
   test
     [ AssocList.props
     , BFS.props
---    , DFS.props
+    , DFS.props
 --    , Ring.Bonds.props
 --    , RU.props
 --    , RS.props
@@ -31,8 +31,8 @@ main =
 --    , Subgraphs.props
 --    , U.props
 --    , Visited.props
---    , ShortestPath.props
---    , RelevantCycles.props
+   , ShortestPath.props
+   , RelevantCycles.props
 --    , Bipartite.props
 --    , DisjointSet.props
     ]
