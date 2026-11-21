@@ -161,7 +161,7 @@ empty : ST
 empty = S 0 [] [<] [] []
 
 toGraph : ST -> Either (BBErr SmilesErr) SmilesGraph
-toGraph (S n _ a b [])                 = Right $ G n (mkGraph (cast a) b)
+toGraph (S n _ a b [])                 = Right $ mkGraph (cast a) b
 toGraph (S _ _ _ _ (RI _ r _ b p ::_)) =
  let bs := BB p $ incLen (length "\{R r b}") p
   in Left $ B (Custom UnclosedRing) bs
@@ -299,7 +299,7 @@ openClose = [opn '(' op, close ')' cl]
     cl = read1 k.st >>= \s => writeAs k.st ({stck $= drop} s) Closed
 
 space : List (RExp True, Step q SSz SSTCK)
-space = [step (plus $ oneof [' ', '\t']) end, ignore nl]
+space = [step (plus $ oneof [' ', '\t']) end, ign nl]
   where
     nl : RExp True
     nl = "\r\n" <|> '\n' <|> '\r'

@@ -24,8 +24,8 @@ fleft3 f x y = Left . f x y
 
 ||| Internal alias for stateful functions when visiting large graphs
 public export
-0 MVis : Type -> Nat -> Type -> Type
-MVis t n a = MBuffer t n -> F1 t a
+0 MVis : Type -> (g : Graph e n) -> Type -> Type
+MVis t g a = MBuffer t g.order -> F1 t a
 
 export %inline
 fromLeftMVis : R1 s (Either a Void) -@ R1 s a

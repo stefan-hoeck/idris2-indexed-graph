@@ -16,13 +16,13 @@ import Derive.Prelude
 ||| Node `first` is the first node after the root node, and is used to
 ||| check if two paths are disjoint.
 public export
-record Path (k : Nat) where
+record Path (g : Graph e n) where
   constructor P
   ||| Number of nodes in the path (including the root node).
   length : Nat
 
   ||| The accumulated path viewed from the right
-  path   : SnocList (Fin k)
+  path   : Sedon g
 
   ||| True, if all nodes in the path are smaller than the root
   |||
@@ -31,10 +31,10 @@ record Path (k : Nat) where
   keep   : Bool
 
   ||| The first non-root node in the path
-  first  : Fin k
+  first  : Node g
 
   ||| The last node in the path
-  last   : Fin k
+  last   : Node g
 
   ||| Number of paths of the same length from `root` to
   ||| `last`. This is later used to compute the size of
@@ -45,10 +45,10 @@ record Path (k : Nat) where
 
 ||| A family of cycles in a graph of order `k`.
 public export
-record NCycle (k : Nat) where
+record NCycle (g : Graph e n) where
   constructor NC
   ||| A single representative of the cycle family.
-  path   : List (Fin k)
+  path   : Nodes g
 
   ||| Length of the cycle.
   size   : Nat
@@ -62,44 +62,44 @@ record NCycle (k : Nat) where
 %runElab deriveIndexed "NCycle" [Show,Eq]
 
 public export
-0 Edg : Nat -> Type
-Edg k = Edge k ()
+0 Edg : Graph e n -> Type
+Edg g = Edge g.order ()
 
 public export
-0 ECycle : Nat -> Type
-ECycle k = List (Edg k)
+0 ECycle : Graph e n -> Type
+ECycle g = List (Edg g)
 
 public export
-record Cycle (k: Nat) where
+record Cycle (g : Graph e n) where
   constructor C
-  ncycle  : NCycle k
-  ecycle  : ECycle k
-  nodeset : SortedSet (Fin k)
-  edgeset : SortedSet (Edg k)
+  ncycle  : NCycle g
+  ecycle  : ECycle g
+  nodeset : SortedSet (Node g)
+  edgeset : SortedSet (Edg g)
 
 export
-(.nodes) : Cycle k -> List (Fin k)
+(.nodes) : Cycle g -> List (Node g)
 (.nodes) c = drop 1 c.ncycle.path
 
 %runElab deriveIndexed "Cycle" [Show,Eq]
 
 export
-ecycle : List (Fin k) -> ECycle k
+ecycle : Nodes g -> ECycle g
 ecycle (x::y::xs) =
-  case mkEdge x y () of
+  case mkEdge x.node y.node () of
     Just e  => e :: ecycle (y::xs)
     Nothing => ecycle (y::xs)
 ecycle _ = []
 
 export
-Cast (NCycle k) (Cycle k) where
+Cast (NCycle g) (Cycle g) where
   cast n =
    let es := ecycle n.path
     in C n es (SS.fromList n.path) (SS.fromList es)
 
 ||| Returns the list of nodes two cycles have in common.
 export
-sharedNodes : (cx,cy : Cycle k) -> List (Fin k)
+sharedNodes : (cx,cy : Cycle g) -> List (Node g)
 sharedNodes cx cy =
   case cx.ncycle.size <= cy.ncycle.size of
     True  => filter (`contains` cy.nodeset) cx.nodes
@@ -107,7 +107,7 @@ sharedNodes cx cy =
 
 ||| Returns the number of nodes shared by two cycles.
 export
-numSharedNodes : (cx,cy : Cycle k) -> Nat
+numSharedNodes : (cx,cy : Cycle g) -> Nat
 numSharedNodes cx cy =
   case cx.ncycle.size <= cy.ncycle.size of
     True  => count (`contains` cy.nodeset) cx.nodes
@@ -115,7 +115,7 @@ numSharedNodes cx cy =
 
 ||| Returns the list of edges two cycles have in common.
 export
-sharedEdges : (cx,cy : Cycle k) -> List (Edg k)
+sharedEdges : (cx,cy : Cycle g) -> List (Edg g)
 sharedEdges cx cy =
   case cx.ncycle.size <= cy.ncycle.size of
     True  => filter (`contains` cy.edgeset) cx.ecycle
@@ -123,7 +123,7 @@ sharedEdges cx cy =
 
 ||| Returns the number of nodes shared by two cycles.
 export
-numSharedEdges : (cx,cy : Cycle k) -> Nat
+numSharedEdges : (cx,cy : Cycle g) -> Nat
 numSharedEdges cx cy =
   case cx.ncycle.size <= cy.ncycle.size of
     True  => count (`contains` cy.edgeset) cx.ecycle
@@ -131,28 +131,24 @@ numSharedEdges cx cy =
 
 ||| True, if the two cycles share a single edge and no additional node.
 export
-isFusedTo : (cx,cy : Cycle k) -> Bool
+isFusedTo : (cx,cy : Cycle g) -> Bool
 isFusedTo cx cy = numSharedNodes cx cy == 2 && numSharedEdges cx cy == 1
 
 ||| True, if the two cycles share a single node.
 export
-isSpiro : (cx,cy : Cycle k) -> Bool
+isSpiro : (cx,cy : Cycle g) -> Bool
 isSpiro cx cy = numSharedNodes cx cy == 1
 
 public export
-record CycleSets (k : Nat) where
+record CycleSets (g : Graph e n) where
   constructor CS
-  cr  : List (Cycle k)
-  mcb : List (Cycle k)
+  cr  : List (Cycle g)
+  mcb : List (Cycle g)
 
 %runElab deriveIndexed "CycleSets" [Show,Eq]
 
 public export
-data Candidates : (k : Nat) -> (e : Type) -> Type where
-  Empty   : Candidates k e
-  Isolate : Subgraph k e Nat -> NCycle k -> Candidates k e
-  System  :
-       (o : Nat)
-    -> ISubgraph o k e Nat
-    -> List (NCycle o)
-    -> Candidates k e
+data Candidates : (g : Graph e n) -> Type where
+  Empty   : Candidates g
+  Isolate : Subgraph g -> NCycle g -> Candidates g
+  System  : (sg : Subgraph g) -> List (NCycle sg) -> Candidates g

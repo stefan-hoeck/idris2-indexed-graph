@@ -14,18 +14,18 @@ import public Data.Graph.Indexed.Ring.Relevant.Types
 --------------------------------------------------------------------------------
 
 export
-computeCyclomaticN : {k : _} -> IGraph k e n -> Nat
-computeCyclomaticN g = S (size g) `minus` k
+computeCyclomaticN : Graph e n -> Nat
+computeCyclomaticN g = S (size g) `minus` g.order
 
-0 EdgMap : Nat -> Type
-EdgMap k = SortedMap (Edg k) Integer
+0 EdgMap : Graph e n -> Type
+EdgMap g = SortedMap (Edg g) Integer
 
 -- Compute a sortedMap corresponding to a mapping from all edges of a graph to their
 -- respective bit pattern.
-getBitsEdges : {k : _} -> (g : IGraph k e n) -> EdgMap k
+getBitsEdges : (g : Graph e n) -> EdgMap g
 getBitsEdges g = setBits (map ignore $ edges g) 1 empty
   where
-    setBits : List (Edg k) -> Integer -> EdgMap k -> EdgMap k
+    setBits : List (Edg g) -> Integer -> EdgMap g -> EdgMap g
     setBits []        bitp sm = sm
     setBits (y :: xs) bitp sm = setBits xs (shiftL bitp 1) (insert y bitp sm)
 
@@ -33,8 +33,8 @@ getBitsEdges g = setBits (map ignore $ edges g) 1 empty
 -- The cycle is represented as node pairs corresponding to the cyclic edges.
 -- The sortedMap is a maping from each edge of the graph (node pairs) to the bit
 -- pattern corresponding to this edge.
-getBitsRing : EdgMap k -> Integer -> List (Fin k) -> Integer
-getBitsRing sm i (x::xs@(y::_)) = case mkEdge x y () >>= lookup' sm of
+getBitsRing : EdgMap g -> Integer -> List (Node g) -> Integer
+getBitsRing sm i (x::xs@(y::_)) = case mkEdge x.node y.node () >>= lookup' sm of
   Nothing => getBitsRing sm i xs -- impossible case
   Just z  => getBitsRing sm (i .|. z) xs
 getBitsRing sm i _ = i
@@ -65,20 +65,20 @@ isInSet ring sy  (x :: xs) =
         GT => (sy :< ring <>> x :: xs, True)
         _  => isInSet ring (sy :< x) xs
 
-record BCycle (k : Nat) where
+record BCycle (g : Graph e n) where
   constructor BC
-  ncycle : NCycle k
+  ncycle : NCycle g
   bitp   : Integer
 
-0 BCycles : Nat -> Type
+0 BCycles : Graph e n -> Type
 BCycles = List . BCycle
 
 -- Recursive function to compute the set of relevant rings and minimum cycle basis.
 getCrAndMCB' :
      (v, size: Nat)
   -> (sm, eq : List Integer)
-  -> (xs, cr, mcb : BCycles k)
-  -> (BCycles k, BCycles k)
+  -> (xs, cr, mcb : BCycles g)
+  -> (BCycles g, BCycles g)
 getCrAndMCB' v size sm eq []        cr mcb = (cr,mcb)
 getCrAndMCB' v size sm eq (c :: cs) cr mcb =
   case c.ncycle.size > size of
@@ -103,37 +103,37 @@ getCrAndMCB' v size sm eq (c :: cs) cr mcb =
 -- from the cyclomatic number and the set of potentially relevant cycles (CI', given
 -- as a list of pairs with cycle size and the cycle represented as a bit pattern of edges).
 -- The potentially relevant cycles are ordered by size.
-getCrAndMCB : Nat -> BCycles k -> (BCycles k, BCycles k)
+getCrAndMCB : Nat -> BCycles g -> (BCycles g, BCycles g)
 getCrAndMCB v xs = getCrAndMCB' v 0 [] [] xs [] []
 
-convert : ISubgraph o k e n -> (BCycles o, BCycles o) -> CycleSets k
-convert g (m,b) = CS (map conv m) (map conv b)
+convert : (sg : Subgraph g) -> (BCycles sg, BCycles sg) -> CycleSets g
+convert sg (m,b) = CS (map conv m) (map conv b)
   where
-    conv : BCycle o -> Cycle k
-    conv (BC c _) = cast {from = NCycle k} $ {path $= map (origin g)} c
+    conv : BCycle sg -> Cycle g
+    conv (BC c _) = cast {from = NCycle g} $ {path $= map origin} c
 
-fromCandidates : Candidates k e -> CycleSets k
+fromCandidates : Candidates g -> CycleSets g
 fromCandidates Empty = CS [] []
-fromCandidates (Isolate x nc) = let c := cast {to = Cycle k} nc in CS [c] [c]
-fromCandidates (System o g xss) =
-  let ebits := getBitsEdges g
+fromCandidates (Isolate x nc) = let c := cast {to = Cycle g} nc in CS [c] [c]
+fromCandidates (System sg xss) =
+  let ebits := getBitsEdges sg
       ci'   := sortBy (compare `on` size) xss
       cs    := map (getCycle ebits) ci'
-      v     := computeCyclomaticN g
-   in convert g $ getCrAndMCB v cs
+      v     := computeCyclomaticN sg
+   in convert sg $ getCrAndMCB v cs
 
-   where getCycle : EdgMap o -> NCycle o ->  BCycle o
+   where getCycle : EdgMap sg -> NCycle sg ->  BCycle sg
          getCycle ebits nc = BC nc $ getBitsRing ebits 0 nc.path
 
 ||| computes the relevant cycles and minimum cycle basis
 ||| for a biconnected component in a graph.
 export %inline
-componentCycles : Subgraph k e n -> CycleSets k
+componentCycles : Subgraph g -> CycleSets g
 componentCycles = fromCandidates . componentCandidates
 
 ||| computes the relevant cycles and minimum cycle basis for a graph
 export
-computeCrAndMCB : {k : _} -> IGraph k e n -> CycleSets k
+computeCrAndMCB : (g : Graph e n) -> CycleSets g
 computeCrAndMCB g =
   let css := map fromCandidates (candidates g)
    in CS (css >>= cr) (css >>= mcb)

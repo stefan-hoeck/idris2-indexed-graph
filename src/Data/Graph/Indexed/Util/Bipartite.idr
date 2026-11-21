@@ -24,19 +24,19 @@ matches Even Even = True
 matches Odd  Odd  = True
 matches _    _    = False
 
-parameters (g  : IGraph k e n)
-           (cs : MArray s k Color)
+parameters (g  : Graph e n)
+           (cs : MArray s g.order Color)
 
-  setc : Fin k -> Color -> Queue (Color,Fin k) -> F1 s (Queue (Color,Fin k))
+  setc : Node g -> Color -> Queue (Color,Node g) -> F1 s (Queue (Color,Node g))
   setc x c q t =
-   let _ # t := set cs x c t
-    in enqueueAll q ((not c,) <$> neighbours g x) # t
+   let _ # t := set cs x.node c t
+    in enqueueAll q ((not c,) <$> neighbours x) # t
 
-  bfs : Queue (Color,Fin k) -> F1 s Bool
+  bfs : Queue (Color,Node g) -> F1 s Bool
   bfs q t =
     case dequeue q of
       Nothing         => True # t
-      Just ((c,x),q2) => case Core.get cs x t of
+      Just ((c,x),q2) => case Core.get cs x.node t of
         Unset # t => let q3 # t := setc x c q2 t in bfs (assert_smaller q q3) t
         col   # t => case matches c col of
           True  => bfs (assert_smaller q q2) t
@@ -47,15 +47,15 @@ parameters (g  : IGraph k e n)
 |||
 ||| Returns the coloring in case of a success and `Nothing` otherwise.
 export
-bipartite : {k : _} -> IGraph k e n -> Maybe (IArray k Bool)
-bipartite g = alloc k Unset (go $ nodes g)
+bipartite : (g : Graph e n) -> Maybe (IArray g.order Bool)
+bipartite g = alloc g.order Unset (go $ nodes g)
   where
-    go : List (Fin k) -> MArray s k Color -> F1 s (Maybe $ IArray k Bool)
+    go : Nodes g -> MArray s g.order Color -> F1 s (Maybe $ IArray g.order Bool)
     go []        cs t =
      let ci # t := unsafeFreeze cs t
       in Just (map toBool ci) # t
     go (x :: xs) cs t =
-     let Unset # t := Core.get cs x t                 | _ # t => go xs cs t
+     let Unset # t := Core.get cs x.node t            | _ # t => go xs cs t
          True  # t := bfs g cs (fromList [(Odd,x)]) t | _ # t => Nothing # t
       in go xs cs t
 
@@ -66,78 +66,77 @@ bipartite g = alloc k Unset (go $ nodes g)
 ||| Finds a maximal matching for a bipartite graph. Returns `Nothing`
 ||| in case the graph is not bipartite.
 export
-match : {k : _} -> IGraph k e n -> Maybe (IArray k (Maybe $ Fin k))
+match : (g : Graph e n) -> Maybe (IArray g.order (Maybe $ Node g))
 -- implementation below
 
 ||| Tries to find a perfect matching for a bipartite graph.
 ||| Returns `Nothing` in case the graph is not bipartite or no
 ||| perfect matching exists.
 export
-perfectMatch : {k : _} -> IGraph k e n -> Maybe (IArray k (Fin k))
+perfectMatch : (g : Graph e n) -> Maybe (IArray g.order (Node g))
 perfectMatch g = match g >>= sequence
 
 ||| Finds the edges of a maximal matching in a graph.
 export
-matchEdges : {k : _} -> IGraph k e n -> List (Edge k e)
+matchEdges : (g : Graph e n) -> List (Edge g.order e)
 matchEdges g = maybe [] (\a => mapMaybe (edg a) (nodes g)) (match g)
   where
-    edg : IArray k (Maybe $ Fin k) -> Fin k -> Maybe (Edge k e)
-    edg a x = at a x >>= \y => if x < y then edge g x y else Nothing
+    edg : IArray g.order (Maybe $ Node g) -> Node g -> Maybe (Edge g.order e)
+    edg a x = atN a x >>= \y => if x < y then edge x y else Nothing
 
 ||| Finds the edges of a maximal matching in a subgraph.
 export
 matchEdgesWhere :
-     {k : _}
-  -> IGraph k e n
-  -> (pred : Fin k -> Bool)
-  -> List (Edge k e)
+     (g    : Graph e n)
+  -> (pred : Node g -> Bool)
+  -> List (Edge g.order e)
 matchEdgesWhere g pred =
- let G _ sg := subgraphL g (filter pred $ nodes g)
+ let sg := subgraphL g (filter pred $ nodes g)
   in mapMaybe (originEdge sg) (matchEdges sg)
 
 --------------------------------------------------------------------------------
 -- Hopcroft-Karp: Implementation
 --------------------------------------------------------------------------------
 
-0 Q : Nat -> Type
-Q k = Queue (Fin k)
+0 Q : Graph e n -> Type
+Q g = Queue (Node g)
 
-0 MDist : Type -> Nat -> Type
-MDist s k = MArray s k Nat
+0 MDist : Type -> Graph e n -> Type
+MDist s g = MArray s g.order Nat
 
-0 Dist : Nat -> Type
-Dist k = IArray k Nat
+0 Dist : Graph e n -> Type
+Dist g = IArray g.order Nat
 
-0 Pair : Type -> Nat -> Type
-Pair s k = MArray s k (Maybe $ Fin k)
-
-%inline
-link : Pair s k => Fin k -> F1 s (Maybe $ Fin k)
-link @{p} = Core.get p
+0 Pair : Type -> Graph e n -> Type
+Pair s g = MArray s g.order (Maybe $ Node g)
 
 %inline
-isFree : Pair s k => Fin k -> F1 s Bool
+link : Pair s g => Node g -> F1 s (Maybe $ Node g)
+link @{p} n = Core.get p n.node
+
+%inline
+isFree : Pair s g => Node g -> F1 s Bool
 isFree x t =
   case link x t of
     Nothing # t => True # t
     _       # t => False # t
 
 %inline
-doLink : Pair s k => (x,y : Fin k) -> F1 s Bool
+doLink : Pair s g => (x,y : Node g) -> F1 s Bool
 doLink @{p} x y t =
- let _ # t := Core.set p x (Just y) t
-     _ # t := Core.set p y (Just x) t
+ let _ # t := Core.set p x.node (Just y) t
+     _ # t := Core.set p y.node (Just x) t
   in True # t
 
 %inline
-dist : MDist s k => Fin k -> F1 s Nat
-dist @{d} = Core.get d
+dist : MDist s g => Node g -> F1 s Nat
+dist @{d} n = Core.get d n.node
 
 %inline
-putDist : MDist s k => Fin k -> Nat -> F1' s
-putDist @{d} = Core.set d
+putDist : MDist s g => Node g -> Nat -> F1' s
+putDist @{d} n = Core.set d n.node
 
-enq : Pair s k => MDist s k => Nat -> List (Fin k) -> Q k -> F1 s (Q k)
+enq : Pair s g => MDist s g => Nat -> Nodes g -> Q g -> F1 s (Q g)
 enq _ []      q t = q # t
 enq l (v::vs) q t =
  let Just u # t := link v t | _ # t => enq l vs q t
@@ -146,37 +145,37 @@ enq l (v::vs) q t =
   in enq l vs (enqueue q u) t
 
 parameters {0 s,e,n : Type}
-           (g    : IGraph k e n)
+           (g       : Graph e n)
 
-  layers : (d : MDist s k) => Pair s k => Q k -> F1 s (Dist k)
+  layers : (d : MDist s g) => Pair s g => Q g -> F1 s (Dist g)
   layers q t =
     case dequeue q of
       Nothing     => unsafeFreeze d t
       Just (u,q2) =>
        let du # t := dist u t
-           q3 # t := enq (S du) (neighbours g u) q2 t
+           q3 # t := enq (S du) (neighbours u) q2 t
         in layers (assert_smaller q q3) t
 
-  dfs : Pair s k => Dist k -> Fin k -> F1 s Bool
-  dfs dist u t = go (neighbours g u) t
+  dfs : Pair s g => Dist g -> Node g -> F1 s Bool
+  dfs dist u t = go (neighbours u) t
     where
-      go : List (Fin k) -> F1 s Bool
+      go : Nodes g -> F1 s Bool
       go []      t = False # t
       go (v::vs) t =
        let Just w # t := link v t                        | _ # t => doLink u v t
-           True       := at dist w == S (at dist u)      | False => go vs t
+           True       := atN dist w == S (atN dist u)    | False => go vs t
            True # t   := dfs dist (assert_smaller u w) t | _ # t => go vs t
         in doLink u v t
 
 match g =
   map
-    (\cs => alloc k Nothing $ \x => loop @{x} (filter (at cs) (nodes g)))
+    (\cs => alloc g.order Nothing $ \x => loop @{x} (filter (atN cs) (nodes g)))
     (bipartite g)
   where
-    loop : Pair s k => List (Fin k) -> F1 s (IArray k (Maybe $ Fin k))
+    loop : Pair s g => Nodes g -> F1 s (IArray g.order (Maybe $ Node g))
     loop @{p} es t =
      let fs # t := filter1 isFree es t
-         md # t := marray1 k Z t
+         md # t := marray1 g.order Z t
          _  # t := for1_ fs (\x => putDist x 1) t
          ds # t := layers g (fromList fs) t
          [] # t := filter1 (dfs g ds) fs t | _ # t => loop (assert_smaller es fs) t

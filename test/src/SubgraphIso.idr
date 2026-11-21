@@ -10,9 +10,9 @@ testQuery x y vs = property1 $ test === Just vs
   where
     test : Maybe (Maybe $ List Nat)
     test = do
-      G o1 g1 <- readSmiles x
-      G o2 g2 <- readSmiles y
-      pure $ toList . map finToNat <$> query (==) (==) g1 g2
+      g1 <- readSmiles x
+      g2 <- readSmiles y
+      pure $ toList . map cast <$> query (==) (==) g1 g2
 
 prop_ethanol : Property
 prop_ethanol = testQuery "CCO" "CCCCO" (Just [2,3,4])

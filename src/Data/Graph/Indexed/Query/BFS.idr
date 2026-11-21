@@ -9,33 +9,32 @@ import Data.SnocList
 %default total
 
 enqueueE :
-     Queue (s, Fin k)
-  -> (s -> Fin k -> Either s a)
+     Queue (s, Node g)
+  -> (s -> Node g -> Either s a)
   -> s
-  -> List (Fin k)
-  -> Either (Queue (s, Fin k)) a
+  -> Nodes g
+  -> Either (Queue (s, Node g)) a
 enqueueE q f st []      = Left q
 enqueueE q f st (x::xs) =
   case f st x of
     Right v => Right v
     Left st2 => enqueueE (enqueue q (st2, x)) f st xs
 
-parameters {k : Nat}
-           (g : IGraph k e n)
+parameters (g : Graph e n)
 
 --------------------------------------------------------------------------------
 -- Flat BFS traversals
 --------------------------------------------------------------------------------
 
   -- flat BFS implementation for large graphs
-  bfsL : Queue (s,Fin k) -> (s -> Fin k -> Either s a) -> MVis t k (Maybe a)
+  bfsL : Queue (s,Node g) -> (s -> Node g -> Either s a) -> MVis t g (Maybe a)
   bfsL q f r t =
     case dequeue q of
       Nothing => Nothing # t
       Just ((vs,x),q2) =>
        let False # t := mvisited r x t
              | True # t => bfsL q2 f (assert_smaller r r) t
-           Left q3 := enqueueE q2 f vs (neighbours g x) | Right v => Just v # t
+           Left q3 := enqueueE q2 f vs (neighbours x) | Right v => Just v # t
            _ # t := mvisit r x t
         in bfsL q3 f (assert_smaller r r) t
 
@@ -51,13 +50,13 @@ parameters {k : Nat}
   ||| edge or sequence of edges.
   export
   limitedBfsWith :
-       (taboo : List (Fin k))
-    -> (s -> Fin k -> Either s a)
+       (taboo : Nodes g)
+    -> (s -> Node g -> Either s a)
     -> (init : s)
-    -> Fin k
+    -> Node g
     -> Maybe a
   limitedBfsWith taboo acc init x =
-    visiting k $ \r,t =>
+    visiting g $ \r,t =>
       let _ # t := mvisitAll r taboo t
        in bfsL (fromList [(init,x)]) acc r t
 
@@ -65,16 +64,12 @@ parameters {k : Nat}
   ||| start nodes and accumulates the nodes encountered with the
   ||| given function.
   export %inline
-  bfsWith : (s -> Fin k -> Either s a) -> (init : s) -> Fin k -> Maybe a
+  bfsWith : (s -> Node g -> Either s a) -> (init : s) -> Node g -> Maybe a
   bfsWith = limitedBfsWith []
 
   ||| Tries to find a shortest path between the two nodes.
   export %inline
-  limitedBfs :
-       (taboo : List (Fin k))
-     -> Fin k
-     -> Fin k
-     -> Maybe (SnocList (Fin k))
+  limitedBfs : (taboo : Nodes g) -> Node g -> Node g -> Maybe (Sedon g)
   limitedBfs taboo start end =
     if start == end then Just [< start]
     else
@@ -86,7 +81,7 @@ parameters {k : Nat}
 
   ||| Tries to find a shortest path between the two nodes.
   export %inline
-  bfs : Fin k -> Fin k -> Maybe (SnocList (Fin k))
+  bfs : Node g -> Node g -> Maybe (Sedon g)
   bfs = limitedBfs []
 
 ----------------------------------------------------------------------------------
@@ -94,14 +89,14 @@ parameters {k : Nat}
 ----------------------------------------------------------------------------------
 
   -- BFS implementation covering a whole connected component for large graphs
-  bfsAllL : SnocList s -> Queue (s,Fin k) -> (s -> Fin k -> s) -> MVis t k (List s)
+  bfsAllL : SnocList s -> Queue (s,Node g) -> (s -> Node g -> s) -> MVis t g (List s)
   bfsAllL ss q f r t =
     case dequeue q of
       Nothing => (ss <>> []) # t
       Just ((vs,x),q2) =>
        let False # t := mvisited r x t
              | True # t => bfsAllL ss q2 f (assert_smaller r r) t
-           q3 := enqueueAll q2 (map (\y => (f vs y, y)) $ neighbours g x)
+           q3 := enqueueAll q2 (map (\y => (f vs y, y)) $ neighbours x)
            _ # t := mvisit r x t
         in bfsAllL (ss :< vs) q3 f (assert_smaller r r) t
 
@@ -109,12 +104,12 @@ parameters {k : Nat}
   ||| start nodes and accumulates the nodes encountered with the
   ||| given function.
   export
-  bfsAllWith : (s -> Fin k -> s) -> (init : s) -> Fin k -> List s
+  bfsAllWith : (s -> Node g -> s) -> (init : s) -> Node g -> List s
   bfsAllWith acc init x =
-    visiting k (bfsAllL [<] (fromList [(init,x)]) acc)
+    visiting g (bfsAllL [<] (fromList [(init,x)]) acc)
 
   export
-  distancesToNode : Fin k -> List (Nat, Fin k)
+  distancesToNode : Node g -> List (Nat, Node g)
   distancesToNode x = bfsAllWith (\x,y => (S $ fst x, y)) (0,x) x
 
 ----------------------------------------------------------------------------------
@@ -122,16 +117,13 @@ parameters {k : Nat}
 ----------------------------------------------------------------------------------
 
   covering
-  shortestL :
-       SnocList (SnocList $ Fin k)
-    -> Queue (SnocList $ Fin k)
-    -> MVis t k (List (SnocList $ Fin k))
+  shortestL : SnocList (Sedon g) -> Queue (Sedon g) -> MVis t g (List (Sedon g))
   shortestL sp q r t =
     case dequeue q of
       Nothing => (sp <>> []) # t
       Just (sx@(_:<x),q2) =>
         let False # t := mvisited r x t | True # t => shortestL sp q2 r t
-            ns := map (sx :<) (neighbours g x)
+            ns := map (sx :<) (neighbours x)
             _ # t := mvisit r x t
          in shortestL (sp :< sx) (enqueueAll q2 ns) r t
       Just (_,q2) => shortestL sp q2 r t
@@ -142,8 +134,8 @@ parameters {k : Nat}
   |||
   ||| Runs in O(n+m) time and O(n) memory.
   export
-  shortestPaths : Fin k -> List (SnocList $ Fin k)
+  shortestPaths : Node g -> List (Sedon g)
   shortestPaths x =
-    let q := fromList $ map ([<x] :<) (neighbours g x)
+    let q := fromList $ map ([<x] :<) (neighbours x)
      in assert_total $
-          visiting k $ \r,t => let _ # t := mvisit r x t in shortestL [<] q r t
+          visiting g $ \r,t => let _ # t := mvisit r x t in shortestL [<] q r t

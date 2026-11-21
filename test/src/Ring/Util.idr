@@ -12,8 +12,8 @@ ring3Test : String -> List Nat -> Property
 ring3Test s ns =
   property1 $ assert $ case readSmiles s of
     Nothing      => False
-    Just (G o g) =>
-      sort (map cast $ filter (inThreeMemberedRing g) (nodes g)) == ns
+    Just g =>
+      sort (map cast $ filter inThreeMemberedRing (nodes g)) == ns
 
 export
 props : Group

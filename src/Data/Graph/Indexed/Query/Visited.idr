@@ -3,6 +3,7 @@ module Data.Graph.Indexed.Query.Visited
 import Data.Bits
 import Data.Buffer
 import Data.Linear.Traverse1
+import public Data.Graph.Indexed
 import public Data.Buffer.Mutable
 
 %default total
@@ -11,31 +12,32 @@ import public Data.Buffer.Mutable
 --          MVisited
 --------------------------------------------------------------------------------
 
-parameters (r : MBuffer s n)
+parameters {0 g : Graph e n}
+           (r   : MBuffer s g.order)
 
   ||| Set the current node to "visited".
   export %inline
-  mvisit : Fin n -> F1' s
-  mvisit i = set r i 1
+  mvisit : Node g -> F1' s
+  mvisit (N i) = set r i 1
 
   ||| Set all given nodes to "visited"
   export %inline
-  mvisitAll : List (Fin n) -> F1' s
+  mvisitAll : List (Node g) -> F1' s
   mvisitAll = traverse1_ mvisit
 
   ||| True, if the current node has been visited.
   export %inline
-  mvisited : Fin n -> F1 s Bool
-  mvisited x t =
-    case get r x t of
+  mvisited : Node g -> F1 s Bool
+  mvisited (N x) t =
+    case Buffer.Core.get r x t of
       1 # t => True  # t
       _ # t => False # t
 
   ||| True, if the current node has not yet been visited.
   export %inline
-  munvisited : Fin n -> F1 s Bool
-  munvisited x t =
-    case get r x t of
+  munvisited : Node g -> F1 s Bool
+  munvisited (N x) t =
+    case Buffer.Core.get r x t of
       1 # t => False # t
       _ # t => True  # t
 
@@ -45,8 +47,8 @@ parameters (r : MBuffer s n)
 ||| This is a convenience alias for `visiting` for those cases, where
 ||| we already have a function returning a linear pair of values.
 export %inline
-visiting : (k : Nat) -> WithMBuffer k a -> a
-visiting = alloc
+visiting : (g : Graph e n) -> WithMBuffer g.order a -> a
+visiting g = alloc g.order
 
 --------------------------------------------------------------------------------
 --          Visited
@@ -58,31 +60,31 @@ visiting = alloc
 |||       faster than `MVisited` for `k < 64`. For larger `k`, however,
 |||       `MVisited` outperforms this by far.
 export
-record Visited (k : Nat) where
+record Visited (g : Graph e n) where
   constructor V
   vis : Integer
 
 ||| Initial `Visited` state
 export
-ini : Visited k
+ini : Visited g
 ini = V 0
 
 ||| Set the current node to "visited".
-export
-visit : Fin k -> Visited k -> Visited k
-visit i (V b) = V $ setBit b (finToNat i)
+export %inline
+visit : Node g -> Visited g -> Visited g
+visit (N i) (V b) = V $ setBit b (finToNat i)
 
 ||| Set all given nodes to "visited".
 export %inline
-visitAll : List (Fin k) -> Visited k -> Visited k
+visitAll : List (Node g) -> Visited g -> Visited g
 visitAll vs v = foldl (flip visit) v vs
 
 ||| True, if the current node has been visited.
 export %inline
-visited : Fin k -> Visited k -> Bool
-visited i (V b) = testBit b (finToNat i)
+visited : Node g -> Visited g -> Bool
+visited (N i) (V b) = testBit b (finToNat i)
 
 ||| True, if the current node has not yet been visited.
 export %inline
-unvisited : Fin k -> Visited k -> Bool
+unvisited : Node g -> Visited g -> Bool
 unvisited i = not . visited i

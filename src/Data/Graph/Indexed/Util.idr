@@ -74,117 +74,114 @@ ctxtEdges x (A _ ns) = foldlKV acc [<] ns
 --          Inspecting Graphs
 --------------------------------------------------------------------------------
 
-||| A list of contexts of a graph
-export
-contexts : {k : _} -> IGraph k e n -> List (Context k e n)
-contexts = foldrKV (\x,(A l ns),cs => C x l ns :: cs) [] . graph
+parameters {g : Graph e n}
+
+  ||| Returns the adjacency (node label plus labeled edges to neighbours)
+  ||| of a node in a graph.
+  export %inline
+  adj : Node g -> Adj g.order e n
+  adj = atN g.graph
+
+  ||| Returns the label of a node in graph.
+  export %inline
+  lab : Node g -> n
+  lab = label . adj
+
+  ||| Returns the edges connecting a node as an `AssocList`
+  ||| (nodes plus edge labels).
+  export %inline
+  neighboursAsAL : Node g -> AssocList g.order e
+  neighboursAsAL = neighbours . adj
+
+  ||| Returns the edges connecting a node as a list of pairs
+  ||| (nodes plus edge labels).
+  export %inline
+  neighboursAsPairs : Node g -> List (Node g, e)
+  neighboursAsPairs = fromAL . neighboursAsAL
+
+  ||| Returns the list of neighbouring nodes of a node in a graph.
+  export %inline
+  neighbours : Node g -> Nodes g
+  neighbours = fromFins . keys . neighboursAsAL
+
+  ||| Returns the list of edges connecting a node.
+  export %inline
+  edgesTo : Node g -> List (Edge g.order e)
+  edgesTo x =
+    let A _ ns := adj x
+     in mapMaybe (\(n,l) => mkEdge x.node n l) $ pairs ns
+
+  ||| Returns the list of neighboring nodes paired with their
+  ||| corresponding labels.
+  export
+  lneighbours : Node g -> List (Node g, n)
+  lneighbours = map (\x => (x, lab x)) . neighbours
+
+  ||| Returns the edges connecting a node paired with the
+  ||| neighbouring node labels.
+  export
+  lneighboursAsAL : Node g -> AssocList g.order (e, n)
+  lneighboursAsAL = mapKV (\x => (, lab $ N x)) . neighboursAsAL
+
+  ||| Returns the labels of neighbour nodes of a node.
+  export
+  neighbourLabels : Node g -> List n
+  neighbourLabels = map lab . neighbours
+
+  ||| Returns the labels of edges connecting a node.
+  export %inline
+  edgeLabels : Node g -> List e
+  edgeLabels = values . neighbours . adj
+
+  ||| Find the label for an `Edge`.
+  export
+  elab : (x,y : Node g) -> Maybe e
+  elab x y = lookup y.node . neighbours $ adj x
+
+  ||| Find the label for an `Edge`.
+  export
+  edge : (x,y : Node g) -> Maybe (Edge g.order e)
+  edge x y = elab x y >>= mkEdge x.node y.node
+
+  ||| Tests if the given nodes are adjecent (connected via an edge).
+  export
+  adjacent : (x,y : Node g) -> Bool
+  adjacent x y = isJust $ elab x y
+
+  ||| The degree of the `Node`.
+  export
+  deg : Node g -> Nat
+  deg = length . neighbours
+
+  ||| Checks if there is an undirected edge between two nodes.
+  export %inline
+  hasNeighbour : (x,y : Node g) -> Bool
+  hasNeighbour = adjacent
 
 ||| List all 'Node's in the 'Graph'.
 export %inline
-nodes : {k : _} -> (0 _ : IGraph k e n) -> List (Fin k)
-nodes _ = allFinsFast k
+nodes : (g : Graph e n) -> Nodes g
+nodes g = fromFins $ allFinsFast g.order
 
 ||| A list of all labeled nodes of a `Graph`
 export
-labNodes  : {k : _} -> IGraph k e n -> List (Fin k, n)
-labNodes = foldrKV (\x,(A l _),cs => (x,l) :: cs) [] . graph
+labNodes : (g : Graph e n) -> List (Node g, n)
+labNodes g = map (\x => (x, lab x)) $ nodes g
 
 ||| A list of all labeled nodes of a `Graph`
-export
-labels  : {k : _} -> IGraph k e n -> List n
-labels = foldr (\(A l _) => (l ::)) [] . graph
-
-||| Returns the adjacency (node label plus labeled edges to neighbours)
-||| of a node in a graph.
 export %inline
-adj : IGraph k e n -> Fin k -> Adj k e n
-adj (IG g) k = at g k
-
-||| Returns the label of a node in graph.
-export %inline
-lab : IGraph k e n -> Fin k -> n
-lab g = label . adj g
-
-||| Returns the edges connecting a node as an `AssocList`
-||| (nodes plus edge labels).
-export %inline
-neighboursAsAL : IGraph k e n -> Fin k -> AssocList k e
-neighboursAsAL g = neighbours . adj g
-
-||| Returns the edges connecting a node as a list of pairs
-||| (nodes plus edge labels).
-export %inline
-neighboursAsPairs : IGraph k e n -> Fin k -> List (Fin k, e)
-neighboursAsPairs g = pairs . neighboursAsAL g
-
-||| Returns the list of neighbouring nodes of a node in a graph.
-export %inline
-neighbours : IGraph k e n -> Fin k -> List (Fin k)
-neighbours g = keys . neighboursAsAL g
-
-||| Returns the list of edges connecting a node.
-export %inline
-edgesTo : IGraph k e n -> Fin k -> List (Edge k e)
-edgesTo g k =
-  let A _ ns := adj g k
-   in mapMaybe (\(n,l) => mkEdge k n l) $ pairs ns
-
-||| Returns the list of neighboring nodes paired with their
-||| corresponding labels.
-export
-lneighbours : IGraph k e n -> Fin k -> List (Fin k, n)
-lneighbours g = map (\x => (x, lab g x)) . neighbours g
-
-||| Returns the edges connecting a node paired with the
-||| neighbouring node labels.
-export
-lneighboursAsAL : IGraph k e n -> Fin k -> AssocList k (e, n)
-lneighboursAsAL g = mapKV (\x => (, lab g x)) . neighboursAsAL g
-
-||| Returns the labels of neighbour nodes of a node.
-export
-neighbourLabels : IGraph k e n -> Fin k -> List n
-neighbourLabels g = map (lab g) . neighbours g
-
-||| Returns the labels of edges connecting a node.
-export %inline
-edgeLabels : IGraph k e n -> Fin k -> List e
-edgeLabels g = values . neighbours . adj g
-
-||| Find the label for an `Edge`.
-export
-elab : IGraph k e n -> Fin k -> Fin k -> Maybe e
-elab (IG g) x y = lookup y . neighbours $ at g x
-
-||| Find the label for an `Edge`.
-export
-edge : IGraph k e n -> Fin k -> Fin k -> Maybe (Edge k e)
-edge g x y = elab g x y >>= mkEdge x y
-
-||| Tests if the given nodes are adjecent (connected via an edge).
-export
-adjacent : IGraph k e n -> Fin k -> Fin k -> Bool
-adjacent g x y = isJust $ elab g x y
+labels : Graph e n -> List n
+labels g = map lab $ nodes g
 
 ||| A list of all `LEdge`s in the `Graph` (in lexicographic order).
 export
-edges  : {k : _} -> IGraph k e n -> List (Edge k e)
-edges (IG g) = foldrKV (\x,adj,es => ctxtEdges x adj <>> es) [] g
+edges  : (g : Graph e n) -> List (Edge g.order e)
+edges (G _ g) = foldrKV (\x,adj,es => ctxtEdges x adj <>> es) [] g
 
 ||| The number of edges in the graph.
-export
-size : {k : _} -> IGraph k e n -> Nat
-size = length . edges
-
-||| The degree of the `Node`.
-export
-deg : IGraph k e n -> Fin k -> Nat
-deg g = length . neighbours g
-
-||| Checks if there is an undirected edge between two nodes.
-export
-hasNeighbour : IGraph k e n -> Fin k -> Fin k -> Bool
-hasNeighbour g k = isJust . elab g k
+export %inline
+size : Graph e n -> Nat
+size g = length $ edges g
 
 --------------------------------------------------------------------------------
 --          Making Graphs
@@ -192,8 +189,8 @@ hasNeighbour g k = isJust . elab g k
 
 ||| An empty `Graph`
 export
-empty : IGraph 0 e n
-empty = IG empty
+empty : Graph e n
+empty = G _ empty
 
 0 mapLen : (f : a -> b) -> (as : List a) -> length (map f as) === length as
 mapLen f []        = Refl
@@ -201,17 +198,17 @@ mapLen f (x :: xs) = cong S $ mapLen f xs
 
 ||| Create a `Graph` from a list of labeled nodes and edges.
 export
-mkGraphL : (ns : List n) -> List (Edge (length ns) e) -> IGraph (length ns) e n
+mkGraphL : (ns : List n) -> List (Edge (length ns) e) -> Graph e n
 mkGraphL ns es =
-  IG $ allocListWith ns (`A` empty) $ \r,t =>
+  G _ $ allocListWith ns (`A` empty) $ \r,t =>
     let _ # t := linsEdges r es t
      in unsafeFreeze r t
 
 ||| Create a `Graph` from a vect of labeled nodes and edges.
 export
-mkGraph : {k : _} -> (ns : Vect k n) -> List (Edge k e) -> IGraph k e n
+mkGraph : {k : _} -> (ns : Vect k n) -> List (Edge k e) -> Graph e n
 mkGraph ns es =
-  IG $ allocVect (map (`A` empty) ns) $ \r,t =>
+  G _ $ allocVect (map (`A` empty) ns) $ \r,t =>
     let _ # t := linsEdges r es t
      in unsafeFreeze r t
 
@@ -221,15 +218,15 @@ mkGraph ns es =
 ||| which is useful when they come from a parser with the last node being
 ||| at the head of the vector.
 export
-mkGraphRev : {k : _} -> (ns : Vect k n) -> List (Edge k e) -> IGraph k e n
+mkGraphRev : {k : _} -> (ns : Vect k n) -> List (Edge k e) -> Graph e n
 mkGraphRev ns es =
- IG $ allocVectRev (map (`A` empty) ns) $ \r,t =>
+ G _ $ allocVectRev (map (`A` empty) ns) $ \r,t =>
    let _ # t := linsEdges r es t
     in unsafeFreeze r t
 
 export %inline
-generate : (k : Nat) -> (Fin k -> Adj k e n) -> IGraph k e n
-generate k f = IG $ generate k f
+generate : (k : Nat) -> (Fin k -> Adj k e n) -> Graph e n
+generate k f = G _ $ generate k f
 
 --------------------------------------------------------------------------------
 --          Folds and Traversals
@@ -238,48 +235,44 @@ generate k f = IG $ generate k f
 ||| Map the adjacencies in a graph accoring to each node's context
 export %inline
 mapCtxt :
-     {k : _}
-  -> (Fin k -> Adj k e n -> Adj k e1 n1)
-  -> IGraph k e n
-  -> IGraph k e1 n1
-mapCtxt fun (IG g) = IG $ mapWithIndex fun g
+     (g : Graph e n)
+  -> (Fin g.order -> Adj g.order e n -> Adj g.order e1 n1)
+  -> Graph e1 n1
+mapCtxt (G _ g) fun = G _ $ mapWithIndex fun g
 
 ||| Map the node labels in a graph accoring to each node's context
 export %inline
 mapWithCtxt :
-     {k : _}
-  -> (Fin k -> Adj k e n -> n1)
-  -> IGraph k e n
-  -> IGraph k e n1
-mapWithCtxt fun = mapCtxt (\x,adj => adj $> fun x adj)
+     (g : Graph e n)
+  -> (Fin g.order -> Adj g.order e n -> n1)
+  -> Graph e n1
+mapWithCtxt g fun = mapCtxt g (\x,adj => adj $> fun x adj)
 
 ||| Map the adjacencies in a graph
 export %inline
-mapAdj : {k : _} -> (Adj k e n -> Adj k f m) -> IGraph k e n -> IGraph k f m
-mapAdj fun (IG g) = IG $ map fun g
+mapAdj : (g : Graph e n) -> (Adj g.order e n -> Adj g.order f m) -> Graph f m
+mapAdj (G _ g) fun = G _ $ map fun g
 
 ||| Map the node labels in a graph accoring to each node's adjacency
 export %inline
-mapWithAdj : {k : _} -> (Adj k e n -> m) -> IGraph k e n -> IGraph k e m
-mapWithAdj fun = mapAdj (\adj => adj $> fun adj)
+mapWithAdj : (g : Graph e n) -> (Adj g.order e n -> m) -> Graph e m
+mapWithAdj g fun = mapAdj g (\adj => adj $> fun adj)
 
 export
 traverseCtxt :
-     {k : _}
-  -> {auto app : Applicative f}
-  -> (Fin k -> Adj k e n -> f (Adj k e1 n1))
-  -> IGraph k e n
-  -> f (IGraph k e1 n1)
-traverseCtxt fun (IG g) = IG <$> traverseWithIndex fun g
+     {auto app : Applicative f}
+  -> (g : Graph e n)
+  -> (Fin g.order -> Adj g.order e n -> f (Adj g.order e1 n1))
+  -> f (Graph e1 n1)
+traverseCtxt (G _ g) fun = G _ <$> traverseWithIndex fun g
 
 export
 traverseWithCtxt :
-     {k : _}
-  -> {auto app : Applicative f}
-  -> (Fin k -> Adj k e n -> f n1)
-  -> IGraph k e n
-  -> f (IGraph k e n1)
-traverseWithCtxt fun = traverseCtxt (\x,a => (`A` a.neighbours) <$> fun x a)
+     {auto app : Applicative f}
+  -> (g : Graph e n)
+  -> (Fin g.order -> Adj g.order e n -> f n1)
+  -> f (Graph e n1)
+traverseWithCtxt g fun = traverseCtxt g (\x,a => (`A` a.neighbours) <$> fun x a)
 
 --------------------------------------------------------------------------------
 --          Modifying Graphs
@@ -289,17 +282,18 @@ traverseWithCtxt fun = traverseCtxt (\x,a => (`A` a.neighbours) <$> fun x a)
 |||
 ||| Once is used for the given node, the other for all other nodes.
 export
-updateNodes : {k : _} -> Fin k -> (f,g : m -> n) -> IGraph k e m -> IGraph k e n
-updateNodes x f g = mapWithCtxt (\y,a => if x == y then f a.label else g a.label)
+updateNodes : {g : Graph e m} -> Node g -> (f,h : m -> n) -> Graph e n
+updateNodes x f h =
+  mapWithCtxt g (\y,a => if x.node == y then f a.label else h a.label)
 
 ||| Updates a single node in the graph at the given position.
 export %inline
-updateNode : {k : _} -> Fin k -> (n -> n) -> IGraph k e n -> IGraph k e n
+updateNode : {g : Graph e n} -> Node g -> (n -> n) -> Graph e n
 updateNode x f = updateNodes x f id
 
 ||| Replaces a single node in the graph at the given position.
 export %inline
-setNode : {k : _} -> Fin k -> n -> IGraph k e n -> IGraph k e n
+setNode : {g : Graph e n} -> Node g -> n -> Graph e n
 setNode x = updateNode x . const
 
 ||| Uses two functions for updating the edge labels in a graph.
@@ -308,76 +302,79 @@ setNode x = updateNode x . const
 ||| all other edges.
 export
 updateEdges :
-     {k : _}
-  -> (x,y : Fin k)
-  -> (f,g : e -> e2)
-  -> IGraph k e n
-  -> IGraph k e2 n
-updateEdges x y f g =
-  mapCtxt $ \k,(A l a) =>
+     {g   : Graph e n}
+  -> (x,y : Node g)
+  -> (f,h : e -> e2)
+  -> Graph e2 n
+updateEdges (N x) (N y) f h =
+  mapCtxt g $ \k,(A l a) =>
    A l $
-     if      k == x then mapKV (\m,l => if m == y then f l else g l) a
-     else if k == y then mapKV (\m,l => if m == x then f l else g l) a
-     else    map g a
+     if      k == x then mapKV (\m,l => if m == y then f l else h l) a
+     else if k == y then mapKV (\m,l => if m == x then f l else h l) a
+     else    map h a
 
 ||| Uses a function for updating a single edge label in a graph.
 export %inline
-updateEdge :
-     {k : _}
-  -> (x,y : Fin k)
-  -> (f : e -> e)
-  -> IGraph k e n
-  -> IGraph k e n
+updateEdge : {g : Graph e n} -> (x,y : Node g) -> (f : e -> e) -> Graph e n
 updateEdge x y f = updateEdges x y f id
 
 ||| Insert (or replace) a single edge in a graph.
 export
-insEdges : {k : _} -> List (Edge k e) -> IGraph k e n -> IGraph k e n
-insEdges es g =
-  IG $ allocGen k (adj g) $ \r,t =>
+insEdges : (g : Graph e n) -> List (Edge g.order e) -> Graph e n
+insEdges g es =
+  G _ $ allocGen g.order (adj {g} . N) $ \r,t =>
     let _ # t := linsEdges r es t
      in unsafeFreeze r t
 
 ||| Insert an `Edge` into the 'IGraph'.
 export %inline
-insEdge : {k : _} -> Edge k e -> IGraph k e n -> IGraph k e n
-insEdge = insEdges . pure
+insEdge : (g : Graph e n) -> Edge g.order e -> Graph e n
+insEdge g x = insEdges g [x]
 
 ||| Remove multiple 'Edge's from the 'Graph'.
 export
-delEdges : {k : _} -> List (Fin k, Fin k) -> IGraph k e n -> IGraph k e n
-delEdges ps g = IG $ allocGen k (adj g) $ \r,t =>
-  let _ # t := ldelEdges r ps t
+delEdges : {g : Graph e n} -> List (Node g, Node g) -> Graph e n
+delEdges ps = G _ $ allocGen g.order (adj {g} . N) $ \r,t =>
+  let _ # t := ldelEdges r (toFinPairs ps) t
    in unsafeFreeze r t
 
 ||| Remove an 'Edge' from the 'Graph'.
 export %inline
-delEdge : {k : _} -> (x,y : Fin k) -> IGraph k e n -> IGraph k e n
+delEdge : {g : Graph e n} -> (x,y : Node g) -> Graph e n
 delEdge x y = delEdges [(x,y)]
 
 ||| Insert multiple `LNode`s into the `Graph`.
 export
-insNodes : {k,m : _} -> IGraph k e n -> (ns : Vect m n) -> IGraph (k + m) e n
-insNodes (IG g) ns =
-  let g'  := map (weakenAdjN m) g
-   in IG $ append g' (map fromLabel (array ns))
+insNodes : {m : _} -> Graph e n -> (ns : Vect m n) -> Graph e n
+insNodes (G o g) ns =
+  let g' := map (weakenAdjN m) g
+   in G (o+m) $ append g' (map fromLabel (array ns))
+
+||| Proof about the order of a graph after inserting `m` nodes.
+export
+0 insLemma :
+     (g : Graph e n)
+  -> (ns : Vect m n)
+  -> order (insNodes g ns) === (g.order + m)
+insLemma (G o g) ns = Refl
 
 ||| Insert multiple `LNode`s into the `Graph`.
 export
 insNodesAndEdges :
-     {k,m : _}
-  -> IGraph k e n
+     {m : _}
+  -> (g  : Graph e n)
   -> (ns : Vect m n)
-  -> (es : List (Edge (k + m) e))
-  -> IGraph (k + m) e n
-insNodesAndEdges g ns es = insEdges es $ insNodes g ns
+  -> (es : List (Edge (g.order + m) e))
+  -> Graph e n
+insNodesAndEdges g ns es =
+  insEdges (insNodes g ns) (rewrite insLemma g ns in es)
 
 ||| Insert a labeled node into the `Graph`.
 ||| The behavior is undefined if the node is already
 ||| in the graph.
 export %inline
-insNode : {k : _} -> IGraph k e n -> n -> IGraph (S k) e n
-insNode g v = rewrite plusCommutative 1 k in insNodes g [v]
+insNode : Graph e n -> n -> Graph e n
+insNode g v = insNodes g [v]
 
 export
 adjEdges : SortedMap (Fin x) (Fin y) -> Adj x e n -> Adj y e n
@@ -391,78 +388,69 @@ zipTR sx _         []        = sx <>> []
 zipTR sx (x :: xs) (y :: ys) = zipTR (sx:<(x,y)) xs ys
 
 export
-delNodes : {k : _} -> List (Fin k) -> IGraph k e n -> Graph e n
-delNodes {k = 0} _ _ = G _ empty
-delNodes {k = S x} ks (IG g) =
+delNodes : {g : Graph e n} -> Nodes g -> Graph e n
+delNodes {g = G 0 g}     _  = G 0 g
+delNodes {g = G (S x) g} ks =
   let set       := SortedSet.fromList ks
       A (S y) h :=
-        filterWithKey (\x,_ => not (contains x set)) g | A 0 _ => G _ empty
-      finX      := filter (\x => not (contains x set)) $ allFinsFast (S x)
+        filterWithKey (\x,_ => not (contains (N x) set)) g | A 0 _ => G _ empty
+      finX      := filter (\x => not (contains (N x) set)) $ allFinsFast (S x)
       finY      := allFinsFast (S y)
       proMap    := SortedMap.fromList $ zipTR [<] finX finY
-   in G (S y) (IG $ map (adjEdges proMap) h)
+   in G (S y) $ map (adjEdges proMap) h
 
 ||| Remove a 'Node' from the 'Graph'.
 export
-delNode : {k : _} -> Fin k -> IGraph k e n -> Graph e n
+delNode : {g : Graph e n} -> Node g -> Graph e n
 delNode = delNodes . pure
 
 ||| Merge two graphs connecting them via the given list of
 ||| edges
 export
 mergeGraphsWithEdges :
-     {k,m : _}
-  -> (g1 : IGraph k e n)
-  -> (g2 : IGraph m e n)
-  -> List (Fin k, Fin m, e)
-  -> IGraph (k + m) e n
-mergeGraphsWithEdges {k} g t es =
-  let vNodes := label <$> toVect t.graph
-      cEdges := map (\(x,y,l) => compositeEdge x y l) es
-      lEdges := incEdge k <$> edges t
-   in insNodesAndEdges g vNodes (cEdges ++ lEdges)
+     {g1 : Graph e n}
+  -> {g2 : Graph e n}
+  -> List (Node g1, Node g2, e)
+  -> Graph e n
+mergeGraphsWithEdges es =
+  let vNodes := label <$> toVect g2.graph
+      cEdges := map (\(x,y,l) => compositeEdge x.node y.node l) es
+      lEdges := incEdge g1.order <$> edges g2
+   in insNodesAndEdges g1 vNodes (cEdges ++ lEdges)
 
 ||| Merge two graphs that have no bonds between them.
 export
-mergeGraphs :
-     {k,m : _}
-  -> (g1 : IGraph k e n)
-  -> (g2 : IGraph m e n)
-  -> IGraph (k + m) e n
-mergeGraphs {k} g t =
-  let vNodes := label <$> toVect t.graph
-      lEdges := incEdge k <$> edges t
-   in insNodesAndEdges g vNodes lEdges
+mergeGraphs : (g1,g2 : Graph e n) -> Graph e n
+mergeGraphs g1 g2 =
+  let vNodes := label <$> toVect g2.graph
+      lEdges := incEdge g1.order <$> edges g2
+   in insNodesAndEdges g1 vNodes lEdges
 
 --------------------------------------------------------------------------------
 --          Displaying Graphs
 --------------------------------------------------------------------------------
 
 export
-{k : _} -> Show e => Show n => Show (IGraph k e n) where
+Show e => Show n => Show (Graph e n) where
   showPrec p g = showCon p "mkGraph" $ showArg (labels g) ++ showArg (edges g)
 
-export
-Show e => Show n => Show (Graph e n) where
-  showPrec p (G o g) = showCon p "G" $ showArg o ++ showArg g
-
 pl : Nat -> Fin k -> String
-pl n = padLeft n ' ' . show . finToNat
+pl n = padLeft n ' ' . show
 
 export
-pretty : {k : _} -> (e -> String) -> (n -> String) -> IGraph k e n -> String
+pretty : (e -> String) -> (n -> String) -> Graph e n -> String
 pretty de dn g =
   let ns     := labNodes g
       es     := edges g
-      maxLen := length $ show k
+      maxLen := length $ show g.order
    in unlines $
         "Nodes:"   :: map (dispNode maxLen) ns ++
         "\nEdges:" :: map (dispEdge maxLen) es
 
   where
-    dispNode : Nat -> (Fin k, n) -> String
+    dispNode : Nat -> (Node g, n) -> String
     dispNode k (n1,l) =
-      "  \{pl k n1} :> \{dn l}"
+      "  \{pl k n1.node} :> \{dn l}"
 
     dispEdge : Nat -> Edge k e -> String
     dispEdge k (E n1 n2 l) =

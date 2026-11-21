@@ -16,21 +16,21 @@ import Data.Vect
 
 data Tag = Q | T
 
-parameters (mq : MArray s q (Maybe $ Fin t))
-           (mt : MArray s t (Maybe $ Fin q))
+parameters (mq : MArray s q.order (Maybe $ Node t))
+           (mt : MArray s t.order (Maybe $ Node q))
 
   -- Link a query node to a target node.
-  assign : Fin q -> Fin t -> F1' s
+  assign : Node q -> Node t -> F1' s
   assign x y t =
-    let _ # t := set mt y (Just x) t
-     in set mq x (Just y) t
+    let _ # t := set mt y.node (Just x) t
+     in set mq x.node (Just y) t
 
   -- Undo an assignment. We use this when backtracking
   -- from an assignment that didn't work.
-  unassign : Fin q -> Fin t -> F1' s
+  unassign : Node q -> Node t -> F1' s
   unassign x y t =
-    let _ # t := set mt y Nothing t
-     in set mq x Nothing t
+    let _ # t := set mt y.node Nothing t
+     in set mq x.node Nothing t
 
 --------------------------------------------------------------------------------
 -- Linear Utilities
@@ -57,16 +57,16 @@ parameters {k : _}
 -- A sorted list pairing query nodes with potential target nodes.
 -- In case a query node is linked to an empty list, there are no
 -- valid target nodes left, so we should abort and try something else.
-0 Matrix : (q,t : Nat) -> Type
-Matrix q t = AssocList q (List $ Fin t)
+0 Matrix : (q : Graph eq nq) -> (t : Graph et nt) -> Type
+Matrix q t = AssocList q.order (List $ Node t)
 
 -- Remove the given node from all target node lists, because it has been
 -- assigned to a query node.
-%inline remove : Fin t -> Matrix q t -> Matrix q t
+%inline remove : Node t -> Matrix q t -> Matrix q t
 remove = map . filter . (/=)
 
 -- Intersect two sorted lists of target nodes.
-intersect : List (Fin t) -> List (Fin t) -> List (Fin t)
+intersect : List (Node t) -> List (Node t) -> List (Node t)
 intersect l@(x::xs) r@(y::ys) =
   case compare x y of
     LT => intersect xs r
@@ -79,13 +79,12 @@ intersect _ _ = []
 --------------------------------------------------------------------------------
 
 parameters {0 eq,et,nq,nt : Type}
-           {q,t : Nat}
-           (mq      : MArray s q (Maybe $ Fin t))
-           (mt      : MArray s t (Maybe $ Fin q))
-           (me      : eq -> et -> Bool) -- edge label matcher
-           (mn      : nq -> nt -> Bool) -- node label matcher
-           (query   : IGraph q eq nq)   -- query node
-           (target  : IGraph t et nt)   -- target node
+           (q  : Graph eq nq) -- query graph
+           (t  : Graph et nt) -- target graph
+           (mq : MArray s q.order (Maybe $ Node t))
+           (mt : MArray s t.order (Maybe $ Node q))
+           (me : eq -> et -> Bool) -- edge label matcher
+           (mn : nq -> nt -> Bool) -- node label matcher
 
   -- Computes a list of candidate mappings from lists of query nodes
   -- and target nodes (both the neighbours - plus edge labels - of the
@@ -93,27 +92,27 @@ parameters {0 eq,et,nq,nt : Type}
   --
   -- We have already veryfied, that both lists consist only of so far
   -- unassigned nodes.
-  candidates : AssocList q eq -> AssocList t et -> Matrix q t
-  candidates ps qs = mapKV cand ps
+  candidates : AssocList q.order eq -> AssocList t.order et -> Matrix q t
+  candidates ps qs = mapKV (\x,v => cand (N x) v) ps
     where
-      match : eq -> nq -> (Fin t, et) -> Maybe (Fin t)
+      match : eq -> nq -> (Node t, et) -> Maybe (Node t)
       match veq vnq (y, vet) =
-        if me veq vet && mn vnq (lab target y) then Just y else Nothing
+        if me veq vet && mn vnq (lab y) then Just y else Nothing
 
-      cand : Fin q -> eq -> List (Fin t)
-      cand x lq = mapMaybe (match lq $ lab query x) (pairs qs)
+      cand : Node q -> eq -> List (Node t)
+      cand x lq = mapMaybe (match lq $ lab x) (fromPairs $ pairs qs)
 
-  align : Fin q -> Fin t -> Matrix q t -> F1 s (Matrix q t)
+  align : Node q -> Node t -> Matrix q t -> F1 s (Matrix q t)
   align x y m t =
-    let nsX # t := filterLin (unset mq) (neighbours $ adj query x) t
-        nsY # t := filterLin (unset mt) (neighbours $ adj target y) t
+    let nsX # t := filterLin (unset mq) (neighbours $ adj x) t
+        nsY # t := filterLin (unset mt) (neighbours $ adj y) t
      in unionWith intersect (remove y m) (candidates nsX nsY) # t
 
   covering
   tryAll : Matrix q t -> F1 s Bool
 
   covering
-  try : Fin q -> List (Fin t) -> Matrix q t -> F1 s Bool
+  try : Node q -> Nodes t -> Matrix q t -> F1 s Bool
 
   -- There are no valid mappings left for query node `x`, so we abort
   -- with `False`.
@@ -139,18 +138,18 @@ parameters {0 eq,et,nq,nt : Type}
   tryAll m t =
     case minBy length m of
       Nothing     => True # t
-      Just (x,vs) => try x vs (delete x m) t
+      Just (x,vs) => try (N x) vs (delete x m) t
 
   -- Tries to align all connected components of the query graph
   -- with nodes of the target graph.
   covering
-  run : F1 s (Maybe $ Vect q (Fin t))
-  run t = -- (S m1 a1) =
-    let Left x # t := findUnassigned mq t | Right arr # t => Just arr # t
-        ns     # t := filter1 (unset mt) (nodes target) t
-        ns'        := filter (\y => mn (lab query x) (lab target y)) ns
-        True   # t := try x ns' empty t | False # t => Nothing # t
-     in run t
+  run : F1 s (Maybe $ Vect q.order (Node t))
+  run y = -- (S m1 a1) =
+    let Left x # y := findUnassigned mq y | Right arr # y => Just arr # y
+        ns     # y := filter1 (unset mt . node) (nodes t) y
+        ns'        := List.filter (\y => mn (lab $ N x) (lab y)) ns
+        True   # y := try (N x) ns' empty y | False # y => Nothing # y
+     in run y
 
 ||| Using the given matching functions for node and edge labels, this
 ||| tries to align the `query` graph with the `target` graph in such
@@ -158,14 +157,13 @@ parameters {0 eq,et,nq,nt : Type}
 export covering
 query :
      {0 eq,et,nq,nt : Type}
-  -> {q,t : Nat}
   -> (me      : eq -> et -> Bool) -- edge label matcher
   -> (mn      : nq -> nt -> Bool) -- node label matcher
-  -> (query   : IGraph q eq nq)   -- query node
-  -> (target  : IGraph t et nt)   -- target node
-  -> Maybe (Vect q (Fin t))
+  -> (query   : Graph eq nq)   -- query node
+  -> (target  : Graph et nt)   -- target node
+  -> Maybe (Vect query.order (Node target))
 query me mn que tgt =
   run1 $ \tk =>
-    let mt # tk := marray1 t Nothing tk
-        mq # tk := marray1 q Nothing tk
-     in run mq mt me mn que tgt tk
+    let mt # tk := marray1 tgt.order Nothing tk
+        mq # tk := marray1 que.order Nothing tk
+     in run que tgt mq mt me mn tk

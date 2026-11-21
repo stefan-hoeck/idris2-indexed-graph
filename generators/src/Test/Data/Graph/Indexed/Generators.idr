@@ -8,17 +8,12 @@ import public Hedgehog
 
 %default total
 
-||| Generates an arbitrary `Fin (S k)` for a known natural number `k`
-export
-anyFin : {k : _} -> Gen (Fin $ S k)
-anyFin = fromMaybe FZ . tryNatToFin <$> nat (linear 0 k)
-
 ||| Generates an `AssocList` for a graph of order `S k`, using `k` to
 ||| determine the list's maximal length and the given generator
 ||| for its values.
 export
 assocList : {k : _} -> Gen a -> Gen (AssocList (S k) a)
-assocList g = fromList <$> list (linear 0 k) [| MkPair anyFin g |]
+assocList g = fromList <$> list (linear 0 k) [| MkPair (anyFin $ S k) g |]
 
 ||| Generates a single `Edge` for a graph of order `k + 2`.
 |||
@@ -66,33 +61,6 @@ distEdges lbl = catMaybes <$> traverse gen (pairs $ allFinsFast k)
       _ | LT = map (\v => E x y v) <$> lbl
       _ | _  = pure Nothing
 
-||| Generates an indexed graph of the given size with the number of edges
-||| in the given range.
-export
-sparseIGraph :
-     {k : _}
-  -> (nrEdges   : Hedgehog.Range Nat)
-  -> (edgeLabel : Gen e)
-  -> (nodeLabel : Gen n)
-  -> Gen (IGraph k e n)
-sparseIGraph nre el nl = do
-  ns <- vect k nl
-  es <- edges nre el
-  pure (mkGraph ns es)
-
-||| Generates an indexed graph with the given number of nodes and
-||| a random distribution of edges.
-export
-igraph :
-     {k : _}
-  -> (edgeLabel : Gen $ Maybe e)
-  -> (nodeLabel : Gen n)
-  -> Gen (IGraph k e n)
-igraph el nl = do
-  ns <- vect k nl
-  es <- distEdges el
-  pure (mkGraph ns es)
-
 ||| Generates a graph with the numbers of nodes and edges in the
 ||| given ranges.
 export
@@ -105,7 +73,7 @@ sparseGraph :
 sparseGraph nrn nre el nl = do
   ns <- list nrn nl
   es <- edges nre el
-  pure $ (G _ $ mkGraphL ns es)
+  pure $ (mkGraphL ns es)
 
 ||| Generates a graph with the numbers of nodes and a random distribution
 ||| of edges.
@@ -118,7 +86,13 @@ graph :
 graph nrn el nl = do
   ns <- list nrn nl
   es <- distEdges el
-  pure $ (G _ $ mkGraphL ns es)
+  pure $ (mkGraphL ns es)
+
+||| Generates a random node for the given graph
+export
+forNode : (g : Graph e n) -> PropertyT (Node g)
+forNode (G 0 _)     = failWith Nothing "no nodes in an empty graph"
+forNode (G (S k) _) = forAll (N <$> anyFin (S k))
 
 --------------------------------------------------------------------------------
 -- Special Graphs
@@ -142,7 +116,7 @@ chains el nl = do
   n  <- nat (linear 1 20)
   e  <- el
   ns <- vect n nl
-  pure (G n $ mkGraph ns $ chainEdges e)
+  pure (mkGraph ns $ chainEdges e)
 
 export %inline
 chains' : Gen (Graph () ())
@@ -154,7 +128,7 @@ trees el nl = do
   n  <- nat (linear 1 20)
   ns <- vect n nl
   es <- go [<] n
-  pure (G n $ mkGraph ns es)
+  pure (mkGraph ns es)
 
   where
     go : {k : _} -> SnocList (Edge k e) -> Nat -> Gen (List $ Edge k e)
@@ -174,7 +148,7 @@ rings el nl = do
   n  <- nat (linear 3 20)
   e  <- el
   ns <- vect n nl
-  pure (G n $ mkGraph ns $ ringEdges e)
+  pure (mkGraph ns $ ringEdges e)
 
 export %inline
 rings' : Gen (Graph () ())
@@ -219,7 +193,7 @@ diamond : (chainLength, numChains : Nat) -> Graph () ()
 diamond cl@(S _) nc@(S _) =
  let sz := cl * nc + 2
      us := Vect.replicate sz ()
-  in G sz $ mkGraph us $ diamondEdges cl nc 0 (pred sz)
+  in mkGraph us $ diamondEdges cl nc 0 (pred sz)
 diamond _ _ = G 0 empty
 
 ||| A chain of `diamonds`
@@ -228,7 +202,7 @@ diamondChain : (ndiamonds, chainLength, numChains : Nat) -> Graph () ()
 diamondChain nd@(S _) cl@(S _) nc@(S _) =
  let sz := nd * (cl * nc + 2)
      us := Vect.replicate sz ()
-  in G sz $ mkGraph us $ diamondChainEdges nd cl nc
+  in mkGraph us $ diamondChainEdges nd cl nc
 diamondChain _ _ _ = G 0 empty
 
 ||| A bracelet of `diamonds`: Like a chain of diamonds but the first
@@ -238,5 +212,5 @@ diamondBracelet : (ndiamonds, chainLength, numChains : Nat) -> Graph () ()
 diamondBracelet nd@(S _) cl@(S _) nc@(S _) =
  let sz := nd * (cl * nc + 2)
      us := Vect.replicate sz ()
-  in G sz $ mkGraph us $ tryEdge 0 (pred sz) () ++ diamondChainEdges nd cl nc
+  in mkGraph us $ tryEdge 0 (pred sz) () ++ diamondChainEdges nd cl nc
 diamondBracelet _ _ _ = G 0 empty
