@@ -18,7 +18,7 @@ rbTest : String -> List (Nat,Nat) -> Property
 rbTest s ps =
   property1 $ assert $ case readSmiles s of
     Nothing => False
-    Just (G o g) => ringBonds g == toEdgeSet ps
+    Just g  => ringBonds g == toEdgeSet g ps
 
 prop_ethanol : Property
 prop_ethanol = rbTest "CCO" []

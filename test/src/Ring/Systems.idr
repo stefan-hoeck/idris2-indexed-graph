@@ -12,8 +12,8 @@ import System.Info
 chainSize : Nat
 chainSize = if codegen == "node" then 100 else 100000
 
-rsSmiles : String -> (k ** RingSystems k Bond Elem)
-rsSmiles s = let G k g := readSmilesOrEmpty s in (k ** ringSystems g)
+rsSmiles : String -> DPair SmilesGraph RingSystems
+rsSmiles s = let g := readSmilesOrEmpty s in (g ** ringSystems g)
 
 nsystems : String -> Nat
 nsystems s = let (_ ** rs) := rsSmiles s in rs.systems
@@ -40,10 +40,10 @@ prop_isInRing =
     n <- forAll (nat $ linear 0 20)
     f <- forAll (fin $ linearFin n)
     let (k ** rs) := rsSmiles (chain $ S n)
-    map (isInRing rs) (tryNatToFin $ 4 * cast f) === Just False
-    map (isInRing rs) (tryNatToFin $ 1 + 4 * cast f) === Just True
-    map (isInRing rs) (tryNatToFin $ 2 + 4 * cast f) === Just True
-    map (isInRing rs) (tryNatToFin $ 3 + 4 * cast f) === Just True
+    map (isInRing rs) (tryNode $ 4 * cast f)     === Just False
+    map (isInRing rs) (tryNode $ 1 + 4 * cast f) === Just True
+    map (isInRing rs) (tryNode $ 2 + 4 * cast f) === Just True
+    map (isInRing rs) (tryNode $ 3 + 4 * cast f) === Just True
 
 prop_inSameRing : Property
 prop_inSameRing =
@@ -54,8 +54,8 @@ prop_inSameRing =
     let (k ** rs) := rsSmiles (chain $ S n)
     [| inSameRing
          (pure rs)
-         (tryNatToFin $ 1 + 4 * cast x)
-         (tryNatToFin $ 2 + 4 * cast y)
+         (tryNode $ 1 + 4 * cast x)
+         (tryNode $ 2 + 4 * cast y)
     |] === Just (x == y)
 
 export

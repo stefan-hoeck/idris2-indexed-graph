@@ -46,5 +46,5 @@ nodePairs sp (h::t) = nodePairs (sp <>< map (h,) t) t
 ||| performing a proper ring detection, just be checking if two of the
 ||| neighbours of the given node are adjacent.
 export
-inThreeMemberedRing : (g : Graph e n) -> Node g -> Bool
-inThreeMemberedRing g x = any (uncurry adjacent) (nodePairs [<] (neighbours x))
+inThreeMemberedRing : {g : Graph e n} -> Node g -> Bool
+inThreeMemberedRing x = any (uncurry adjacent) (nodePairs [<] (neighbours x))
