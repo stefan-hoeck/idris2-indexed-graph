@@ -16,10 +16,10 @@ smallGraphs = sparseGraph (linear 0 30) (linear 0 100) anyBits8 anyBits8
 -- Tests
 --------------------------------------------------------------------------------
 
-testEdgesTo : Eq e => IGraph k e n -> Fin k -> Bool
-testEdgesTo g n =
-  let vs := values $ neighbours (adj g n)
-   in vs == map label (edgesTo g n)
+testEdgesTo : Eq e => {g : Graph e n} -> Node g -> Bool
+testEdgesTo n =
+  let vs := values $ neighbours (adj n)
+   in vs == map label (edgesTo n)
 
 --------------------------------------------------------------------------------
 -- Properties
@@ -27,8 +27,8 @@ testEdgesTo g n =
 
 prop_edgesTo : Property
 prop_edgesTo = property $ do
-  G o g <- forAll smallGraphs
-  assert $ all (testEdgesTo g) (nodes g)
+  g <- forAll smallGraphs
+  assert $ all testEdgesTo (nodes g)
 
 export
 props : Group

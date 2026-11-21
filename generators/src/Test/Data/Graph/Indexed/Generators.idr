@@ -88,6 +88,12 @@ graph nrn el nl = do
   es <- distEdges el
   pure $ (mkGraphL ns es)
 
+||| Generates a random node for the given graph
+export
+forNode : (g : Graph e n) -> PropertyT (Node g)
+forNode (G 0 _)     = failWith Nothing "no nodes in an empty graph"
+forNode (G (S k) _) = forAll (N <$> anyFin (S k))
+
 --------------------------------------------------------------------------------
 -- Special Graphs
 --------------------------------------------------------------------------------

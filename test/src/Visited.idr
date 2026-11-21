@@ -5,36 +5,39 @@ import Test.Data.Graph.Indexed.Generators
 
 %default total
 
+gr : Gen (Graph () ())
+gr = graph (linear 1 127) (maybe $ pure ()) (pure ())
+
 prop_minitUnset : Property
 prop_minitUnset = property $ do
-  k <- forAll (nat $ linear 0 127)
-  n <- forAll (anyFin {k})
+  g <- forAll gr
+  n <- forNode g
   assert (test n)
 
   where
-    test : {k : _} -> Fin k -> Bool
-    test n = visiting k $ \r,t => mapR1 not (mvisited r n t)
+    test : {g : _} -> Node g -> Bool
+    test n = visiting g $ \r,t => mapR1 not (mvisited r n t)
 
 prop_iniUnset : Property
 prop_iniUnset = property $ do
-  k <- forAll (nat $ linear 0 127)
-  n <- forAll (anyFin {k})
+  g <- forAll gr
+  n <- forNode g
   assert (not $ visited n ini)
 
 prop_mset : Property
 prop_mset = property $ do
-  k <- forAll (nat $ linear 0 127)
-  n <- forAll (anyFin {k})
+  g <- forAll gr
+  n <- forNode g
   assert (test n)
 
   where
-    test : {k : _} -> Fin k -> Bool
-    test n = visiting k $ \r,t => let _ # t := mvisit r n t in mvisited r n t
+    test : {g : _} -> Node g -> Bool
+    test n = visiting g $ \r,t => let _ # t := mvisit r n t in mvisited r n t
 
 prop_set : Property
 prop_set = property $ do
-  k <- forAll (nat $ linear 0 127)
-  n <- forAll (anyFin {k})
+  g <- forAll gr
+  n <- forNode g
   assert (visited n $ visit n ini)
 
 export
