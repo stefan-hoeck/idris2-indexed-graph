@@ -23,13 +23,11 @@ unlabeledGraphs = sparseGraph (linear 0 30) (linear 0 100) anyBits8 anyBits8
 
 -- test that the given edge (from the subgraph) corresponds to
 -- an edge in the original graph
-testEdge : Eq e => (g : Graph e n) -> (sg : Subgraph g) -> Edge sg.order e -> Bool
-testEdge _ g (E n1 n2 el) =
-  elab (lab {g} $ N n1) (lab {g} $ N n2) == Just el
+testEdge : Eq e => (g : Graph e n) -> (sg : Subgraph g) -> LEdg sg -> Bool
+testEdge _ g (LE n1 n2 el) = elab (lab n1) (lab n2) == Just el
 
 isBiconnected : Graph e n -> Bool
-isBiconnected g =
-  all (\(E n1 n2 _) => isConnected (delEdge (N n1) (N n2))) (edges g)
+isBiconnected g = all (\(LE n1 n2 _) => isConnected (delEdge n1 n2)) (edges g)
 
 --------------------------------------------------------------------------------
 -- Example Graphs

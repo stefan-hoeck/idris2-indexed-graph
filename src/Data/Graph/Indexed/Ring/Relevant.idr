@@ -23,7 +23,7 @@ EdgMap g = SortedMap (Edg g) Integer
 -- Compute a sortedMap corresponding to a mapping from all edges of a graph to their
 -- respective bit pattern.
 getBitsEdges : (g : Graph e n) -> EdgMap g
-getBitsEdges g = setBits (map ignore $ edges g) 1 empty
+getBitsEdges g = setBits (map toEdg $ edges g) 1 empty
   where
     setBits : List (Edg g) -> Integer -> EdgMap g -> EdgMap g
     setBits []        bitp sm = sm
@@ -34,7 +34,7 @@ getBitsEdges g = setBits (map ignore $ edges g) 1 empty
 -- The sortedMap is a maping from each edge of the graph (node pairs) to the bit
 -- pattern corresponding to this edge.
 getBitsRing : EdgMap g -> Integer -> List (Node g) -> Integer
-getBitsRing sm i (x::xs@(y::_)) = case mkEdge x.node y.node () >>= lookup' sm of
+getBitsRing sm i (x::xs@(y::_)) = case mkEdg x y >>= lookup' sm of
   Nothing => getBitsRing sm i xs -- impossible case
   Just z  => getBitsRing sm (i .|. z) xs
 getBitsRing sm i _ = i

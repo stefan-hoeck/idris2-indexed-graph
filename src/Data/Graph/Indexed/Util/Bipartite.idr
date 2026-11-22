@@ -78,10 +78,10 @@ perfectMatch g = match g >>= sequence
 
 ||| Finds the edges of a maximal matching in a graph.
 export
-matchEdges : (g : Graph e n) -> List (Edge g.order e)
+matchEdges : (g : Graph e n) -> List (LEdg g)
 matchEdges g = maybe [] (\a => mapMaybe (edg a) (nodes g)) (match g)
   where
-    edg : IArray g.order (Maybe $ Node g) -> Node g -> Maybe (Edge g.order e)
+    edg : IArray g.order (Maybe $ Node g) -> Node g -> Maybe (LEdg g)
     edg a x = atN a x >>= \y => if x < y then edge x y else Nothing
 
 ||| Finds the edges of a maximal matching in a subgraph.
@@ -89,7 +89,7 @@ export
 matchEdgesWhere :
      (g    : Graph e n)
   -> (pred : Node g -> Bool)
-  -> List (Edge g.order e)
+  -> List (LEdg g)
 matchEdgesWhere g pred =
  let sg := subgraphL g (filter pred $ nodes g)
   in mapMaybe (originEdge sg) (matchEdges sg)

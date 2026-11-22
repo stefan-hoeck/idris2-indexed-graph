@@ -84,13 +84,8 @@ origin = lab
 ||| the subgraph is injective, that is, distinct nodes in the subgraph
 ||| point at distinct nodes in the original graph.
 export
-originEdge :
-     {g : _}
-  -> (h : Subgraph g)
-  -> Edge h.order e
-  -> Maybe (Edge g.order e)
-originEdge h (E x y l) =
-  mkEdge (node $ origin {h} $ N x) (node $ origin {h} $ N y) l
+originEdge : {g : _} -> (h : Subgraph g) -> LEdg h -> Maybe (LEdg g)
+originEdge h (LE x y l) = mkLEdg (origin x) (origin y) l
 
 --------------------------------------------------------------------------------
 -- Biconnected Components

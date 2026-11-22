@@ -62,10 +62,6 @@ record NCycle (g : Graph e n) where
 %runElab deriveIndexed "NCycle" [Show,Eq]
 
 public export
-0 Edg : Graph e n -> Type
-Edg g = Edge g.order ()
-
-public export
 0 ECycle : Graph e n -> Type
 ECycle g = List (Edg g)
 
@@ -86,7 +82,7 @@ export
 export
 ecycle : Nodes g -> ECycle g
 ecycle (x::y::xs) =
-  case mkEdge x.node y.node () of
+  case mkEdg x y of
     Just e  => e :: ecycle (y::xs)
     Nothing => ecycle (y::xs)
 ecycle _ = []

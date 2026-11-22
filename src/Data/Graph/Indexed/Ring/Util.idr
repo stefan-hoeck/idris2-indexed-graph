@@ -9,7 +9,7 @@ import Data.SnocList
 ||| A set of unlabeled edges of order `k`
 public export
 0 EdgeSet : (g : Graph e n) -> Type
-EdgeSet g = SortedSet (Edge g.order ())
+EdgeSet g = SortedSet (Edg g)
 
 ||| Adds an unlabeled edge to an edge set.
 |||
@@ -17,7 +17,7 @@ EdgeSet g = SortedSet (Edge g.order ())
 ||| identical.
 export
 addEdge : EdgeSet g -> Node g -> Node g -> EdgeSet g
-addEdge es (N x) (N y) = maybe es (`insert` es) (mkEdge x y ())
+addEdge es x y = maybe es (`insert` es) (mkEdg x y)
 
 ||| Adds an unlabeled edge to an edge set.
 |||

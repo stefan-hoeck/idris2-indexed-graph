@@ -61,13 +61,17 @@ parameters (r : MArray s k (Adj k e n))
 
 -- we return only edges to nodes greater than the node in the
 -- context to avoid returning every edge twice in `labEdges`.
-ctxtEdges : Fin k -> Adj k e n -> SnocList (Edge k e)
-ctxtEdges x (A _ ns) = foldlKV acc [<] ns
+ctxtEdgs :
+     {0 g : Graph e n}
+  -> Fin g.order
+  -> Adj g.order e n
+  -> SnocList (LEdg g)
+ctxtEdgs x (A _ ns) = foldlKV acc [<] ns
 
   where
-    acc : Fin k -> SnocList (Edge k e) -> e -> SnocList (Edge k e)
+    acc : Fin g.order -> SnocList (LEdg g) -> e -> SnocList (LEdg g)
     acc y sp v with (compare x y) proof eq
-      _ | LT = sp :< E x y v
+      _ | LT = sp :< LE (N x) (N y) v
       _ | _  = sp
 
 --------------------------------------------------------------------------------
@@ -106,10 +110,8 @@ parameters {g : Graph e n}
 
   ||| Returns the list of edges connecting a node.
   export %inline
-  edgesTo : Node g -> List (Edge g.order e)
-  edgesTo x =
-    let A _ ns := adj x
-     in mapMaybe (\(n,l) => mkEdge x.node n l) $ pairs ns
+  edgesTo : Node g -> List (LEdg g)
+  edgesTo x = mapMaybe (\(n,l) => mkLEdg x n l) $ neighboursAsPairs x
 
   ||| Returns the list of neighboring nodes paired with their
   ||| corresponding labels.
@@ -140,8 +142,8 @@ parameters {g : Graph e n}
 
   ||| Find the label for an `Edge`.
   export
-  edge : (x,y : Node g) -> Maybe (Edge g.order e)
-  edge x y = elab x y >>= mkEdge x.node y.node
+  edge : (x,y : Node g) -> Maybe (LEdg g)
+  edge x y = elab x y >>= mkLEdg x y
 
   ||| Tests if the given nodes are adjecent (connected via an edge).
   export
@@ -173,10 +175,10 @@ export %inline
 labels : Graph e n -> List n
 labels g = map lab $ nodes g
 
-||| A list of all `LEdge`s in the `Graph` (in lexicographic order).
+||| A list of all `Edge`s in the `Graph` (in lexicographic order).
 export
-edges  : (g : Graph e n) -> List (Edge g.order e)
-edges (G _ g) = foldrKV (\x,adj,es => ctxtEdges x adj <>> es) [] g
+edges  : (g : Graph e n) -> List (LEdg g)
+edges g = foldrKV (\x,adj,es => ctxtEdgs x adj <>> es) [] g.graph
 
 ||| The number of edges in the graph.
 export %inline
@@ -320,15 +322,15 @@ updateEdge x y f = updateEdges x y f id
 
 ||| Insert (or replace) a single edge in a graph.
 export
-insEdges : (g : Graph e n) -> List (Edge g.order e) -> Graph e n
+insEdges : (g : Graph e n) -> List (LEdg g) -> Graph e n
 insEdges g es =
   G _ $ allocGen g.order (adj {g} . N) $ \r,t =>
-    let _ # t := linsEdges r es t
+    let _ # t := linsEdges r (map toEdge es) t
      in unsafeFreeze r t
 
 ||| Insert an `Edge` into the 'IGraph'.
 export %inline
-insEdge : (g : Graph e n) -> Edge g.order e -> Graph e n
+insEdge : (g : Graph e n) -> LEdg g -> Graph e n
 insEdge g x = insEdges g [x]
 
 ||| Remove multiple 'Edge's from the 'Graph'.
@@ -367,7 +369,7 @@ insNodesAndEdges :
   -> (es : List (Edge (g.order + m) e))
   -> Graph e n
 insNodesAndEdges g ns es =
-  insEdges (insNodes g ns) (rewrite insLemma g ns in es)
+  insEdges (insNodes g ns) (map toLEdg $ rewrite insLemma g ns in es)
 
 ||| Insert a labeled node into the `Graph`.
 ||| The behavior is undefined if the node is already
@@ -434,7 +436,7 @@ export
 Show e => Show n => Show (Graph e n) where
   showPrec p g = showCon p "mkGraph" $ showArg (labels g) ++ showArg (edges g)
 
-pl : Nat -> Fin k -> String
+pl : Nat -> Node g -> String
 pl n = padLeft n ' ' . show
 
 export
@@ -450,8 +452,8 @@ pretty de dn g =
   where
     dispNode : Nat -> (Node g, n) -> String
     dispNode k (n1,l) =
-      "  \{pl k n1.node} :> \{dn l}"
+      "  \{pl k n1} :> \{dn l}"
 
-    dispEdge : Nat -> Edge k e -> String
-    dispEdge k (E n1 n2 l) =
+    dispEdge : Nat -> LEdg g -> String
+    dispEdge k (LE n1 n2 l) =
       "E \{pl k n1} \{pl k n2}  \{de l}"

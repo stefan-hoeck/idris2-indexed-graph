@@ -10,7 +10,7 @@ import Text.Smiles.Simple
 %default total
 
 testBipartite : (g : Graph e n) -> IArray g.order Bool -> Bool
-testBipartite g cs = all (\(E x y _) => at cs x /= at cs y) (edges g)
+testBipartite g cs = all (\(LE x y _) => atN cs x /= atN cs y) (edges g)
 
 prop_bipartite : Property
 prop_bipartite =

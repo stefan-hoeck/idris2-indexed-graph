@@ -16,7 +16,7 @@ disjointSet : Graph e n -> List (List Nat)
 disjointSet g =
   run1 $ T1.do
     d <- ds g.order
-    for1_ (edges g) $ \(E x y _) => union d x y
+    for1_ (edges g) $ \(LE x y _) => union d x.node y.node
     ss <- sets d
     pure $ sort (map finToNat <$> ss)
 

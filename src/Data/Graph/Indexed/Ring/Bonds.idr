@@ -13,7 +13,7 @@ parameters (g : Graph e n)
   export
   addEdges : EdgeSet g -> Subgraph g -> EdgeSet g
   addEdges x h =
-    foldl (\s,(E a b _) => addEdge s (origin $ N a) (origin $ N b)) x $ edges h
+    foldl (\s,(LE a b _) => addEdge s (origin a) (origin b)) x $ edges h
 
   ||| Computes the cyclic bonds in a graph.
   |||
