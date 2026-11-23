@@ -219,6 +219,10 @@ fromAL : {0 g : Graph e n} -> AssocList g.order e -> List (Node g,e)
 fromAL al = fromPairs $ pairs al
 
 export %inline
+alNodes : {0 g : Graph e n} -> AssocList g.order e -> List (Node g)
+alNodes al = fromFins $ keys al
+
+export %inline
 atN : IArray g.order a -> Node g -> a
 atN arr (N x) = at arr x
 
