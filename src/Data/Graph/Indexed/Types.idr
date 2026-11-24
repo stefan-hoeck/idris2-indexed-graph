@@ -173,9 +173,6 @@ export %inline
 Show (Node g) where show = show . node
 
 export %inline
-Interpolation (Node g) where interpolate = show
-
-export %inline
 Cast (Node g) (Fin g.order) where cast = node
 
 export %inline
