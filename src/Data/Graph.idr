@@ -119,8 +119,17 @@ fromPairs []            = []
 fromPairs ((x,l) :: xs) = (N x,l) :: fromPairs xs
 
 export
+toPairs : {0 g : Graph e n} -> List (Node g,a) -> List (Fin g.order,a)
+toPairs []            = []
+toPairs ((x,l) :: xs) = (x.node,l) :: toPairs xs
+
+export
 fromAL : {0 g : Graph e n} -> AssocList g.order e -> List (Node g,e)
 fromAL al = fromPairs $ pairs al
+
+export %inline
+toAL : {0 g : Graph e n} -> List (Node g,e) -> AssocList g.order e
+toAL = fromList . toPairs
 
 export %inline
 alNodes : {0 g : Graph e n} -> AssocList g.order e -> List (Node g)
