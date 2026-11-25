@@ -206,6 +206,14 @@ export %inline
 toAdj : {0 g : Graph e n} -> IAdj g.order e n -> Adj g
 toAdj (IA l ns) = A l (fromAL ns)
 
+export
+anodes : Adj g -> Nodes g
+anodes = map fst . neighbours
+
+export
+alabs : {g : Graph e n} -> Adj g -> List e
+alabs = map snd . neighbours
+
 --------------------------------------------------------------------------------
 --          Inspecting Graphs
 --------------------------------------------------------------------------------
