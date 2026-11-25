@@ -8,15 +8,15 @@
 ||| Please note that this is internal stuff. The algorithm is not suitable
 ||| as a general shortest path algorithm, as it computes only paths up
 ||| to half the graph order in length.
-module Data.Graph.Indexed.Ring.Relevant.ShortestPath
+module Data.Graph.Ring.Relevant.ShortestPath
 
 import Data.Array.Mutable
-import Data.Graph.Indexed.Ring.Relevant.Types
+import Data.Graph.Ring.Relevant.Types
 import Data.Linear.Ref1
 import Data.List
 import Data.Queue
-import public Data.Graph.Indexed
-import public Data.Graph.Indexed.Subgraph
+import public Data.Graph
+import public Data.Graph.Subgraph
 
 %default total
 

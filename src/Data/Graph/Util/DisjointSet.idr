@@ -1,4 +1,4 @@
-module Data.Graph.Indexed.Util.DisjointSet
+module Data.Graph.Util.DisjointSet
 
 import Data.Array
 import Data.SortedMap

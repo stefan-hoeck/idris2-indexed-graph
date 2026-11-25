@@ -1,10 +1,10 @@
 module BFS
 
-import Data.Graph.Indexed.Query.BFS
+import Data.Graph.Query.BFS
 import Data.List
 import Data.String
 import Data.SnocList
-import Test.Data.Graph.Indexed.Generators
+import Test.Data.Graph.Generators
 import Text.Smiles.Simple
 
 %default total

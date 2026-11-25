@@ -100,14 +100,14 @@ lteAddLeft n = rewrite plusCommutative m n in lteAddRight n
 ||| we can enforce without loss of generality
 ||| that `node2 > node1 = True`.
 public export
-record Edge (k : Nat) (e : Type) where
-  constructor E
+record IEdge (k : Nat) (e : Type) where
+  constructor IE
   node1 : Fin k
   node2 : Fin k
   label : e
   {auto 0 prf : CompFin node1 node2 === LT}
 
-%runElab derivePattern "Edge" [I,P] [Show,Eq,Ord]
+%runElab derivePattern "IEdge" [I,P] [Show,Eq,Ord]
 
 export
 fromNat :
@@ -116,17 +116,17 @@ fromNat :
   -> {auto 0 p2 : LT y k}
   -> {auto 0 p3 : LT x y}
   -> (l : e)
-  -> Edge k e
-fromNat x y l = E (natToFinLT x) (natToFinLT y) l @{fromNatLemma x y p1 p2 p3}
+  -> IEdge k e
+fromNat x y l = IE (natToFinLT x) (natToFinLT y) l @{fromNatLemma x y p1 p2 p3}
 
 export
-weakenEdge : Edge k e -> Edge (S k) e
-weakenEdge (E x y e @{p}) = E (weaken x) (weaken y) e @{weakenL x y `trans` p}
+weakenEdge : IEdge k e -> IEdge (S k) e
+weakenEdge (IE x y e @{p}) = IE (weaken x) (weaken y) e @{weakenL x y `trans` p}
 
 export
-weakenEdgeN : (0 m : Nat) -> Edge k e -> Edge (k + m) e
-weakenEdgeN m (E x y e @{p}) =
-  E (weakenN m x) (weakenN m y) e @{weakenLN m x y `trans` p}
+weakenEdgeN : (0 m : Nat) -> IEdge k e -> IEdge (k + m) e
+weakenEdgeN m (IE x y e @{p}) =
+  IE (weakenN m x) (weakenN m y) e @{weakenLN m x y `trans` p}
 
 ||| Creates an edge between two nodes from different graphs,
 ||| resulting in a new edge of their composite graph.
@@ -135,7 +135,7 @@ weakenEdgeN m (E x y e @{p}) =
 |||       will stay the same, while nodes in the second graph
 |||       (of order `m`) will be increased by `k`.
 export
-compositeEdge : {k : _} -> Fin k -> Fin m -> (l : e) -> Edge (k+m) e
+compositeEdge : {k : _} -> Fin k -> Fin m -> (l : e) -> IEdge (k+m) e
 compositeEdge x y l =
   fromNat
     (finToNat x)
@@ -156,39 +156,51 @@ compareGT FZ     (FS x) prf impossible
 |||
 ||| Returns `Nothing` in case the two nodes are identical.
 public export
-mkEdge : Fin k -> Fin k -> e -> Maybe (Edge k e)
+mkEdge : Fin k -> Fin k -> e -> Maybe (IEdge k e)
 mkEdge k j l with (compareNat (finToNat k) (finToNat j)) proof prf
-  _ | LT = Just (E k j l )
+  _ | LT = Just (IE k j l )
   _ | EQ = Nothing
-  _ | GT = Just (E j k l @{compareGT k j prf})
+  _ | GT = Just (IE j k l @{compareGT k j prf})
 
 ||| Tries to create an edge from two natural numbers plus a label.
 |||
 ||| Returns `Nothing` in case the two numbers are not in the correct
 ||| range or are identical.
 export
-tryFromNat : {k : _} -> (x,y : Nat) -> (l : e) -> Maybe (Edge k e)
+tryFromNat : {k : _} -> (x,y : Nat) -> (l : e) -> Maybe (IEdge k e)
 tryFromNat x y l =
   let Just fx := tryNatToFin x | Nothing => Nothing
       Just fy := tryNatToFin y | Nothing => Nothing
    in mkEdge fx fy l
 
 public export
-edge : {k : _} -> Fin k -> e -> Edge (S k) e
-edge x l = E (weaken x) last l @{edgeLemma k x}
+edge : {k : _} -> Fin k -> e -> IEdge (S k) e
+edge x l = IE (weaken x) last l @{edgeLemma k x}
+
+||| Increase both nodes in an edge by the same natural number
+export
+incEdge : (k : Nat) -> IEdge o e -> IEdge (k+o) e
+incEdge k (IE n1 n2 l @{prf}) =
+  fromNat
+    (k + finToNat n1)
+    (k + finToNat n2)
+    @{ltPlusLeft $ finLT o n1}
+    @{ltPlusLeft $ finLT o n2}
+    @{ltPlusLeft $ ltLemma2 _ _ prf}
+    l
 
 export
-Functor (Edge k) where
-  map f (E x y l) = E x y (f l)
+Functor (IEdge k) where
+  map f (IE x y l) = IE x y (f l)
 
 export
-Foldable (Edge k) where
-  foldl f x (E _ _ l) = f x l
-  foldr f x (E _ _ l) = f l x
-  toList (E _ _ l)    = [l]
-  foldMap f (E _ _ l) = f l
+Foldable (IEdge k) where
+  foldl f x (IE _ _ l) = f x l
+  foldr f x (IE _ _ l) = f l x
+  toList (IE _ _ l)    = [l]
+  foldMap f (IE _ _ l) = f l
   null _              = False
 
 export
-Traversable (Edge k) where
-  traverse f (E x y l) = map (\v => E x y v) (f l)
+Traversable (IEdge k) where
+  traverse f (IE x y l) = map (\v => IE x y v) (f l)

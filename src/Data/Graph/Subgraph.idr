@@ -1,11 +1,10 @@
-module Data.Graph.Indexed.Subgraph
+module Data.Graph.Subgraph
 
 import Data.Array
 import Data.Array.Mutable
 import Data.AssocList.Indexed
-import Data.Graph.Indexed.Query.DFS
-import Data.Graph.Indexed.Types
-import Data.Graph.Indexed.Util
+import Data.Graph
+import Data.Graph.Query.DFS
 import Data.Linear.Ref1
 import Data.SortedMap
 
@@ -54,8 +53,8 @@ subgraph g arr =
   in G _ $ map (fun m) arr
 
   where
-    fun : NodeMap g k -> Node g -> Adj k e (Node g)
-    fun m fm = let A _ ns := adj fm in A fm (adjAssocList m ns)
+    fun : NodeMap g k -> Node g -> IAdj k e (Node g)
+    fun m fm = let IA _ ns := gadj fm in IA fm (adjAssocList m ns)
 
 ||| Computes a subgraph of a graph containing the given nodes.
 ||| Runs in O(k * log (k)) for sparse graphs.

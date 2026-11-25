@@ -1,13 +1,13 @@
 ||| This modules provides several functions for traversing
 ||| graphs in depth-first order and accumulating results in
 ||| various ways along the way.
-module Data.Graph.Indexed.Query.DFS
+module Data.Graph.Query.DFS
 
 import Data.Either
 import Data.Tree
-import Data.Graph.Indexed
-import Data.Graph.Indexed.Query.Util
-import Data.Graph.Indexed.Query.Visited
+import Data.Graph
+import Data.Graph.Query.Util
+import Data.Graph.Query.Visited
 
 %default total
 

@@ -1,9 +1,9 @@
 module Ring.Systems
 
-import Data.Graph.Indexed.Ring.Systems
+import Data.Graph.Ring.Systems
 import Data.List
 import Hedgehog
-import Test.Data.Graph.Indexed.Generators
+import Test.Data.Graph.Generators
 import Text.Smiles.Simple
 import System.Info
 

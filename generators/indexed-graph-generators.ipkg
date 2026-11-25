@@ -14,5 +14,5 @@ depends    = indexed-graph
            , refined
            , elab-util
 
-modules = Test.Data.Graph.Indexed.Generators
+modules = Test.Data.Graph.Generators
         , Text.Smiles.Simple

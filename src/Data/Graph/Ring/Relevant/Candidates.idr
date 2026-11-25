@@ -3,10 +3,10 @@
 ||| (The Electronic Journal of Combinatorics 4 (1997)).
 |||
 ||| In particular, it computes candidates of relevant cycle familes.
-module Data.Graph.Indexed.Ring.Relevant.Candidates
+module Data.Graph.Ring.Relevant.Candidates
 
-import Data.Graph.Indexed.Ring.Relevant.ShortestPath
-import Data.Graph.Indexed.Ring.Relevant.Types
+import Data.Graph.Ring.Relevant.ShortestPath
+import Data.Graph.Ring.Relevant.Types
 import Data.SnocList
 
 %default total

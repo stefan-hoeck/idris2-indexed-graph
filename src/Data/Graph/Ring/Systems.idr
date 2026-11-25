@@ -1,11 +1,11 @@
 ||| Computes the ring systems (biconnected components) of
 ||| a graph and provides an efficient mapping assigning
 ||| each node to the ring system it belongs to.
-module Data.Graph.Indexed.Ring.Systems
+module Data.Graph.Ring.Systems
 
 import Data.Array
-import Data.Graph.Indexed
-import Data.Graph.Indexed.Subgraph
+import Data.Graph
+import Data.Graph.Subgraph
 import Data.Linear.Traverse1
 
 %default total

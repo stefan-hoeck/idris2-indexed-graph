@@ -1,7 +1,7 @@
 module Util
 
 import Data.AssocList.Indexed
-import Test.Data.Graph.Indexed.Generators
+import Test.Data.Graph.Generators
 
 %default total
 
@@ -18,7 +18,7 @@ smallGraphs = sparseGraph (linear 0 30) (linear 0 100) anyBits8 anyBits8
 
 testEdgesTo : Eq e => {g : Graph e n} -> Node g -> Bool
 testEdgesTo n =
-  let vs := values $ neighbours (adj n)
+  let vs := values $ neighbours (gadj n)
    in vs == map label (edgesTo n)
 
 --------------------------------------------------------------------------------

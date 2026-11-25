@@ -1,10 +1,10 @@
 ||| This is an implementation of a simple but efficient subgraph isomorphism
 ||| algorithm.
-module Data.Graph.Indexed.Query.Subgraph
+module Data.Graph.Query.Subgraph
 
 import Data.Array.Mutable
 import Data.AssocList.Indexed
-import Data.Graph.Indexed
+import Data.Graph
 import Data.Linear.List
 import Data.Vect
 
@@ -104,8 +104,8 @@ parameters {0 eq,et,nq,nt : Type}
 
   align : Node q -> Node t -> Matrix q t -> F1 s (Matrix q t)
   align x y m t =
-    let nsX # t := filterLin (unset mq) (neighbours $ adj x) t
-        nsY # t := filterLin (unset mt) (neighbours $ adj y) t
+    let nsX # t := filterLin (unset mq) (neighbours $ gadj x) t
+        nsY # t := filterLin (unset mt) (neighbours $ gadj y) t
      in unionWith intersect (remove y m) (candidates nsX nsY) # t
 
   covering

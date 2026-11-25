@@ -1,7 +1,7 @@
 module AssocList
 
 import Data.SOP
-import Test.Data.Graph.Indexed.Generators
+import Test.Data.Graph.Generators
 
 %default total
 

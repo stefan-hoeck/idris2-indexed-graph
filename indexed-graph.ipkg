@@ -15,24 +15,23 @@ modules = Data.AssocList.Indexed
 
         , Data.Graph.Indexed
         , Data.Graph.Indexed.Edge
-        , Data.Graph.Indexed.Subgraph
-        , Data.Graph.Indexed.Types
-        , Data.Graph.Indexed.Util
 
-        , Data.Graph.Indexed.Query.BFS
-        , Data.Graph.Indexed.Query.DFS
-        , Data.Graph.Indexed.Query.Subgraph
-        , Data.Graph.Indexed.Query.Visited
-        , Data.Graph.Indexed.Query.Util
+        , Data.Graph
+        , Data.Graph.Subgraph
+        , Data.Graph.Query.BFS
+        , Data.Graph.Query.DFS
+        , Data.Graph.Query.Subgraph
+        , Data.Graph.Query.Visited
+        , Data.Graph.Query.Util
 
-        , Data.Graph.Indexed.Ring.Relevant
-        , Data.Graph.Indexed.Ring.Relevant.Candidates
-        , Data.Graph.Indexed.Ring.Relevant.ShortestPath
-        , Data.Graph.Indexed.Ring.Relevant.Types
+        , Data.Graph.Ring.Relevant
+        , Data.Graph.Ring.Relevant.Candidates
+        , Data.Graph.Ring.Relevant.ShortestPath
+        , Data.Graph.Ring.Relevant.Types
 
-        , Data.Graph.Indexed.Ring.Bonds
-        , Data.Graph.Indexed.Ring.Systems
-        , Data.Graph.Indexed.Ring.Util
+        , Data.Graph.Ring.Bonds
+        , Data.Graph.Ring.Systems
+        , Data.Graph.Ring.Util
 
-        , Data.Graph.Indexed.Util.Bipartite
-        , Data.Graph.Indexed.Util.DisjointSet
+        , Data.Graph.Util.Bipartite
+        , Data.Graph.Util.DisjointSet

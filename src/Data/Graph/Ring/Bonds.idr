@@ -1,9 +1,9 @@
-module Data.Graph.Indexed.Ring.Bonds
+module Data.Graph.Ring.Bonds
 
 import Data.SortedSet
-import Data.Graph.Indexed
-import Data.Graph.Indexed.Ring.Util
-import Data.Graph.Indexed.Subgraph
+import Data.Graph
+import Data.Graph.Ring.Util
+import Data.Graph.Subgraph
 
 %default total
 

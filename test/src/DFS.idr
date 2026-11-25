@@ -1,7 +1,7 @@
 module DFS
 
-import Data.Graph.Indexed.Query.DFS
-import Test.Data.Graph.Indexed.Generators
+import Data.Graph.Query.DFS
+import Test.Data.Graph.Generators
 import Text.Smiles.Simple
 import Data.SnocList
 

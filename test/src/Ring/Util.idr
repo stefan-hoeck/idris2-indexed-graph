@@ -1,9 +1,9 @@
 module Ring.Util
 
-import Data.Graph.Indexed.Ring.Util
+import Data.Graph.Ring.Util
 import Data.List
 import Data.SortedSet
-import Test.Data.Graph.Indexed.Generators
+import Test.Data.Graph.Generators
 import Text.Smiles.Simple
 
 %default total

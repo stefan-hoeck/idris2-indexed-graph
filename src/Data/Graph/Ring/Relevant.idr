@@ -1,11 +1,11 @@
-module Data.Graph.Indexed.Ring.Relevant
+module Data.Graph.Ring.Relevant
 
 import Data.Bits
-import Data.Graph.Indexed.Ring.Relevant.Candidates
+import Data.Graph.Ring.Relevant.Candidates
 import Data.List
 import Data.SortedMap
 
-import public Data.Graph.Indexed.Ring.Relevant.Types
+import public Data.Graph.Ring.Relevant.Types
 
 %default total
 

@@ -1,9 +1,9 @@
-module Data.Graph.Indexed.Query.BFS
+module Data.Graph.Query.BFS
 
 import Data.Queue
-import Data.Graph.Indexed
-import Data.Graph.Indexed.Query.Util
-import Data.Graph.Indexed.Query.Visited
+import Data.Graph
+import Data.Graph.Query.Util
+import Data.Graph.Query.Visited
 import Data.SnocList
 
 %default total

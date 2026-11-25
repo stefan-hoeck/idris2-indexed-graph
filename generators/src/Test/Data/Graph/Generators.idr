@@ -1,9 +1,9 @@
-module Test.Data.Graph.Indexed.Generators
+module Test.Data.Graph.Generators
 
 import Data.List
 import Data.Vect
 import Data.Array.Index
-import public Data.Graph.Indexed
+import public Data.Graph
 import public Hedgehog
 
 %default total
@@ -15,19 +15,19 @@ export
 assocList : {k : _} -> Gen a -> Gen (AssocList (S k) a)
 assocList g = fromList <$> list (linear 0 k) [| MkPair (anyFin $ S k) g |]
 
-||| Generates a single `Edge` for a graph of order `k + 2`.
+||| Generates a single `IEdge` for a graph of order `k + 2`.
 |||
 ||| Note: Since graphs of order 1 and 0 can't have any edges
 |||       (remember, we don't support self-loops), the smallest
 |||       graph with an edge has order two.
 export
-edge : {k : _} -> Gen e -> Gen (Edge (S $ S k) e)
+edge : {k : _} -> Gen e -> Gen (IEdge (S $ S k) e)
 edge lbl =
   let gnode = fin {n = S (S k)} (constant FZ last)
    in [| toEdge gnode gnode lbl |]
   where
-    toEdge : Fin (S $ S k) -> Fin (S $ S k) -> e -> Edge (S $ S k) e
-    toEdge k j l = fromMaybe (E 0 1 l) (mkEdge k j l)
+    toEdge : Fin (S $ S k) -> Fin (S $ S k) -> e -> IEdge (S $ S k) e
+    toEdge k j l = fromMaybe (IE 0 1 l) (mkEdge k j l)
 
 ||| Generates a list of edges for a graph of size `k`.
 |||
@@ -39,7 +39,7 @@ edges :
      {k : _}
   -> (nrEdges : Hedgehog.Range Nat)
   -> (label   : Gen e)
-  -> Gen (List $ Edge k e)
+  -> Gen (List $ IEdge k e)
 edges {k = S (S m)} nr lbl = list nr (edge lbl)
 edges               _  _   = pure []
 
@@ -53,12 +53,12 @@ pairs vs = [| MkPair vs vs |]
 ||| This allows us to create very sparse and very dense graphs based
 ||| on the edge generator, with nice edge distributions.
 export
-distEdges : {k : _} -> (label : Gen (Maybe e)) -> Gen (List $ Edge k e)
+distEdges : {k : _} -> (label : Gen (Maybe e)) -> Gen (List $ IEdge k e)
 distEdges lbl = catMaybes <$> traverse gen (pairs $ allFinsFast k)
   where
-    gen : (Fin k, Fin k) -> Gen (Maybe $ Edge k e)
+    gen : (Fin k, Fin k) -> Gen (Maybe $ IEdge k e)
     gen (x,y) with (compare x y) proof prf
-      _ | LT = map (\v => E x y v) <$> lbl
+      _ | LT = map (\v => IE x y v) <$> lbl
       _ | _  = pure Nothing
 
 ||| Generates a graph with the numbers of nodes and edges in the
@@ -73,7 +73,7 @@ sparseGraph :
 sparseGraph nrn nre el nl = do
   ns <- list nrn nl
   es <- edges nre el
-  pure $ (mkGraphL ns es)
+  pure $ (mkGraph (fromList ns) es)
 
 ||| Generates a graph with the numbers of nodes and a random distribution
 ||| of edges.
@@ -86,7 +86,7 @@ graph :
 graph nrn el nl = do
   ns <- list nrn nl
   es <- distEdges el
-  pure $ (mkGraphL ns es)
+  pure $ (mkGraph (fromList ns) es)
 
 ||| Generates a random node for the given graph
 export
@@ -99,15 +99,15 @@ forNode (G (S k) _) = forAll (N <$> anyFin (S k))
 --------------------------------------------------------------------------------
 
 export
-tryEdge : {k : _} -> (x,y : Nat) -> e -> List (Edge k e)
+tryEdge : {k : _} -> (x,y : Nat) -> e -> List (IEdge k e)
 tryEdge x y = toList . tryFromNat x y
 
 export
-chainEdges : {k : _} -> e -> List (Edge k e)
+chainEdges : {k : _} -> e -> List (IEdge k e)
 chainEdges e = [0..k] >>= \n => tryEdge n (S n) e
 
 export
-ringEdges : {k : _} -> e -> List (Edge k e)
+ringEdges : {k : _} -> e -> List (IEdge k e)
 ringEdges e = tryEdge 0 (pred k) e ++ chainEdges e
 
 export
@@ -131,7 +131,7 @@ trees el nl = do
   pure (mkGraph ns es)
 
   where
-    go : {k : _} -> SnocList (Edge k e) -> Nat -> Gen (List $ Edge k e)
+    go : {k : _} -> SnocList (IEdge k e) -> Nat -> Gen (List $ IEdge k e)
     go sx 0     = pure (sx <>> [])
     go sx (S j) = do
       e <- el
@@ -157,10 +157,10 @@ rings' = rings (pure ()) (pure ())
 diamondEdges :
      {k : _}
   -> (chainLength, numChains, first,last : Nat)
-  -> List (Edge k ())
+  -> List (IEdge k ())
 diamondEdges cl nc first last = [0..pred nc] >>= edges
   where
-    edges : Nat -> List (Edge k ())
+    edges : Nat -> List (IEdge k ())
     edges i =
      let begin := first + i * cl + 1
          end   := begin + pred cl
@@ -174,7 +174,7 @@ diamondSize cl nc = cl * nc + 2
 diamondChainEdges :
      {k : _}
   -> (ndiamonds, chainLength, numChains : Nat)
-  -> List (Edge k ())
+  -> List (IEdge k ())
 diamondChainEdges nd cl nc =
  let ds := diamondSize cl nc
   in [0..pred nd] >>= \n =>

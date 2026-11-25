@@ -1,7 +1,7 @@
-module Data.Graph.Indexed.Util.Bipartite
+module Data.Graph.Util.Bipartite
 
-import Data.Graph.Indexed
-import Data.Graph.Indexed.Subgraph
+import Data.Graph
+import Data.Graph.Subgraph
 import Data.Linear.List
 import Data.Linear.Token
 import Data.Linear.Traverse1

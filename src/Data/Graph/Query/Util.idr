@@ -1,7 +1,7 @@
 ||| Utilities for graph traversals.
-module Data.Graph.Indexed.Query.Util
+module Data.Graph.Query.Util
 
-import Data.Graph.Indexed.Query.Visited
+import Data.Graph.Query.Visited
 
 %default total
 

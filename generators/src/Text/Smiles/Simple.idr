@@ -2,7 +2,7 @@ module Text.Smiles.Simple
 
 import Data.Either
 import Data.Finite
-import Data.Graph.Indexed
+import Data.Graph
 import Data.Maybe
 import Data.Refined.Bits8
 import Data.SnocVect
@@ -150,7 +150,7 @@ record ST where
   cnt   : Nat
   stck  : List (AtomInfo cnt)
   atoms : SnocVect cnt Elem
-  bonds : List (Edge cnt Bond)
+  bonds : List (IEdge cnt Bond)
   rings : List (RingInfo cnt)
 
 public export
@@ -169,7 +169,7 @@ toGraph (S _ _ _ _ (RI _ r _ b p ::_)) =
 weakenST : List (AtomInfo n) -> List (AtomInfo $ S n)
 weakenST x = believe_me x
 
-weakenBS : List (Edge n e) -> List (Edge (S n) e)
+weakenBS : List (IEdge n e) -> List (IEdge (S n) e)
 weakenBS x = believe_me x
 
 weakenRS : List (RingInfo n) -> List (RingInfo (S n))

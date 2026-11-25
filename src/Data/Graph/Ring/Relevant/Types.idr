@@ -1,8 +1,8 @@
-module Data.Graph.Indexed.Ring.Relevant.Types
+module Data.Graph.Ring.Relevant.Types
 
-import public Data.Graph.Indexed
-import public Data.Graph.Indexed.Subgraph
-import public Data.Graph.Indexed.Query.Util
+import public Data.Graph
+import public Data.Graph.Subgraph
+import public Data.Graph.Query.Util
 import Data.Nat
 import Data.SortedSet as SS
 import Derive.Prelude

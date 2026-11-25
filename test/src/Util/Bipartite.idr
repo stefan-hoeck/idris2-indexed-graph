@@ -1,10 +1,10 @@
 module Util.Bipartite
 
-import Data.Graph.Indexed.Util.Bipartite
+import Data.Graph.Util.Bipartite
 import Data.List
 import Hedgehog
 import Syntax.T1
-import Test.Data.Graph.Indexed.Generators
+import Test.Data.Graph.Generators
 import Text.Smiles.Simple
 
 %default total

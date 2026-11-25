@@ -1,13 +1,13 @@
 module ShortestPath
 
-import Data.Graph.Indexed.Ring.Relevant.ShortestPath
-import Data.Graph.Indexed.Ring.Relevant.Types
+import Data.Graph.Ring.Relevant.ShortestPath
+import Data.Graph.Ring.Relevant.Types
 import Data.List
 import Data.List.Quantifiers
 import Data.SortedSet as SS
 import Derive.Prelude
 import Hedgehog
-import Test.Data.Graph.Indexed.Generators
+import Test.Data.Graph.Generators
 import Text.Smiles.Simple
 
 %default total

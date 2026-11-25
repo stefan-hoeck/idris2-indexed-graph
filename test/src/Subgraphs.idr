@@ -1,12 +1,12 @@
 module Subgraphs
 
 import Text.Smiles.Simple
-import Data.Graph.Indexed.Util
-import Data.Graph.Indexed.Query.DFS
-import Data.Graph.Indexed.Subgraph
+import Data.Graph
+import Data.Graph.Query.DFS
+import Data.Graph.Subgraph
 import Data.List
 import Data.Vect
-import Test.Data.Graph.Indexed.Generators
+import Test.Data.Graph.Generators
 
 %default total
 
@@ -27,7 +27,8 @@ testEdge : Eq e => (g : Graph e n) -> (sg : Subgraph g) -> LEdg sg -> Bool
 testEdge _ g (LE n1 n2 el) = elab (lab n1) (lab n2) == Just el
 
 isBiconnected : Graph e n -> Bool
-isBiconnected g = all (\(LE n1 n2 _) => isConnected (delEdge n1 n2)) (edges g)
+isBiconnected g =
+  all (\(LE (N n1) (N n2) _) => isConnected (toGraph $ delEdge g.igraph n1 n2)) (edges g)
 
 --------------------------------------------------------------------------------
 -- Example Graphs

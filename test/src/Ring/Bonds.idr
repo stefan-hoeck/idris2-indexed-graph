@@ -1,14 +1,14 @@
 module Ring.Bonds
 
-import Data.Graph.Indexed.Ring.Bonds
-import Data.Graph.Indexed.Ring.Util
+import Data.Graph.Ring.Bonds
+import Data.Graph.Ring.Util
 import Data.SortedSet
-import Test.Data.Graph.Indexed.Generators
+import Test.Data.Graph.Generators
 import Text.Smiles.Simple
 
 %default total
 
-toEdge : {o : _} -> (Nat, Nat) -> Maybe (Edge o ())
+toEdge : {o : _} -> (Nat, Nat) -> Maybe (IEdge o ())
 toEdge (x,y) = do
   fx <- tryNatToFin x
   fy <- tryNatToFin y

@@ -1,7 +1,7 @@
 module Visited
 
-import Data.Graph.Indexed.Query.Visited
-import Test.Data.Graph.Indexed.Generators
+import Data.Graph.Query.Visited
+import Test.Data.Graph.Generators
 
 %default total
 

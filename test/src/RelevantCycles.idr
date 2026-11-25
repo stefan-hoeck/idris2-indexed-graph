@@ -1,11 +1,11 @@
 module RelevantCycles
 
 import Data.List.Quantifiers
-import Data.Graph.Indexed.Ring.Relevant
+import Data.Graph.Ring.Relevant
 import Derive.Prelude
 import Hedgehog
 import ShortestPath
-import Test.Data.Graph.Indexed.Generators
+import Test.Data.Graph.Generators
 import Text.Smiles.Simple
 
 %default total
@@ -23,10 +23,10 @@ record Sizes where
 
 %runElab derive "Sizes" [Show,Eq]
 
-natEdge : {n : Nat} -> (x,y : Nat) -> Maybe (Edge n ())
+natEdge : {n : Nat} -> (x,y : Nat) -> Maybe (IEdge n ())
 natEdge x y = join [| mkEdge (tryNatToFin x) (tryNatToFin y) (pure ()) |]
 
-toNext : {n : Nat} -> (x : Nat) -> Maybe (Edge n ())
+toNext : {n : Nat} -> (x : Nat) -> Maybe (IEdge n ())
 toNext x = natEdge x (S x)
 
 crSize : Graph e n -> Sizes

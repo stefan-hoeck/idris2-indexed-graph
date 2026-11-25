@@ -1,7 +1,7 @@
-module Data.Graph.Indexed.Ring.Util
+module Data.Graph.Ring.Util
 
 import Data.SortedSet
-import Data.Graph.Indexed
+import Data.Graph
 import Data.SnocList
 
 %default total

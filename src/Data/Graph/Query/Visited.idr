@@ -1,9 +1,9 @@
-module Data.Graph.Indexed.Query.Visited
+module Data.Graph.Query.Visited
 
 import Data.Bits
 import Data.Buffer
 import Data.Linear.Traverse1
-import public Data.Graph.Indexed
+import public Data.Graph
 import public Data.Buffer.Mutable
 
 %default total

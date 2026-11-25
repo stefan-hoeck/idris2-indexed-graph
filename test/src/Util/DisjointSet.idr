@@ -1,13 +1,13 @@
 module Util.DisjointSet
 
-import Data.Graph.Indexed.Util.DisjointSet
-import Data.Graph.Indexed.Subgraph
+import Data.Graph.Util.DisjointSet
+import Data.Graph.Subgraph
 import Data.Linear.Token
 import Data.Linear.Traverse1
 import Data.List
 import Hedgehog
 import Syntax.T1
-import Test.Data.Graph.Indexed.Generators
+import Test.Data.Graph.Generators
 import Text.Smiles.Simple
 
 %default total

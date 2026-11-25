@@ -1,8 +1,8 @@
 module SubgraphIso
 
-import Data.Graph.Indexed.Query.Subgraph
+import Data.Graph.Query.Subgraph
 import Data.Vect
-import Test.Data.Graph.Indexed.Generators
+import Test.Data.Graph.Generators
 import Text.Smiles.Simple
 
 testQuery : String -> String -> Maybe (List Nat) -> Property
