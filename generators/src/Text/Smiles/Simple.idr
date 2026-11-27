@@ -299,7 +299,7 @@ openClose = [opn '(' op, close ')' cl]
     cl = read1 k.st >>= \s => writeAs k.st ({stck $= drop} s) Closed
 
 space : List (RExp True, Step q SSz SSTCK)
-space = [step (plus $ oneof [' ', '\t']) end, ignore nl]
+space = [step (plus $ oneof [' ', '\t']) end, ign nl]
   where
     nl : RExp True
     nl = "\r\n" <|> '\n' <|> '\r'
