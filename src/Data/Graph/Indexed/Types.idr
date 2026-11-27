@@ -435,6 +435,22 @@ export
 {k : _} -> Bitraversable (IGraph k) where
   bitraverse f g (IG h) = IG <$> traverse (bitraverse f g) h
 
+export
+itraverseEither :
+     {k : _}
+  -> (n -> Either x m)
+  -> IGraph k e n
+  -> Either x (IGraph k e m)
+itraverseEither f (IG a) = IG <$> itraverseEither (traverse f) a
+
+export
+itraverseMaybe :
+     {k : _}
+  -> (n -> Maybe m)
+  -> IGraph k e n
+  -> Maybe (IGraph k e m)
+itraverseMaybe f (IG a) = IG <$> itraverseMaybe (traverse f) a
+
 --------------------------------------------------------------------------------
 --          Graph
 --------------------------------------------------------------------------------
@@ -497,3 +513,11 @@ Bifoldable (Graph) where
 export
 Bitraversable Graph where
   bitraverse f g (G s h) = G s <$> bitraverse f g h
+
+export
+traverseEither : (n -> Either x m) -> Graph e n -> Either x (Graph e m)
+traverseEither f (G o $ IG a) = (G o . IG) <$> itraverseEither (traverse f) a
+
+export
+traverseMaybe : (n -> Maybe m) -> Graph e n -> Maybe (Graph e m)
+traverseMaybe f (G o $ IG a) = (G o . IG) <$> itraverseMaybe (traverse f) a
